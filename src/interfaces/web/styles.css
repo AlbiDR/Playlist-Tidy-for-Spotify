@@ -98,6 +98,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
   padding: 72px 0 82px;
 }
 
+.hero__copy { min-width: 0; }
+
 .eyebrow {
   margin: 0;
   color: var(--green);
@@ -453,8 +455,8 @@ footer {
   #app { width: min(100% - 28px, 1160px); }
   .app-header, .connection-row, .section-heading, footer { align-items: flex-start; flex-direction: column; }
   .hero { min-height: auto; padding: 56px 0 64px; }
-  h1 { font-size: clamp(3rem, 15vw, 4.4rem); }
-  .sort-visual { width: 100%; }
+  h1 { font-size: clamp(2.75rem, 13.4vw, 3.6rem); }
+  .sort-visual { width: calc(100% - 12px); transform: rotate(1deg); }
   .route { padding: 42px 24px; border-radius: 32px 12px 32px 12px; }
   .playlist-catalog { padding: 22px 16px; border-radius: 16px 34px 16px 34px; }
   .playlist-row { grid-template-columns: minmax(0, 1fr); }

@@ -1,23 +1,58 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 <!-- Copyright (C) 2026 AlbiDR -->
 
-# Playlist Tidy for Spotify
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/mark-dark.svg">
+    <img src="docs/assets/readme/mark.svg" width="128" alt="Playlist Tidy mark">
+  </picture>
+</p>
 
-A focused Spotify utility that restores owned playlists to a stable, newest-added-first order—without replacing, removing, or duplicating their contents.
+<h1 align="center">Playlist Tidy for Spotify</h1>
 
-[Open Playlist Tidy](https://albidr.github.io/PlaylistTidy/) · [Read the architecture](docs/architecture/cleanstack.md) · [Report a problem](https://github.com/AlbiDR/PlaylistTidy/issues/new/choose)
+---
+
+<p align="center">
+  <strong>Put every playlist back in order.</strong><br>
+  Preview first. Sort safely.
+</p>
+
+<p align="center">
+  <a href="https://albidr.github.io/PlaylistTidy/">Open app</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#safety-by-design">Safety</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#development">Develop</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/ci.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/ci.yml/badge.svg?branch=main&amp;event=push" alt="Verify workflow status"></a>
+  <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/repository-policy.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/repository-policy.yml/badge.svg?branch=main&amp;event=push" alt="Repository Policy workflow status"></a>
+  <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml/badge.svg?branch=main&amp;event=push" alt="Pages deployment status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--only-386b49" alt="GPL-3.0-only license"></a>
+</p>
+
+<p align="center">
+  <img src="docs/assets/readme/desktop.webp" width="960" alt="Playlist Tidy showing the connect action, newest-first promise, and three-step sorting route">
+</p>
+
+Playlist Tidy is a focused Spotify utility for playlists owned by the authenticated user. It restores a stable, newest-added-first order without replacing, removing, or duplicating playlist contents.
 
 > Playlist Tidy is an independent project and is not affiliated with or endorsed by Spotify. It is currently an early build: preview first and begin with a playlist you can restore.
 
-## The job
+## How it works
 
-Spotify playlists can drift out of chronological order as tracks are added and rearranged. Playlist Tidy performs one operation well: it places the most recently added occurrences first while preserving the playlist itself.
+1. **Connect.** Authorize directly with Spotify through Authorization Code with PKCE.
+2. **Choose.** Select a playlist owned by the authenticated account.
+3. **Preview.** Read the complete playlist and calculate the exact reorder plan with zero writes.
+4. **Confirm.** Start sorting only after an explicit user action.
+5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
 
-1. Connect through Spotify Authorization Code with PKCE.
-2. Choose a playlist owned by the authenticated account.
-3. Preview the complete reorder plan without writing anything.
-4. Confirm the sort explicitly.
-5. Reconcile every write and verify the final order and membership.
+<p align="center">
+  <img src="docs/assets/readme/mobile.webp" width="320" alt="Playlist Tidy narrow layout showing the connect action and ordering visualization">
+</p>
+
+The narrow layout retains the same product hierarchy and safety contract; it does not collapse into a separate mobile experience.
 
 ## Behavioral contract
 
@@ -32,9 +67,9 @@ Spotify playlists can drift out of chronological order as tracks are added and r
 | Concurrency | Detects snapshot changes, replans within a fixed budget, and never hides ambiguous writes. |
 | Completion | Verifies both membership and final ordering before reporting success. |
 
-These are executable invariants, not interface promises. The authoritative decisions and dependency rules live in the [CleanStack Architecture](docs/architecture/cleanstack.md).
+These are executable invariants, not interface promises. Their authoritative definitions live in the [CleanStack Architecture](docs/architecture/cleanstack.md).
 
-## Security model
+## Safety by design
 
 - The browser receives no Spotify client secret.
 - Access tokens exist in memory only and disappear on reload.
@@ -60,6 +95,8 @@ interfaces  →  applications  →  core
 - `adapters/` validates Spotify data and isolates OAuth and Web API behavior.
 - `interfaces/` composes the browser experience without leaking UI concerns inward.
 - Tests sit beside the modules whose contracts they specify.
+
+Read the [authoritative architecture reference](docs/architecture/cleanstack.md) before changing a dependency boundary, playlist invariant, Spotify scope, or mutation type.
 
 ## Development
 
@@ -91,14 +128,14 @@ Register these Spotify redirect URIs exactly:
 
 ## Quality gate
 
-`npm run verify` is the single local and CI acceptance command. It checks, in order:
+`npm run verify` is the single local and CI acceptance command:
 
-1. Current-year GPL-3.0-only notices and required repository metadata
-2. Approved human-only Git attribution
-3. Strict TypeScript correctness
-4. Architectural and code-quality lint rules
-5. The complete automated test suite
-6. Reproducible web and CLI-library builds
+1. Verify current-year GPL-3.0-only notices and required repository metadata.
+2. Verify approved human-only Git attribution.
+3. Type-check product and repository tooling under strict TypeScript rules.
+4. Enforce architectural and code-quality lint rules.
+5. Run the complete automated test suite.
+6. Produce clean web and CLI-library builds.
 
 GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
@@ -108,7 +145,7 @@ GitHub repeats those controls across independent Verify, Repository Policy, Cont
 .
 ├── .github/   Governance, ownership, issue forms, and workflows
 ├── config/    TypeScript, ESLint, Vitest, and Vite configuration
-├── docs/      Authoritative architecture and project documentation
+├── docs/      Architecture, README assets, and project documentation
 ├── scripts/   Typed cleanup and repository-policy checks
 └── src/       Product code, interfaces, colocated tests, and test support
 ```
@@ -123,4 +160,4 @@ Repository history attributes work only to the humans responsible for its commit
 
 ## License
 
-GPL-3.0-only. See [LICENSE](LICENSE).
+[GPL-3.0-only](LICENSE), copyright 2026 AlbiDR.

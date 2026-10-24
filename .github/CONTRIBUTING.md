@@ -16,7 +16,7 @@ Playlist Tidy accepts focused, reviewable changes that preserve its narrow Spoti
 
 ## Licensing
 
-All contributions are licensed under GPL-3.0-only. Run `npm run license:fix` after adding files, then review the result. `npm run verify:licenses` rejects missing, incorrect, or stale copyright years. Strict JSON uses structured `license` and `copyright` properties because JSON does not permit comments; the generated lockfile carries the same metadata in its root package record.
+All contributions are licensed under GPL-3.0-only. Run `npm run license:fix` after adding files, then review the result. `npm run verify:licenses` rejects missing, incorrect, or stale copyright years. Strict JSON uses structured `license` and `copyright` properties because JSON does not permit comments; the generated lockfile carries the same metadata in its root package record. Binary README captures are explicitly registered in the policy because their format cannot carry a source comment.
 
 ## Architecture and safety review
 

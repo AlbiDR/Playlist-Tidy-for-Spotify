@@ -1,0 +1,12 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title description">
+  <title id="title">Playlist Tidy mark</title>
+  <desc id="description">Three playlist rows descending into chronological order beside a verification line.</desc>
+  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M24 32h112v96H24z" stroke="#182019" stroke-width="8"/>
+    <path d="M44 58h52M44 80h40M44 102h28" stroke="#182019" stroke-width="8"/>
+    <path d="M110 54v50m0 0-14-14m14 14 14-14" stroke="#43a966" stroke-width="8"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Playlist Tidy">
+  <rect width="64" height="64" fill="#0c0f0c"/>
+  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M10 12h44v40H10z" stroke="#eef3ee" stroke-width="4"/>
+    <path d="M19 24h20M19 32h15M19 40h10" stroke="#eef3ee" stroke-width="4"/>
+    <path d="M45 22v21m0 0-6-6m6 6 6-6" stroke="#79ee9d" stroke-width="4"/>
+  </g>
+</svg>
