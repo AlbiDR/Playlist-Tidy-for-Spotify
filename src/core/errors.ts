@@ -12,7 +12,9 @@ export type PlaylistTidyErrorCode =
   | "TRANSIENT_READ_FAILED"
   | "AMBIGUOUS_WRITE"
   | "CONCURRENT_EDIT"
-  | "RETRY_EXHAUSTED";
+  | "RETRY_EXHAUSTED"
+  | "DEADLINE_EXCEEDED"
+  | "INTEGRITY_FAILED";
 
 export class PlaylistTidyError extends Error {
   public constructor(
