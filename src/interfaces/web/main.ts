@@ -36,7 +36,6 @@ function render(state: ViewState): void {
         <span class="wordmark__disc" aria-hidden="true"></span>
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
-      <p class="build-label">Working build / 2026</p>
     </header>
     <main>
       <section class="hero" aria-labelledby="connection-title">

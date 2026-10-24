@@ -51,8 +51,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
   padding: 0 2px 22px;
   border-bottom: 1px solid var(--line);
 }
@@ -89,15 +87,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: 50%;
   background: var(--green);
   content: "";
-}
-
-.build-label {
-  margin: 0;
-  color: #8a948c;
-  font-size: 0.7rem;
-  font-weight: 650;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .hero {
