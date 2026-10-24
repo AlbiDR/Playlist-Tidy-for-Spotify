@@ -15,7 +15,10 @@ class MemorySpotifyPort implements PlaylistSortPort {
   public coherentReads = 0;
   public ambiguousMode: "none" | "before-apply" | "after-apply" = "none";
   public mutateAfterWrite = false;
+  public staleReadsAfterWrite = 0;
   private snapshotVersion = 1;
+  private remainingStaleReads = 0;
+  private staleView?: Pick<PlaylistView, "snapshotId" | "occurrences">;
 
   public constructor(public occurrences: readonly PlaylistOccurrence[]) {}
 
@@ -33,6 +36,18 @@ class MemorySpotifyPort implements PlaylistSortPort {
 
   public async getCoherentPlaylist(playlistId: string): Promise<PlaylistView> {
     this.coherentReads += 1;
+    if (this.remainingStaleReads > 0 && this.staleView !== undefined) {
+      this.remainingStaleReads -= 1;
+      return {
+        playlistId,
+        ownerId: this.ownerId,
+        snapshotId: this.staleView.snapshotId,
+        occurrences: this.staleView.occurrences.map((occurrence, originalPosition) => ({
+          ...occurrence,
+          originalPosition,
+        })),
+      };
+    }
     if (this.mutateAfterWrite && this.reorderCalls > 0) {
       this.mutateAfterWrite = false;
       this.occurrences = [
@@ -65,8 +80,14 @@ class MemorySpotifyPort implements PlaylistSortPort {
       this.ambiguousMode = "none";
       throw createAmbiguousWriteError();
     }
+    const staleView = {
+      snapshotId: this.snapshotId,
+      occurrences: this.occurrences,
+    };
     this.occurrences = applyRangeMove(this.occurrences, move);
     this.snapshotVersion += 1;
+    this.staleView = staleView;
+    this.remainingStaleReads = this.staleReadsAfterWrite;
     if (this.ambiguousMode === "after-apply") {
       this.ambiguousMode = "none";
       throw createAmbiguousWriteError();
@@ -126,6 +147,35 @@ describe("sortPlaylist", () => {
     spotify.ambiguousMode = "after-apply";
     const result = await sortPlaylist(spotify, "playlist");
     expect(result.status).toBe("sorted");
+    expect(spotify.reorderCalls).toBe(1);
+  });
+
+  it("waits for an acknowledged reorder to become visible without replaying it", async () => {
+    const spotify = createUnsortedPort();
+    spotify.staleReadsAfterWrite = 2;
+    const delays: number[] = [];
+    const result = await sortPlaylist(spotify, "playlist", {
+      reconciliationDelayMs: 1,
+      sleep: (milliseconds) => {
+        delays.push(milliseconds);
+        return Promise.resolve();
+      },
+    });
+    expect(result).toMatchObject({ status: "sorted", writeCalls: 1, replans: 0 });
+    expect(spotify.reorderCalls).toBe(1);
+    expect(delays).toEqual([1, 2]);
+  });
+
+  it("does not replay an acknowledged reorder while reads remain stale", async () => {
+    const spotify = createUnsortedPort();
+    spotify.staleReadsAfterWrite = 100;
+    await expect(
+      sortPlaylist(spotify, "playlist", {
+        reconciliationAttempts: 3,
+        reconciliationDelayMs: 0,
+        sleep: () => Promise.resolve(),
+      }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AMBIGUOUS_WRITE" });
     expect(spotify.reorderCalls).toBe(1);
   });
 

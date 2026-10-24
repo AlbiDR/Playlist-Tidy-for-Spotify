@@ -18,6 +18,8 @@ import type {
 
 const DEFAULT_DEADLINE_MS = 5 * 60 * 1000;
 const DEFAULT_REPLAN_LIMIT = 3;
+const DEFAULT_RECONCILIATION_ATTEMPTS = 6;
+const DEFAULT_RECONCILIATION_DELAY_MS = 150;
 
 export interface PlaylistSortPort
   extends SpotifyPlaylistReadPort,
@@ -27,7 +29,10 @@ export interface SortPlaylistOptions {
   readonly dryRun?: boolean;
   readonly deadlineMs?: number;
   readonly replanLimit?: number;
+  readonly reconciliationAttempts?: number;
+  readonly reconciliationDelayMs?: number;
   readonly now?: () => number;
+  readonly sleep?: (milliseconds: number) => Promise<void>;
 }
 
 export interface SortPlaylistResult {
@@ -49,11 +54,24 @@ export async function sortPlaylist(
   const now = options.now ?? Date.now;
   const deadlineMs = options.deadlineMs ?? DEFAULT_DEADLINE_MS;
   const replanLimit = options.replanLimit ?? DEFAULT_REPLAN_LIMIT;
+  const reconciliationAttempts =
+    options.reconciliationAttempts ?? DEFAULT_RECONCILIATION_ATTEMPTS;
+  const reconciliationDelayMs =
+    options.reconciliationDelayMs ?? DEFAULT_RECONCILIATION_DELAY_MS;
+  const sleep =
+    options.sleep ??
+    ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   if (!Number.isFinite(deadlineMs) || deadlineMs <= 0) {
     throw new PlaylistTidyError("VALIDATION_FAILED", "Deadline must be a positive number of milliseconds.");
   }
   if (!Number.isInteger(replanLimit) || replanLimit < 0) {
     throw new PlaylistTidyError("VALIDATION_FAILED", "Replan limit must be a non-negative integer.");
+  }
+  if (!Number.isInteger(reconciliationAttempts) || reconciliationAttempts < 1) {
+    throw new PlaylistTidyError("VALIDATION_FAILED", "Reconciliation attempts must be a positive integer.");
+  }
+  if (!Number.isFinite(reconciliationDelayMs) || reconciliationDelayMs < 0) {
+    throw new PlaylistTidyError("VALIDATION_FAILED", "Reconciliation delay must be a non-negative number of milliseconds.");
   }
   const deadline = now() + deadlineMs;
 
@@ -64,7 +82,7 @@ export async function sortPlaylist(
   let latestPlan: readonly RangeMove[] = [];
 
   planning: for (;;) {
-    assertWithinDeadline(now, deadline, playlistId);
+    assertWithinDeadline(now, deadline);
     const view = await spotify.getCoherentPlaylist(playlistId);
     assertOwnership(view, user.id);
     firstSnapshot ??= view.snapshotId;
@@ -102,11 +120,11 @@ export async function sortPlaylist(
     if (preWriteMetadata.ownerId !== user.id) {
       throw new PlaylistTidyError(
         "OWNER_MISMATCH",
-        `Playlist ${playlistId} is not owned by the authenticated Spotify user.`,
+        "The selected playlist is not owned by the authenticated Spotify user.",
       );
     }
     if (preWriteMetadata.snapshotId !== view.snapshotId) {
-      replans = registerReplan(replans, replanLimit, playlistId);
+      replans = registerReplan(replans, replanLimit);
       continue;
     }
 
@@ -114,15 +132,14 @@ export async function sortPlaylist(
     let currentSnapshot = view.snapshotId;
 
     for (const move of plan) {
-      assertWithinDeadline(now, deadline, playlistId);
+      assertWithinDeadline(now, deadline);
       const expectedIntermediate = applyRangeMove(expectedState, move);
-      let returnedSnapshot: string;
       try {
-        returnedSnapshot = await spotify.reorderPlaylistRange(playlistId, currentSnapshot, move);
+        await spotify.reorderPlaylistRange(playlistId, currentSnapshot, move);
         writeCalls += 1;
       } catch (error) {
         if (error instanceof PlaylistTidyError && error.code === "CONCURRENT_EDIT") {
-          replans = registerReplan(replans, replanLimit, playlistId);
+          replans = registerReplan(replans, replanLimit);
           continue planning;
         }
         if (!(error instanceof PlaylistTidyError) || error.code !== "AMBIGUOUS_WRITE") throw error;
@@ -130,7 +147,7 @@ export async function sortPlaylist(
         const live = await spotify.getCoherentPlaylist(playlistId);
         assertOwnership(live, user.id);
         if (!haveEqualMembership(view.occurrences, live.occurrences)) {
-          replans = registerReplan(replans, replanLimit, playlistId);
+          replans = registerReplan(replans, replanLimit);
           continue planning;
         }
         if (haveEqualOrderedState(live.occurrences, expectedIntermediate)) {
@@ -138,18 +155,26 @@ export async function sortPlaylist(
           currentSnapshot = live.snapshotId;
           continue;
         }
-        replans = registerReplan(replans, replanLimit, playlistId);
+        replans = registerReplan(replans, replanLimit);
         continue planning;
       }
 
-      const live = await spotify.getCoherentPlaylist(playlistId);
-      assertOwnership(live, user.id);
-      if (
-        live.snapshotId !== returnedSnapshot ||
-        !haveEqualMembership(view.occurrences, live.occurrences) ||
-        !haveEqualOrderedState(live.occurrences, expectedIntermediate)
-      ) {
-        replans = registerReplan(replans, replanLimit, playlistId);
+      const live = await reconcileAcknowledgedWrite({
+        spotify,
+        playlistId,
+        ownerId: user.id,
+        membershipBaseline: view.occurrences,
+        stateBefore: expectedState,
+        snapshotBefore: currentSnapshot,
+        stateAfter: expectedIntermediate,
+        attempts: reconciliationAttempts,
+        delayMs: reconciliationDelayMs,
+        sleep,
+        now,
+        deadline,
+      });
+      if (live === null) {
+        replans = registerReplan(replans, replanLimit);
         continue planning;
       }
       expectedState = expectedIntermediate;
@@ -169,7 +194,7 @@ export async function sortPlaylist(
     ) {
       throw new PlaylistTidyError(
         "INTEGRITY_FAILED",
-        `Playlist ${playlistId} failed final order or membership verification.`,
+        "The playlist failed final order or membership verification.",
       );
     }
     return createResult(
@@ -185,30 +210,70 @@ export async function sortPlaylist(
   }
 }
 
+interface ReconciliationContext {
+  readonly spotify: PlaylistSortPort;
+  readonly playlistId: string;
+  readonly ownerId: string;
+  readonly membershipBaseline: readonly PlaylistView["occurrences"][number][];
+  readonly stateBefore: readonly PlaylistView["occurrences"][number][];
+  readonly snapshotBefore: string;
+  readonly stateAfter: readonly PlaylistView["occurrences"][number][];
+  readonly attempts: number;
+  readonly delayMs: number;
+  readonly sleep: (milliseconds: number) => Promise<void>;
+  readonly now: () => number;
+  readonly deadline: number;
+}
+
+async function reconcileAcknowledgedWrite(
+  context: ReconciliationContext,
+): Promise<PlaylistView | null> {
+  for (let attempt = 1; attempt <= context.attempts; attempt += 1) {
+    assertWithinDeadline(context.now, context.deadline);
+    const live = await context.spotify.getCoherentPlaylist(context.playlistId);
+    assertOwnership(live, context.ownerId);
+    if (!haveEqualMembership(context.membershipBaseline, live.occurrences)) return null;
+    if (haveEqualOrderedState(live.occurrences, context.stateAfter)) return live;
+
+    const isPreWriteView =
+      live.snapshotId === context.snapshotBefore &&
+      haveEqualOrderedState(live.occurrences, context.stateBefore);
+    if (!isPreWriteView) return null;
+    if (attempt < context.attempts) {
+      const delay = Math.min(context.delayMs * 2 ** (attempt - 1), 1_000);
+      await context.sleep(delay);
+    }
+  }
+  throw new PlaylistTidyError(
+    "AMBIGUOUS_WRITE",
+    "Spotify accepted the reorder, but the updated playlist did not become readable in time. No further writes were attempted.",
+  );
+}
+
 function assertOwnership(view: PlaylistView, userId: string): void {
   if (view.ownerId !== userId) {
     throw new PlaylistTidyError(
       "OWNER_MISMATCH",
-      `Playlist ${view.playlistId} is not owned by the authenticated Spotify user.`,
+      "The selected playlist is not owned by the authenticated Spotify user.",
     );
   }
 }
 
-function assertWithinDeadline(now: () => number, deadline: number, playlistId: string): void {
+function assertWithinDeadline(now: () => number, deadline: number): void {
   if (now() > deadline) {
     throw new PlaylistTidyError(
       "DEADLINE_EXCEEDED",
-      `Playlist ${playlistId} exceeded its sorting deadline.`,
+      "The playlist exceeded its sorting deadline.",
     );
   }
 }
 
-function registerReplan(current: number, limit: number, playlistId: string): number {
+function registerReplan(current: number, limit: number): number {
   const next = current + 1;
   if (next > limit) {
     throw new PlaylistTidyError(
       "CONCURRENT_EDIT",
-      `Playlist ${playlistId} continued changing after ${String(limit)} replans.`,
+      `The playlist continued changing after ${String(limit)} replans.`,
     );
   }
   return next;

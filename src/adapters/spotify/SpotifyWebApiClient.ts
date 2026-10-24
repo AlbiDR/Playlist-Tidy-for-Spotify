@@ -125,7 +125,7 @@ export class SpotifyWebApiClient
     }
     throw new PlaylistTidyError(
       "CONCURRENT_EDIT",
-      `Playlist ${playlistId} changed during every coherent read attempt.`,
+      "The playlist changed during every coherent read attempt.",
     );
   }
 

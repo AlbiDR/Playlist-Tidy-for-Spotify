@@ -25,14 +25,14 @@ export async function previewPlaylistSort(
   if (metadata.ownerId !== user.id) {
     throw new PlaylistTidyError(
       "OWNER_MISMATCH",
-      `Playlist ${playlistId} is not owned by the authenticated Spotify user.`,
+      "The selected playlist is not owned by the authenticated Spotify user.",
     );
   }
   const view = await spotify.getCoherentPlaylist(playlistId);
   if (view.ownerId !== user.id) {
     throw new PlaylistTidyError(
       "OWNER_MISMATCH",
-      `Playlist ${playlistId} changed ownership or returned inconsistent ownership metadata.`,
+      "The selected playlist changed ownership or returned inconsistent ownership metadata.",
     );
   }
   return {
