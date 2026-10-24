@@ -3,11 +3,6 @@
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Playlist Tidy">
   <rect width="64" height="64" rx="10" fill="#0c0f0c"/>
-  <g fill="none" stroke="#eef3ee">
-    <circle cx="23" cy="32" r="15" stroke-width="4"/>
-    <circle cx="23" cy="32" r="6" stroke-width="3"/>
-    <path d="M43 21h12M43 32h9M43 43h6" stroke-width="4" stroke-linecap="round"/>
-  </g>
-  <circle cx="23" cy="32" r="2" fill="#79ee9d"/>
-  <path d="M39 17v30" stroke="#79ee9d" stroke-width="2"/>
+  <path d="M14 50V14h13c10 0 16 5 16 13s-6 13-16 13h-6" fill="none" stroke="#eef3ee" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M35 14h16M43 14v36" fill="none" stroke="#79ee9d" stroke-width="5" stroke-linecap="square"/>
 </svg>

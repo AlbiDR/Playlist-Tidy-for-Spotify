@@ -43,6 +43,7 @@
     "eslint": "^9.38.0",
     "jiti": "^2.2.0",
     "playwright": "^1.56.1",
+    "sharp": "^0.35.5",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
     "vite": "^7.1.12",

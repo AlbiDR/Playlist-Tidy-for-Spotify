@@ -131,7 +131,20 @@ describe("sortPlaylist", () => {
     const result = await sortPlaylist(spotify, "playlist");
     expect(result).toMatchObject({ status: "sorted", writeCalls: 1, replans: 0 });
     expect(spotify.occurrences.map(({ uri }) => uri)).toEqual(["new", "old"]);
-    expect(spotify.coherentReads).toBeGreaterThanOrEqual(2);
+    expect(spotify.coherentReads).toBe(2);
+  });
+
+  it("chains acknowledged snapshots and reads the full playlist only once after all moves", async () => {
+    const spotify = new MemorySpotifyPort([
+      createOccurrence(0, "2026-01-01T00:00:00.000Z", "one"),
+      createOccurrence(1, "2026-01-04T00:00:00.000Z", "four"),
+      createOccurrence(2, "2026-01-02T00:00:00.000Z", "two"),
+      createOccurrence(3, "2026-01-03T00:00:00.000Z", "three"),
+    ]);
+    const result = await sortPlaylist(spotify, "playlist");
+    expect(result.writeCalls).toBeGreaterThan(1);
+    expect(spotify.coherentReads).toBe(2);
+    expect(spotify.occurrences.map(({ uri }) => uri)).toEqual(["four", "three", "two", "one"]);
   });
 
   it("previews without issuing a reorder", async () => {

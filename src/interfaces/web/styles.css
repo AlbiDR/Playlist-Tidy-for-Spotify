@@ -72,21 +72,23 @@ button, a { -webkit-tap-highlight-color: transparent; }
   letter-spacing: -0.01em;
 }
 
-.wordmark__disc {
-  position: relative;
-  width: 27px;
-  height: 27px;
-  border: 1px solid #7f8a81;
-  border-radius: 50%;
-  background: repeating-radial-gradient(circle, #111511 0 3px, #3c463e 4px 5px);
+.wordmark__symbol {
+  width: 29px;
+  height: 29px;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 
-.wordmark__disc::after {
-  position: absolute;
-  inset: 9px;
-  border-radius: 50%;
-  background: var(--green);
-  content: "";
+.wordmark__symbol-p {
+  stroke: var(--ink);
+  stroke-width: 3.5;
+}
+
+.wordmark__symbol-t {
+  stroke: var(--green);
+  stroke-width: 3;
 }
 
 .hero {

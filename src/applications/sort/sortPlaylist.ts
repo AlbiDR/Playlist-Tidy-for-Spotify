@@ -135,8 +135,9 @@ export async function sortPlaylist(
       assertWithinDeadline(now, deadline);
       const expectedIntermediate = applyRangeMove(expectedState, move);
       try {
-        await spotify.reorderPlaylistRange(playlistId, currentSnapshot, move);
+        currentSnapshot = await spotify.reorderPlaylistRange(playlistId, currentSnapshot, move);
         writeCalls += 1;
+        expectedState = expectedIntermediate;
       } catch (error) {
         if (error instanceof PlaylistTidyError && error.code === "CONCURRENT_EDIT") {
           replans = registerReplan(replans, replanLimit);
@@ -158,35 +159,25 @@ export async function sortPlaylist(
         replans = registerReplan(replans, replanLimit);
         continue planning;
       }
-
-      const live = await reconcileAcknowledgedWrite({
-        spotify,
-        playlistId,
-        ownerId: user.id,
-        membershipBaseline: view.occurrences,
-        stateBefore: expectedState,
-        snapshotBefore: currentSnapshot,
-        stateAfter: expectedIntermediate,
-        attempts: reconciliationAttempts,
-        delayMs: reconciliationDelayMs,
-        sleep,
-        now,
-        deadline,
-      });
-      if (live === null) {
-        replans = registerReplan(replans, replanLimit);
-        continue planning;
-      }
-      expectedState = expectedIntermediate;
-      currentSnapshot = live.snapshotId;
     }
 
-    const finalView: PlaylistView = {
+    const finalView = await reconcileAcknowledgedPlan({
+      spotify,
       playlistId,
-      ownerId: view.ownerId,
-      snapshotId: currentSnapshot,
-      occurrences: expectedState,
-    };
+      ownerId: user.id,
+      membershipBaseline: view.occurrences,
+      expectedState,
+      expectedSnapshot: currentSnapshot,
+      attempts: reconciliationAttempts,
+      delayMs: reconciliationDelayMs,
+      sleep,
+      now,
+      deadline,
+    });
+    if (finalView === null) {
+      replans = registerReplan(replans, replanLimit);
+      continue;
+    }
     if (
       !haveEqualMembership(view.occurrences, finalView.occurrences) ||
       !haveEqualOrderedState(finalView.occurrences, target) ||
@@ -215,9 +206,8 @@ interface ReconciliationContext {
   readonly playlistId: string;
   readonly ownerId: string;
   readonly membershipBaseline: readonly PlaylistView["occurrences"][number][];
-  readonly stateBefore: readonly PlaylistView["occurrences"][number][];
-  readonly snapshotBefore: string;
-  readonly stateAfter: readonly PlaylistView["occurrences"][number][];
+  readonly expectedState: readonly PlaylistView["occurrences"][number][];
+  readonly expectedSnapshot: string;
   readonly attempts: number;
   readonly delayMs: number;
   readonly sleep: (milliseconds: number) => Promise<void>;
@@ -225,7 +215,7 @@ interface ReconciliationContext {
   readonly deadline: number;
 }
 
-async function reconcileAcknowledgedWrite(
+async function reconcileAcknowledgedPlan(
   context: ReconciliationContext,
 ): Promise<PlaylistView | null> {
   for (let attempt = 1; attempt <= context.attempts; attempt += 1) {
@@ -233,12 +223,8 @@ async function reconcileAcknowledgedWrite(
     const live = await context.spotify.getCoherentPlaylist(context.playlistId);
     assertOwnership(live, context.ownerId);
     if (!haveEqualMembership(context.membershipBaseline, live.occurrences)) return null;
-    if (haveEqualOrderedState(live.occurrences, context.stateAfter)) return live;
-
-    const isPreWriteView =
-      live.snapshotId === context.snapshotBefore &&
-      haveEqualOrderedState(live.occurrences, context.stateBefore);
-    if (!isPreWriteView) return null;
+    if (haveEqualOrderedState(live.occurrences, context.expectedState)) return live;
+    if (live.snapshotId === context.expectedSnapshot) return null;
     if (attempt < context.attempts) {
       const delay = Math.min(context.delayMs * 2 ** (attempt - 1), 1_000);
       await context.sleep(delay);
@@ -246,7 +232,7 @@ async function reconcileAcknowledgedWrite(
   }
   throw new PlaylistTidyError(
     "AMBIGUOUS_WRITE",
-    "Spotify accepted the reorder, but the updated playlist did not become readable in time. No further writes were attempted.",
+    "Spotify accepted the reorder plan, but the final playlist did not become readable in time. No further writes were attempted.",
   );
 }
 

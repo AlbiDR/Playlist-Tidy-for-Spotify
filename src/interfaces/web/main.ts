@@ -33,7 +33,10 @@ function render(state: ViewState): void {
   app.innerHTML = `
     <header class="app-header">
       <a class="wordmark" href="./" aria-label="Playlist Tidy home">
-        <span class="wordmark__disc" aria-hidden="true"></span>
+        <svg class="wordmark__symbol" viewBox="0 0 32 32" aria-hidden="true">
+          <path class="wordmark__symbol-p" d="M4 28V4h8.5C18 4 21.5 7.2 21.5 12s-3.5 8-9 8H9"/>
+          <path class="wordmark__symbol-t" d="M18 4h11M23.5 4v24"/>
+        </svg>
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
     </header>
