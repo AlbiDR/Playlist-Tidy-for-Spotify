@@ -2,151 +2,141 @@
 /* Copyright (C) 2026 AlbiDR */
 
 :root {
-  color: #effff4;
-  background: #07100b;
+  color: #e8eee9;
+  background: #0c100d;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at 15% 15%, rgb(31 215 96 / 14%), transparent 30rem),
-    linear-gradient(145deg, #07100b 0%, #0a1710 55%, #050906 100%);
+  background: #0c100d;
 }
 
 #app {
-  width: min(1120px, calc(100% - 40px));
+  width: min(920px, calc(100% - 40px));
   margin: 0 auto;
-  padding: clamp(64px, 10vw, 128px) 0 40px;
+  padding: 28px 0 40px;
 }
 
-.hero {
-  max-width: 850px;
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #29312b;
 }
 
-.eyebrow,
-.number {
-  color: #49e582;
+.wordmark, .build-label, .step-label, .number { margin: 0; }
+.wordmark { font-weight: 750; letter-spacing: -0.02em; }
+.wordmark span, .build-label, .step-label { color: #829087; font-weight: 500; }
+.build-label, .step-label, .number {
   font-size: 0.75rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-h1 {
-  max-width: 760px;
-  margin: 18px 0 24px;
-  font-size: clamp(3rem, 9vw, 7rem);
-  font-weight: 760;
-  letter-spacing: -0.07em;
-  line-height: 0.86;
-}
+.connection-panel { padding: clamp(50px, 9vw, 88px) 0; }
+.step-label, .number { color: #52d984; }
 
-h1 span {
-  display: block;
-  color: #86a18f;
-  font-size: 0.42em;
-  letter-spacing: -0.035em;
-  line-height: 1.35;
+h1 {
+  max-width: 650px;
+  margin: 14px 0 18px;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  letter-spacing: -0.045em;
+  line-height: 1.02;
 }
 
 .summary {
-  max-width: 650px;
-  color: #b6c9bc;
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
-  line-height: 1.6;
+  max-width: 660px;
+  margin: 0;
+  color: #aab6ad;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.connection-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 30px;
 }
 
 .connect-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  margin-top: 28px;
+  min-width: 150px;
+  min-height: 46px;
   padding: 0 20px;
-  border: 1px solid #405247;
-  border-radius: 6px;
-  color: #829087;
-  background: #172019;
+  border: 1px solid #52d984;
+  border-radius: 5px;
+  color: #07120a;
+  background: #52d984;
   font: inherit;
-  font-weight: 700;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.connect-button:hover:not(:disabled) { background: #75e49c; }
+.connect-button:focus-visible { outline: 3px solid #d6ffe4; outline-offset: 3px; }
+.connect-button:disabled {
+  border-color: #3a443d;
+  color: #7b877e;
+  background: #1d241f;
   cursor: not-allowed;
 }
 
-.connection-note {
-  margin: 10px 0 0;
-  color: #718078;
-  font-size: 0.82rem;
+.connection-status {
+  margin: 0;
+  color: #89968c;
+  font-size: 0.88rem;
+  line-height: 1.5;
 }
 
-.principles {
+.error-message {
+  max-width: 680px;
+  margin: 16px 0 0;
+  color: #ffb9b9;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.error-message:empty { display: none; }
+
+.workflow {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  margin-top: clamp(72px, 12vw, 140px);
-  border: 1px solid #213328;
-  background: #213328;
+  border: 1px solid #29312b;
+  border-right: 0;
 }
 
-.principles article {
-  min-height: 210px;
-  padding: 26px;
-  background: #0a130e;
+.workflow__step {
+  min-height: 190px;
+  padding: 24px;
+  border-right: 1px solid #29312b;
+  background: #111613;
 }
 
-.principles h2 {
-  margin: 32px 0 10px;
-  font-size: 1.1rem;
-}
-
-.principles article > p:last-child {
-  margin: 0;
-  color: #92a498;
-  line-height: 1.55;
-}
+.workflow__step:not(.workflow__step--current) { color: #7d8980; }
+.workflow h2 { margin: 28px 0 9px; font-size: 1.03rem; }
+.workflow article > p:last-child { margin: 0; color: #8d9a90; line-height: 1.55; }
 
 footer {
-  margin-top: 34px;
-  color: #627469;
-  font-size: 0.75rem;
+  max-width: 720px;
+  margin-top: 28px;
+  color: #68736b;
+  font-size: 0.76rem;
+  line-height: 1.6;
 }
 
-@media (max-width: 720px) {
-  #app {
-    width: min(100% - 28px, 1120px);
-  }
-
-  .principles {
-    grid-template-columns: 1fr;
-  }
-
-  .principles article {
-    min-height: 170px;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .hero,
-  .principles {
-    animation: reveal 600ms ease-out both;
-  }
-
-  .principles {
-    animation-delay: 100ms;
-  }
-
-  @keyframes reveal {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-  }
+@media (max-width: 680px) {
+  #app { width: min(100% - 28px, 920px); }
+  .app-header, .connection-row { align-items: flex-start; flex-direction: column; }
+  .workflow { grid-template-columns: 1fr; }
+  .workflow__step { min-height: 150px; }
 }
