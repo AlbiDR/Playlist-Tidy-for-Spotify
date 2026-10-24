@@ -65,26 +65,26 @@ h1 span {
   line-height: 1.6;
 }
 
-.status {
+.connect-button {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   min-height: 44px;
   margin-top: 28px;
-  padding: 11px 16px;
-  border: 1px solid #294534;
-  border-radius: 999px;
-  color: #cee0d3;
-  background: rgb(18 39 25 / 78%);
-  font-size: 0.9rem;
+  padding: 0 20px;
+  border: 1px solid #405247;
+  border-radius: 6px;
+  color: #829087;
+  background: #172019;
+  font: inherit;
+  font-weight: 700;
+  cursor: not-allowed;
 }
 
-.status__mark {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #49e582;
-  box-shadow: 0 0 16px #49e582;
+.connection-note {
+  margin: 10px 0 0;
+  color: #718078;
+  font-size: 0.82rem;
 }
 
 .principles {

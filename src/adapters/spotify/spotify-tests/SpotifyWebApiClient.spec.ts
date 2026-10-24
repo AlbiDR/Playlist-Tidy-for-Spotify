@@ -35,7 +35,7 @@ describe("SpotifyWebApiClient", () => {
   it("reads all pages between matching playlist snapshots", async () => {
     const responses = [
       jsonResponse(metadata("snapshot-a")),
-      jsonResponse({ items: [item("spotify:track:a", "2026-01-01")], next: "next", total: 2 }),
+      jsonResponse({ items: [item("spotify:track:a", "2026-01-01T00:00:00Z")], next: "next", total: 2 }),
       jsonResponse({ items: [item(null, null)], next: null, total: 2 }),
       jsonResponse(metadata("snapshot-a")),
     ];
@@ -54,7 +54,7 @@ describe("SpotifyWebApiClient", () => {
         originalPosition: 0,
         uri: "spotify:track:a",
         itemType: "track",
-        addedAt: "2026-01-01",
+        addedAt: "2026-01-01T00:00:00.000Z",
         addedById: "owner",
       },
       {
@@ -72,10 +72,10 @@ describe("SpotifyWebApiClient", () => {
   it("discards a mixed-snapshot read and starts again", async () => {
     const responses = [
       jsonResponse(metadata("snapshot-a")),
-      jsonResponse({ items: [item("spotify:track:a", "2026-01-01")], next: null, total: 1 }),
+      jsonResponse({ items: [item("spotify:track:a", "2026-01-01T00:00:00Z")], next: null, total: 1 }),
       jsonResponse(metadata("snapshot-b")),
       jsonResponse(metadata("snapshot-b")),
-      jsonResponse({ items: [item("spotify:track:b", "2026-01-02")], next: null, total: 1 }),
+      jsonResponse({ items: [item("spotify:track:b", "2026-01-02T00:00:00Z")], next: null, total: 1 }),
       jsonResponse(metadata("snapshot-b")),
     ];
     const client = new SpotifyWebApiClient(tokens, {
@@ -140,6 +140,28 @@ describe("SpotifyWebApiClient", () => {
     await expect(client.getPlaylistMetadata("playlist")).rejects.toMatchObject<Partial<PlaylistTidyError>>({
       code: "VALIDATION_FAILED",
     });
+  });
+
+  it("rejects an incomplete final page instead of planning from partial membership", async () => {
+    const responses = [
+      jsonResponse(metadata("snapshot-a")),
+      jsonResponse({ items: [item("spotify:track:a", "2026-01-01T00:00:00Z")], next: null, total: 2 }),
+    ];
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+    });
+    await expect(client.getCoherentPlaylist("playlist")).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "VALIDATION_FAILED",
+    });
+  });
+
+  it("classifies forbidden reads as authorization failures without retrying", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({}, 403));
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(client.getCurrentUser()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "AUTHORIZATION_FAILED",
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 });
 

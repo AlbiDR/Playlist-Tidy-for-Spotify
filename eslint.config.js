@@ -31,4 +31,52 @@ export default tseslint.config(
       "@typescript-eslint/no-base-to-string": "off"
     },
   },
+  {
+    files: ["src/core/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          "patterns": [
+            {
+              "group": ["**/adapters/**", "**/applications/**", "**/interfaces/**"],
+              "message": "Core must remain independent of outer layers."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ["src/applications/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          "patterns": [
+            {
+              "group": ["**/adapters/**", "**/interfaces/**"],
+              "message": "Applications depend on ports and core, never concrete adapters or interfaces."
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ["src/adapters/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          "patterns": [
+            {
+              "group": ["**/interfaces/**"],
+              "message": "Adapters must not depend on composition roots."
+            }
+          ]
+        }
+      ]
+    }
+  },
 );

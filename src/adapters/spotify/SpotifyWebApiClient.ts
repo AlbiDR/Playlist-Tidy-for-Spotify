@@ -106,8 +106,7 @@ export class SpotifyWebApiClient
     let offset = 0;
     let hasNextPage = true;
     while (hasNextPage) {
-      const fields = encodeURIComponent("items(added_at,added_by(id),item(uri,type,is_local)),next,total");
-      const path = `/playlists/${encodeURIComponent(playlistId)}/items?limit=${String(PAGE_SIZE)}&offset=${String(offset)}&fields=${fields}`;
+      const path = `/playlists/${encodeURIComponent(playlistId)}/items?limit=${String(PAGE_SIZE)}&offset=${String(offset)}`;
       const page = this.parse(
         SpotifyPlaylistItemsPageSchema,
         await this.readJson(path),
@@ -120,6 +119,12 @@ export class SpotifyWebApiClient
       offset += page.items.length;
       if (hasNextPage && page.items.length === 0) {
         throw new PlaylistTidyError("VALIDATION_FAILED", "Spotify returned an empty page with a next link.");
+      }
+      if (!hasNextPage && occurrences.length !== page.total) {
+        throw new PlaylistTidyError(
+          "VALIDATION_FAILED",
+          `Spotify declared ${String(page.total)} playlist items but returned ${String(occurrences.length)}.`,
+        );
       }
     }
     return occurrences;
@@ -217,7 +222,7 @@ function mapOccurrence(item: SpotifyPlaylistItemDto, originalPosition: number): 
     originalPosition,
     uri: item.item?.uri ?? null,
     itemType: type,
-    addedAt: item.added_at,
+    addedAt: item.added_at === null ? null : new Date(item.added_at).toISOString(),
     addedById: item.added_by?.id ?? null,
   };
 }
@@ -231,6 +236,11 @@ function getRetryDelay(response: Response): number {
 function createHttpError(status: number, context: string): PlaylistTidyError {
   if (status === 401) return new PlaylistTidyError("AUTHENTICATION_FAILED", `${context}: authentication failed.`);
   if (status === 429) return new PlaylistTidyError("RATE_LIMITED", `${context}: rate limited.`);
+  if (status === 403) return new PlaylistTidyError("AUTHORIZATION_FAILED", `${context}: access was forbidden.`);
+  if (status === 404) return new PlaylistTidyError("RESOURCE_NOT_FOUND", `${context}: resource was not found.`);
+  if (status >= 400 && status < 500) {
+    return new PlaylistTidyError("REQUEST_REJECTED", `${context}: Spotify rejected the request with HTTP ${String(status)}.`);
+  }
   return new PlaylistTidyError("TRANSIENT_READ_FAILED", `${context}: HTTP ${String(status)}.`);
 }
 

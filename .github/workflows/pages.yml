@@ -34,11 +34,7 @@ jobs:
         run: npm ci
 
       - name: Verify project
-        run: |
-          npm run typecheck
-          npm run lint
-          npm test
-          npm run build
+        run: npm run verify
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

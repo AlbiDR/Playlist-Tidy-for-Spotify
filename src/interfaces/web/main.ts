@@ -11,32 +11,34 @@ if (app === null) {
 
 app.innerHTML = `
   <section class="hero" aria-labelledby="page-title">
-    <p class="eyebrow">A precise playlist utility</p>
+    <p class="eyebrow">Development preview</p>
     <h1 id="page-title">Playlist Tidy <span>for Spotify</span></h1>
     <p class="summary">
-      Put every occurrence in newest-added-first order without replacing,
-      removing, or duplicating your tracks.
+      This interface is under construction. Spotify connection and playlist
+      sorting are not available on the website yet.
     </p>
-    <div class="status" role="status" aria-live="polite">
-      <span class="status__mark" aria-hidden="true"></span>
-      The sorting kernel is ready. Spotify connection comes next.
-    </div>
+    <button class="connect-button" type="button" disabled aria-describedby="connection-note">
+      Connect Spotify
+    </button>
+    <p id="connection-note" class="connection-note">
+      Disabled until OAuth integration is complete.
+    </p>
   </section>
-  <section class="principles" aria-label="Product guarantees">
+  <section class="principles" aria-label="Planned workflow">
     <article>
       <p class="number">01</p>
-      <h2>Preview first</h2>
-      <p>See the exact range moves before the playlist changes.</p>
+      <h2>Connect</h2>
+      <p>Authorize access to playlists you own.</p>
     </article>
     <article>
       <p class="number">02</p>
-      <h2>Membership intact</h2>
-      <p>Reordering is the only Spotify write capability in the application.</p>
+      <h2>Preview</h2>
+      <p>Review the required range moves with zero writes.</p>
     </article>
     <article>
       <p class="number">03</p>
-      <h2>Verified result</h2>
-      <p>Every real run refetches and validates the final playlist state.</p>
+      <h2>Sort and verify</h2>
+      <p>Reorder newest-first, then verify membership and final order.</p>
     </article>
   </section>
   <footer>

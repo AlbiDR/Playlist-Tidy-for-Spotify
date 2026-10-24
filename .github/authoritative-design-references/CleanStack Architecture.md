@@ -84,7 +84,8 @@ layers:
     forbidden_runtime_apis: [dom, node, network, storage]
   - id: adapters
     level: 1
-    allowed_imports: [core]
+    allowed_imports: [applications, core]
+    role: port-implementation
   - id: applications
     level: 2
     allowed_imports: [core]

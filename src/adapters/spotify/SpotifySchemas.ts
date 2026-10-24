@@ -20,7 +20,7 @@ const SpotifyContentItemSchema = v.object({
 });
 
 export const SpotifyPlaylistItemSchema = v.object({
-  added_at: v.nullable(v.string()),
+  added_at: v.nullable(v.pipe(v.string(), v.isoTimestamp())),
   added_by: v.nullable(v.object({ id: v.string() })),
   item: v.nullable(SpotifyContentItemSchema),
 });

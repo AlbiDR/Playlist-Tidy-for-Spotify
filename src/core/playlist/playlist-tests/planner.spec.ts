@@ -53,5 +53,65 @@ describe("planPlaylistSort", () => {
       );
     }
   });
+
+  it("matches an independent optimal range-move oracle through six occurrences", () => {
+    for (let length = 0; length <= 6; length += 1) {
+      const identity = Array.from({ length }, (_, index) => index);
+      const optimalDistances = getOptimalDistances(identity);
+      for (const target of getPermutations(identity)) {
+        const rank = new Map(target.map((value, index) => [value, index]));
+        const values = identity.map((originalPosition) =>
+          occurrence(
+            originalPosition,
+            new Date(Date.UTC(2026, 0, length - (rank.get(originalPosition) ?? 0))).toISOString(),
+          ),
+        );
+        const optimalDistance = optimalDistances.get(target.join(","));
+        if (optimalDistance === undefined) throw new Error("Oracle did not reach a permutation.");
+        expect(planPlaylistSort(values)).toHaveLength(optimalDistance);
+      }
+    }
+  });
 });
+
+function getOptimalDistances(initial: readonly number[]): ReadonlyMap<string, number> {
+  const initialKey = initial.join(",");
+  const distances = new Map<string, number>([[initialKey, 0]]);
+  const queue: number[][] = [[...initial]];
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const state = queue[cursor] as readonly number[];
+    const distance = distances.get(state.join(",")) as number;
+    for (const next of getIndependentTransitions(state)) {
+      const key = next.join(",");
+      if (distances.has(key)) continue;
+      distances.set(key, distance + 1);
+      queue.push(next);
+    }
+  }
+  return distances;
+}
+
+function getIndependentTransitions(values: readonly number[]): readonly number[][] {
+  const transitions: number[][] = [];
+  for (let start = 0; start < values.length; start += 1) {
+    for (let length = 1; start + length <= values.length; length += 1) {
+      for (let destination = 0; destination <= values.length; destination += 1) {
+        if (destination >= start && destination <= start + length) continue;
+        const remainder = [...values];
+        const block = remainder.splice(start, length);
+        const insertion = destination < start ? destination : destination - length;
+        remainder.splice(insertion, 0, ...block);
+        transitions.push(remainder);
+      }
+    }
+  }
+  return transitions;
+}
+
+function getPermutations(values: readonly number[]): readonly number[][] {
+  if (values.length === 0) return [[]];
+  return values.flatMap((value, index) =>
+    getPermutations([...values.slice(0, index), ...values.slice(index + 1)]).map((tail) => [value, ...tail]),
+  );
+}
 
