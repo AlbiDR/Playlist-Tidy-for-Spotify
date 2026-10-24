@@ -4,7 +4,7 @@ Playlist Tidy for Spotify is an independent utility for keeping playlists owned 
 
 ## Project status
 
-The project is under active development. The pure playlist kernel, canonical range-move transition, exact small-playlist planner, larger-playlist block planner, identity rules, validated Spotify Web API adapter, coherent paginated reads, write-safe retry boundary, preview use case, sort orchestrator, per-step reconciliation, ambiguous-write recovery, browser PKCE login, tests, and connection interface are implemented. Playlist discovery and user-facing sorting controls are the next milestone.
+The project is under active development. The pure playlist kernel, canonical range-move transition, exact small-playlist planner, larger-playlist block planner, identity rules, validated Spotify Web API adapter, coherent paginated reads, write-safe retry boundary, preview use case, sort orchestrator, per-step reconciliation, ambiguous-write recovery, browser PKCE login, owned-playlist discovery, write-free web previews, and tests are implemented. User-facing sort confirmation and result reporting are the next milestone.
 
 Do not use the current build with a real Spotify playlist yet.
 

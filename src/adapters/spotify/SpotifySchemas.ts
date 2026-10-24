@@ -35,6 +35,21 @@ export const SpotifyReorderResponseSchema = v.object({
   snapshot_id: v.string(),
 });
 
+const SpotifyPlaylistSummarySchema = v.object({
+  id: v.string(),
+  name: v.string(),
+  owner: v.object({ id: v.string() }),
+  snapshot_id: v.string(),
+  public: v.nullable(v.boolean()),
+  items: v.object({ total: v.number() }),
+});
+
+export const SpotifyPlaylistCatalogPageSchema = v.object({
+  items: v.array(SpotifyPlaylistSummarySchema),
+  next: v.nullable(v.string()),
+  total: v.number(),
+});
+
 export type SpotifyPlaylistItemDto = v.InferOutput<typeof SpotifyPlaylistItemSchema>;
 export type SpotifyPlaylistItemsPageDto = v.InferOutput<typeof SpotifyPlaylistItemsPageSchema>;
 

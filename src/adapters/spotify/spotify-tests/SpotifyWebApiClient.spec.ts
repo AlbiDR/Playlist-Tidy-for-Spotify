@@ -163,5 +163,50 @@ describe("SpotifyWebApiClient", () => {
     });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+
+  it("pages the playlist catalog and returns only playlists owned by the current user", async () => {
+    const playlist = (id: string, ownerId: string, name: string): unknown => ({
+      id,
+      name,
+      owner: { id: ownerId },
+      snapshot_id: `snapshot-${id}`,
+      public: true,
+      items: { total: 4 },
+    });
+    const responses = [
+      jsonResponse({
+        items: [playlist("owned-a", "owner", "Owned A"), playlist("followed", "other", "Followed")],
+        next: "next",
+        total: 3,
+      }),
+      jsonResponse({
+        items: [playlist("owned-b", "owner", "Owned B")],
+        next: null,
+        total: 3,
+      }),
+    ];
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+    });
+
+    await expect(client.getOwnedPlaylists("owner")).resolves.toEqual([
+      {
+        id: "owned-a",
+        name: "Owned A",
+        ownerId: "owner",
+        snapshotId: "snapshot-owned-a",
+        itemCount: 4,
+        isPublic: true,
+      },
+      {
+        id: "owned-b",
+        name: "Owned B",
+        ownerId: "owner",
+        snapshotId: "snapshot-owned-b",
+        itemCount: 4,
+        isPublic: true,
+      },
+    ]);
+  });
 });
 

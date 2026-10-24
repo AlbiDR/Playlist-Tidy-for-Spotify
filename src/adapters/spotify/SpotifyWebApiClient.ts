@@ -6,11 +6,14 @@ import { PlaylistTidyError } from "../../core/errors.js";
 import type { PlaylistOccurrence, PlaylistView, RangeMove } from "../../core/playlist/types.js";
 import type {
   PlaylistMetadata,
+  SpotifyPlaylistCatalogPort,
   SpotifyPlaylistReadPort,
   SpotifyPlaylistReorderPort,
+  SpotifyPlaylistSummary,
   SpotifyUser,
 } from "../../applications/ports/SpotifyPlaylistPort.js";
 import {
+  SpotifyPlaylistCatalogPageSchema,
   SpotifyPlaylistItemsPageSchema,
   SpotifyPlaylistMetadataSchema,
   SpotifyReorderResponseSchema,
@@ -37,7 +40,7 @@ export interface SpotifyClientOptions {
 }
 
 export class SpotifyWebApiClient
-  implements SpotifyPlaylistReadPort, SpotifyPlaylistReorderPort
+  implements SpotifyPlaylistReadPort, SpotifyPlaylistReorderPort, SpotifyPlaylistCatalogPort
 {
   private readonly fetchImplementation: typeof fetch;
   private readonly sleep: (milliseconds: number) => Promise<void>;
@@ -65,6 +68,45 @@ export class SpotifyWebApiClient
     const payload = await this.readJson(`/playlists/${encodeURIComponent(playlistId)}?fields=${fields}`);
     const parsed = this.parse(SpotifyPlaylistMetadataSchema, payload, "playlist metadata");
     return { id: parsed.id, ownerId: parsed.owner.id, snapshotId: parsed.snapshot_id };
+  }
+
+  public async getOwnedPlaylists(ownerId: string): Promise<readonly SpotifyPlaylistSummary[]> {
+    const playlists: SpotifyPlaylistSummary[] = [];
+    let offset = 0;
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const page = this.parse(
+        SpotifyPlaylistCatalogPageSchema,
+        await this.readJson(`/me/playlists?limit=${String(PAGE_SIZE)}&offset=${String(offset)}`),
+        "playlist catalog page",
+      );
+      for (const playlist of page.items) {
+        if (playlist.owner.id !== ownerId) continue;
+        playlists.push({
+          id: playlist.id,
+          name: playlist.name,
+          ownerId: playlist.owner.id,
+          snapshotId: playlist.snapshot_id,
+          itemCount: playlist.items.total,
+          isPublic: playlist.public,
+        });
+      }
+      hasNextPage = page.next !== null;
+      offset += page.items.length;
+      if (hasNextPage && page.items.length === 0) {
+        throw new PlaylistTidyError(
+          "VALIDATION_FAILED",
+          "Spotify returned an empty playlist catalog page with a next link.",
+        );
+      }
+      if (!hasNextPage && offset !== page.total) {
+        throw new PlaylistTidyError(
+          "VALIDATION_FAILED",
+          `Spotify declared ${String(page.total)} playlists but returned ${String(offset)}.`,
+        );
+      }
+    }
+    return playlists;
   }
 
   public async getCoherentPlaylist(playlistId: string): Promise<PlaylistView> {

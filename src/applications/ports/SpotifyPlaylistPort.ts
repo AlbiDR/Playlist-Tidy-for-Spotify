@@ -7,6 +7,15 @@ export interface SpotifyUser {
   readonly id: string;
 }
 
+export interface SpotifyPlaylistSummary {
+  readonly id: string;
+  readonly name: string;
+  readonly ownerId: string;
+  readonly snapshotId: string;
+  readonly itemCount: number;
+  readonly isPublic: boolean | null;
+}
+
 export interface PlaylistMetadata {
   readonly id: string;
   readonly ownerId: string;
@@ -25,5 +34,9 @@ export interface SpotifyPlaylistReorderPort {
     snapshotId: string,
     move: RangeMove,
   ): Promise<string>;
+}
+
+export interface SpotifyPlaylistCatalogPort {
+  getOwnedPlaylists(ownerId: string): Promise<readonly SpotifyPlaylistSummary[]>;
 }
 
