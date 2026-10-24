@@ -1,0 +1,145 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 AlbiDR
+
+import { describe, expect, it, vi } from "vitest";
+import type { PlaylistTidyError } from "../../../core/errors.js";
+import { SpotifyWebApiClient, type SpotifyTokenProvider } from "../SpotifyWebApiClient.js";
+
+const tokens: SpotifyTokenProvider = {
+  getAccessToken: vi.fn(async () => "access-token"),
+  refreshAccessToken: vi.fn(async () => "refreshed-token"),
+};
+
+function jsonResponse(payload: unknown, status = 200, headers?: HeadersInit): Response {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("Content-Type", "application/json");
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: responseHeaders,
+  });
+}
+
+function metadata(snapshotId: string): unknown {
+  return { id: "playlist", owner: { id: "owner" }, snapshot_id: snapshotId };
+}
+
+function item(uri: string | null, addedAt: string | null): unknown {
+  return {
+    added_at: addedAt,
+    added_by: { id: "owner" },
+    item: uri === null ? null : { uri, type: "track", is_local: false },
+  };
+}
+
+describe("SpotifyWebApiClient", () => {
+  it("reads all pages between matching playlist snapshots", async () => {
+    const responses = [
+      jsonResponse(metadata("snapshot-a")),
+      jsonResponse({ items: [item("spotify:track:a", "2026-01-01")], next: "next", total: 2 }),
+      jsonResponse({ items: [item(null, null)], next: null, total: 2 }),
+      jsonResponse(metadata("snapshot-a")),
+    ];
+    const requestedUrls: string[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      requestedUrls.push(String(input));
+      return responses.shift() as Response;
+    });
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+
+    const view = await client.getCoherentPlaylist("playlist");
+
+    expect(view.snapshotId).toBe("snapshot-a");
+    expect(view.occurrences).toEqual([
+      {
+        originalPosition: 0,
+        uri: "spotify:track:a",
+        itemType: "track",
+        addedAt: "2026-01-01",
+        addedById: "owner",
+      },
+      {
+        originalPosition: 1,
+        uri: null,
+        itemType: "unknown",
+        addedAt: null,
+        addedById: "owner",
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(requestedUrls[2]).toContain("offset=1");
+  });
+
+  it("discards a mixed-snapshot read and starts again", async () => {
+    const responses = [
+      jsonResponse(metadata("snapshot-a")),
+      jsonResponse({ items: [item("spotify:track:a", "2026-01-01")], next: null, total: 1 }),
+      jsonResponse(metadata("snapshot-b")),
+      jsonResponse(metadata("snapshot-b")),
+      jsonResponse({ items: [item("spotify:track:b", "2026-01-02")], next: null, total: 1 }),
+      jsonResponse(metadata("snapshot-b")),
+    ];
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+    });
+
+    const view = await client.getCoherentPlaylist("playlist");
+    expect(view.snapshotId).toBe("snapshot-b");
+    expect(view.occurrences[0]?.uri).toBe("spotify:track:b");
+  });
+
+  it("refreshes once after an unauthorized read", async () => {
+    const localTokens: SpotifyTokenProvider = {
+      getAccessToken: vi.fn(async () => "token"),
+      refreshAccessToken: vi.fn(async () => "new-token"),
+    };
+    const responses = [jsonResponse({}, 401), jsonResponse({ id: "owner" })];
+    const client = new SpotifyWebApiClient(localTokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+    });
+    await expect(client.getCurrentUser()).resolves.toEqual({ id: "owner" });
+    expect(localTokens.refreshAccessToken).toHaveBeenCalledOnce();
+  });
+
+  it("honors a bounded Retry-After before retrying a rejected write", async () => {
+    const sleep = vi.fn(async () => undefined);
+    const responses = [
+      jsonResponse({}, 429, { "Retry-After": "90" }),
+      jsonResponse({ snapshot_id: "snapshot-b" }),
+    ];
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+      sleep,
+    });
+    await expect(
+      client.reorderPlaylistRange("playlist", "snapshot-a", {
+        rangeStart: 2,
+        rangeLength: 1,
+        insertBefore: 0,
+      }),
+    ).resolves.toBe("snapshot-b");
+    expect(sleep).toHaveBeenCalledWith(60_000);
+  });
+
+  it("never blindly retries a reorder after a server error", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({}, 500));
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(
+      client.reorderPlaylistRange("playlist", "snapshot-a", {
+        rangeStart: 1,
+        rangeLength: 1,
+        insertBefore: 0,
+      }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AMBIGUOUS_WRITE" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("rejects malformed Spotify data at the adapter boundary", async () => {
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => jsonResponse({ owner: {} })),
+    });
+    await expect(client.getPlaylistMetadata("playlist")).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "VALIDATION_FAILED",
+    });
+  });
+});
+

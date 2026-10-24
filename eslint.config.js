@@ -23,4 +23,12 @@ export default tseslint.config(
       "@typescript-eslint/no-confusing-void-expression": "off"
     },
   },
+  {
+    files: ["**/*.spec.ts", "tests/**/*.ts"],
+    rules: {
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-base-to-string": "off"
+    },
+  },
 );
