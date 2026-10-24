@@ -304,9 +304,9 @@ function getConnectionPresentation(state: ViewState): {
         status: `Connected as ${state.userId}. ${String(state.playlists.length)} owned ${state.playlists.length === 1 ? "playlist" : "playlists"} loaded.`,
       };
     case "error":
-      return { buttonLabel: "Try again", disabled: false, status: "Spotify is not connected." };
+      return { buttonLabel: "Try again", disabled: false, status: "" };
     case "disconnected":
-      return { buttonLabel: "Connect Spotify", disabled: false, status: "Spotify is not connected." };
+      return { buttonLabel: "Connect Spotify", disabled: false, status: "" };
   }
 }
 

@@ -177,6 +177,8 @@ h1 em {
   line-height: 1.5;
 }
 
+.connection-status:empty { display: none; }
+
 .error-message {
   max-width: 680px;
   margin: 16px 0 0;
