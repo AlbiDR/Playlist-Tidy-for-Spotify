@@ -43,6 +43,12 @@ npm run dev
 
 Do not commit Spotify tokens, playlist identifiers, OAuth authorization codes, PKCE verifiers, or local environment files. Report security-sensitive issues privately rather than opening a public issue.
 
+## Contributor attribution
+
+Repository history attributes work only to the humans responsible for its commits. AI systems, coding agents, bots, and automation must never be named as authors or co-authors. The Contributor Attribution Policy action scans the complete Git history and rejects every identity that is not explicitly listed in `.github/allowed-contributors.json`.
+
+The policy governs Git metadata, which is the information GitHub uses for contributor attribution. It cannot determine which private tools a human used while preparing a change.
+
 ## License
 
 GPL-3.0-only. A complete license file will be added before the first release.
