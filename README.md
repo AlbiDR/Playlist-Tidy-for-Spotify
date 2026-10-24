@@ -10,8 +10,6 @@
 
 <h1 align="center">Playlist Tidy for Spotify</h1>
 
----
-
 <p align="center">
   <strong>Put every playlist back in order.</strong><br>
   Preview first. Sort safely.
