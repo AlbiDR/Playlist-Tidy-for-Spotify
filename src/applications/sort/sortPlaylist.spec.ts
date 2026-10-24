@@ -2,11 +2,11 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { PlaylistTidyError } from "../../../core/errors.js";
-import { applyRangeMove } from "../../../core/playlist/transition.js";
-import type { PlaylistOccurrence, PlaylistView, RangeMove } from "../../../core/playlist/types.js";
-import type { PlaylistSortPort } from "../sortPlaylist.js";
-import { sortPlaylist } from "../sortPlaylist.js";
+import { PlaylistTidyError } from "../../core/errors.js";
+import { applyRangeMove } from "../../core/playlist/transition.js";
+import type { PlaylistOccurrence, PlaylistView, RangeMove } from "../../core/playlist/types.js";
+import type { PlaylistSortPort } from "./sortPlaylist.js";
+import { sortPlaylist } from "./sortPlaylist.js";
 
 class MemorySpotifyPort implements PlaylistSortPort {
   public readonly userId = "owner";

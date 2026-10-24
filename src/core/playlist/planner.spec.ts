@@ -2,9 +2,9 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { occurrence } from "../../../../tests/helpers/occurrence.js";
-import { getTargetOrder } from "../order.js";
-import { applyMovePlan, planPlaylistSort } from "../planner.js";
+import { occurrence } from "../../../tests/helpers/occurrence.js";
+import { getTargetOrder } from "./order.js";
+import { applyMovePlan, planPlaylistSort } from "./planner.js";
 
 describe("planPlaylistSort", () => {
   it("emits no writes for an already sorted playlist", () => {

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
 # Playlist Tidy for Spotify
 
 Playlist Tidy for Spotify is an independent utility for keeping playlists owned by the authenticated user ordered newest-added first. It is not affiliated with or endorsed by Spotify.
@@ -27,10 +30,7 @@ Requires Node.js 22 or newer.
 
 ```sh
 npm ci
-npm run typecheck
-npm run lint
-npm test
-npm run build
+npm run verify
 ```
 
 Run the local static site with:
@@ -61,6 +61,12 @@ Repository history attributes work only to the humans responsible for its commit
 
 The policy governs Git metadata, which is the information GitHub uses for contributor attribution. It cannot determine which private tools a human used while preparing a change.
 
+## Repository governance
+
+`npm run verify` is the single local and CI quality gate. It enforces current-year GPL-3.0-only notices, approved human attribution, architectural lint boundaries, strict type checking, tests, and reproducible production builds. `npm run license:fix` applies the canonical header for the current UTC year to supported files; strict JSON receives equivalent structured metadata.
+
+Pull requests use structured safety checks, issues use privacy-aware forms, sensitive reports use private security advisories, and CODEOWNERS makes review responsibility explicit. GitHub Actions use least-privilege permissions, immutable action revisions, bounded runtimes, non-persistent checkout credentials, and lifecycle concurrency controls.
+
 ## License
 
-GPL-3.0-only. A complete license file will be added before the first release.
+GPL-3.0-only. See [LICENSE](LICENSE).

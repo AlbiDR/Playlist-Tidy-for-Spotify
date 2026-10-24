@@ -2,8 +2,8 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it, vi } from "vitest";
-import type { PlaylistTidyError } from "../../../core/errors.js";
-import { SpotifyWebApiClient, type SpotifyTokenProvider } from "../SpotifyWebApiClient.js";
+import type { PlaylistTidyError } from "../../core/errors.js";
+import { SpotifyWebApiClient, type SpotifyTokenProvider } from "./SpotifyWebApiClient.js";
 
 const tokens: SpotifyTokenProvider = {
   getAccessToken: vi.fn(async () => "access-token"),

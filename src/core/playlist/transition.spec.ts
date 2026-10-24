@@ -2,7 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { applyRangeMove, InvalidRangeMoveError } from "../transition.js";
+import { applyRangeMove, InvalidRangeMoveError } from "./transition.js";
 
 describe("applyRangeMove", () => {
   it("moves a multi-item block forward using pre-removal coordinates", () => {

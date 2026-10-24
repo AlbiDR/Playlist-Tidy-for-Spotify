@@ -2,8 +2,8 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { occurrence } from "../../../../tests/helpers/occurrence.js";
-import { haveEqualMembership, haveEqualOrderedState } from "../identity.js";
+import { occurrence } from "../../../tests/helpers/occurrence.js";
+import { haveEqualMembership, haveEqualOrderedState } from "./identity.js";
 
 describe("cross-snapshot identity", () => {
   it("compares membership as a multiset", () => {

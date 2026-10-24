@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 AlbiDR
+
+name: Bug report
+description: Report a reproducible defect without exposing Spotify or personal data.
+title: "bug: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: Never include access tokens, authorization codes, playlist identifiers, or private playlist contents.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest safe sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: dropdown
+    id: write-path
+    attributes:
+      label: Did Spotify receive a reorder request?
+      options: ["No", "Yes", "Unknown"]
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser or Node.js version and operating system. Do not paste raw network logs.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, playlist identifiers, and private playlist data.
+          required: true

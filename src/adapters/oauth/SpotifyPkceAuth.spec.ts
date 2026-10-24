@@ -3,12 +3,12 @@
 
 import { webcrypto } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { PlaylistTidyError } from "../../../core/errors.js";
+import type { PlaylistTidyError } from "../../core/errors.js";
 import {
   SPOTIFY_SCOPES,
   SpotifyPkceAuth,
   type SessionStoragePort,
-} from "../SpotifyPkceAuth.js";
+} from "./SpotifyPkceAuth.js";
 
 const CLIENT_ID = "spotify-client-id";
 const REDIRECT_URI = "https://albidr.github.io/Playlist-Tidy-for-Spotify/";

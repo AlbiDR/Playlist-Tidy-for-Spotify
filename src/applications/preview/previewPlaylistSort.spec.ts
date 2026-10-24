@@ -2,10 +2,10 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import type { PlaylistTidyError } from "../../../core/errors.js";
-import type { PlaylistView } from "../../../core/playlist/types.js";
-import type { SpotifyPlaylistReadPort } from "../../ports/SpotifyPlaylistPort.js";
-import { previewPlaylistSort } from "../previewPlaylistSort.js";
+import type { PlaylistTidyError } from "../../core/errors.js";
+import type { PlaylistView } from "../../core/playlist/types.js";
+import type { SpotifyPlaylistReadPort } from "../ports/SpotifyPlaylistPort.js";
+import { previewPlaylistSort } from "./previewPlaylistSort.js";
 
 const view: PlaylistView = {
   playlistId: "playlist",

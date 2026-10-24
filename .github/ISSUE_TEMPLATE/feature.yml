@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 AlbiDR
+
+name: Feature proposal
+description: Propose a focused improvement consistent with the project boundary.
+title: "feature: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete user problem should the project solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behavior, not a preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Safety and architecture impact
+      description: Explain any impact on Spotify scopes, writes, ordering, membership, or CleanStack boundaries.
+    validations:
+      required: true

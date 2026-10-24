@@ -4,17 +4,30 @@
   "private": true,
   "type": "module",
   "description": "Keep owned Spotify playlists ordered newest-added first.",
+  "license": "GPL-3.0-only",
+  "copyright": "Copyright (C) 2026 AlbiDR",
+  "author": "AlbiDR",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlbiDR/Playlist-Tidy-for-Spotify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AlbiDR/Playlist-Tidy-for-Spotify/issues"
+  },
+  "homepage": "https://albidr.github.io/Playlist-Tidy-for-Spotify/",
   "scripts": {
     "build": "npm run build:web && npm run build:cli",
     "build:cli": "tsc -p tsconfig.cli.json",
     "build:web": "vite build",
     "dev": "vite --host 127.0.0.1",
     "lint": "eslint .",
+    "license:fix": "node scripts/verify-license-headers.mjs --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run verify:contributors && npm run typecheck && npm run lint && npm test && npm run build",
-    "verify:contributors": "node scripts/verify-contributors.mjs"
+    "verify": "npm run verify:licenses && npm run verify:contributors && npm run typecheck && npm run lint && npm test && npm run build",
+    "verify:contributors": "node scripts/verify-contributors.mjs",
+    "verify:licenses": "node scripts/verify-license-headers.mjs"
   },
   "engines": {
     "node": ">=22"

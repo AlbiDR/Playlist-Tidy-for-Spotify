@@ -2,8 +2,8 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { occurrence } from "../../../../tests/helpers/occurrence.js";
-import { getTargetOrder, isNewestFirst } from "../order.js";
+import { occurrence } from "../../../tests/helpers/occurrence.js";
+import { getTargetOrder, isNewestFirst } from "./order.js";
 
 describe("playlist ordering", () => {
   it("sorts newest first, preserves ties, and puts null dates last", () => {
