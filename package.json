@@ -1,0 +1,32 @@
+{
+  "name": "playlist-tidy-for-spotify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Keep owned Spotify playlists ordered newest-added first.",
+  "scripts": {
+    "build": "npm run build:web && npm run build:cli",
+    "build:cli": "tsc -p tsconfig.cli.json",
+    "build:web": "vite build",
+    "dev": "vite --host 127.0.0.1",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "valibot": "^1.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@types/node": "^24.9.1",
+    "eslint": "^9.38.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vite": "^7.1.12",
+    "vitest": "^5.0.5"
+  }
+}
