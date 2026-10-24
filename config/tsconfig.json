@@ -20,5 +20,5 @@
     "allowImportingTsExtensions": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src", "tests", "vite.config.ts", "eslint.config.js"]
+  "include": ["../src", "./vite.config.ts", "./eslint.config.js"]
 }

@@ -2,11 +2,14 @@
 // Copyright (C) 2026 AlbiDR
 
 import eslint from "@eslint/js";
+import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
+
+const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 
 export default tseslint.config(
   {
-    ignores: ["dist/", "dist-cli/", "coverage/", "node_modules/", "eslint.config.js"],
+    ignores: ["dist/", "dist-cli/", "coverage/", "node_modules/", "config/eslint.config.js"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
@@ -18,8 +21,8 @@ export default tseslint.config(
     files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        project: ["./config/tsconfig.json"],
+        tsconfigRootDir: repositoryRoot,
       },
     },
     rules: {

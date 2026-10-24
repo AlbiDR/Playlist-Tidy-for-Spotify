@@ -2,7 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { occurrence } from "../../../tests/helpers/occurrence.js";
+import { occurrence } from "../../testing/occurrence.js";
 import { getTargetOrder, isNewestFirst } from "./order.js";
 
 describe("playlist ordering", () => {

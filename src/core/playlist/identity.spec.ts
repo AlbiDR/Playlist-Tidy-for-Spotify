@@ -2,7 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it } from "vitest";
-import { occurrence } from "../../../tests/helpers/occurrence.js";
+import { occurrence } from "../../testing/occurrence.js";
 import { haveEqualMembership, haveEqualOrderedState } from "./identity.js";
 
 describe("cross-snapshot identity", () => {

@@ -3,7 +3,7 @@
 
 # Playlist Tidy for Spotify — CleanStack Architecture
 
-Status: Proposed  
+Status: Accepted  
 Decision type: Authoritative Design Reference (ADR)  
 Applies to: Website, CLI, shared sorting engine, and GitHub Actions automation
 

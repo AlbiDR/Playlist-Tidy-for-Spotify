@@ -22,7 +22,20 @@ This is an early build. Preview first, and test sorting on a playlist you can re
 - Post-run membership and order verification
 - Shared behavior between the website and CLI
 
-The authoritative architecture is documented in [CleanStack Architecture](.github/authoritative-design-references/CleanStack%20Architecture.md).
+The authoritative architecture is documented in [CleanStack Architecture](docs/architecture/cleanstack.md).
+
+## Repository map
+
+```text
+.
+├── .github/   GitHub governance, ownership, issue forms, and workflows
+├── config/    TypeScript, ESLint, and Vite configuration
+├── docs/      Authoritative architecture and project documentation
+├── scripts/   Executable repository-policy checks
+└── src/       Product code, interfaces, colocated tests, and test support
+```
+
+The root is reserved for repository identity (`README.md`, `LICENSE`), the npm manifest and lockfile, and conventional dotfiles consumed directly by development tools.
 
 ## Development
 

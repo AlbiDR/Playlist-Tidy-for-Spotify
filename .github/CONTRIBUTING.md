@@ -7,7 +7,7 @@ Playlist Tidy accepts focused, reviewable changes that preserve its narrow Spoti
 
 ## Development contract
 
-1. Read the [CleanStack Architecture](.github/authoritative-design-references/CleanStack%20Architecture.md) before changing dependencies or behavior.
+1. Read the [CleanStack Architecture](../docs/architecture/cleanstack.md) before changing dependencies or behavior.
 2. Create one branch and one coherent pull request per concern.
 3. Never commit credentials, OAuth artifacts, playlist identifiers, private playlist contents, build output, or local environment files.
 4. Add or update tests before changing a sorting, identity, reconciliation, or adapter invariant.

@@ -18,15 +18,21 @@ const requiredFiles = [
   ".editorconfig",
   ".gitattributes",
   ".github/CODEOWNERS",
+  ".github/CONTRIBUTING.md",
   ".github/ISSUE_TEMPLATE/bug.yml",
   ".github/ISSUE_TEMPLATE/config.yml",
   ".github/ISSUE_TEMPLATE/feature.yml",
   ".github/pull_request_template.md",
+  ".github/SECURITY.md",
   ".github/workflows/repository-policy.yml",
-  "CONTRIBUTING.md",
+  "config/eslint.config.js",
+  "config/tsconfig.cli.json",
+  "config/tsconfig.json",
+  "config/vite.config.ts",
+  "docs/architecture/cleanstack.md",
   "LICENSE",
   "README.md",
-  "SECURITY.md",
+  "src/interfaces/web/index.html",
 ];
 
 const commentStyles = new Map([

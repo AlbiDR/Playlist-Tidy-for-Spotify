@@ -7,12 +7,12 @@
     "allowImportingTsExtensions": false,
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "dist-cli",
-    "rootDir": "src",
+    "outDir": "../dist-cli",
+    "rootDir": "../src",
     "types": ["node"],
     "noEmit": false,
     "declaration": false
   },
-  "include": ["src/core/**/*.ts", "src/adapters/**/*.ts", "src/applications/**/*.ts", "src/interfaces/cli/**/*.ts"],
+  "include": ["../src/core/**/*.ts", "../src/adapters/**/*.ts", "../src/applications/**/*.ts", "../src/interfaces/cli/**/*.ts"],
   "exclude": ["**/*.spec.ts"]
 }
