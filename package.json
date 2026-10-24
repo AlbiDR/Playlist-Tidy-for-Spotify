@@ -9,12 +9,12 @@
   "author": "AlbiDR",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AlbiDR/Playlist-Tidy-for-Spotify.git"
+    "url": "git+https://github.com/AlbiDR/PlaylistTidy.git"
   },
   "bugs": {
-    "url": "https://github.com/AlbiDR/Playlist-Tidy-for-Spotify/issues"
+    "url": "https://github.com/AlbiDR/PlaylistTidy/issues"
   },
-  "homepage": "https://albidr.github.io/Playlist-Tidy-for-Spotify/",
+  "homepage": "https://albidr.github.io/PlaylistTidy/",
   "scripts": {
     "build": "npm run clean && npm run build:web && npm run build:cli",
     "build:cli": "tsc -p config/tsconfig.cli.json",

@@ -11,7 +11,7 @@ import {
 } from "./SpotifyPkceAuth.js";
 
 const CLIENT_ID = "spotify-client-id";
-const REDIRECT_URI = "https://albidr.github.io/Playlist-Tidy-for-Spotify/";
+const REDIRECT_URI = "https://albidr.github.io/PlaylistTidy/";
 
 class MemoryStorage implements SessionStoragePort {
   public readonly values = new Map<string, string>();

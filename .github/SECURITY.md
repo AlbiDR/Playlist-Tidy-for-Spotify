@@ -9,7 +9,7 @@ The project is pre-release. Only the current `main` branch receives security fix
 
 ## Reporting a vulnerability
 
-Use [GitHub private vulnerability reporting](https://github.com/AlbiDR/Playlist-Tidy-for-Spotify/security/advisories/new). Do not open a public issue or disclose live Spotify tokens, authorization codes, PKCE verifiers, playlist identifiers, or private playlist data.
+Use [GitHub private vulnerability reporting](https://github.com/AlbiDR/PlaylistTidy/security/advisories/new). Do not open a public issue or disclose live Spotify tokens, authorization codes, PKCE verifiers, playlist identifiers, or private playlist data.
 
 Include a concise impact statement, safe reproduction steps, the affected commit, and any suggested mitigation. Receipt will be acknowledged as soon as practical; remediation timing depends on severity and the safety of the fix.
 
