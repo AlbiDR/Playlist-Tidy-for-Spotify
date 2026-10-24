@@ -3,10 +3,13 @@
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title description">
   <title id="title">Playlist Tidy mark</title>
-  <desc id="description">Three playlist rows descending into chronological order beside a verification line.</desc>
-  <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
-    <path d="M24 32h112v96H24z" stroke="#182019" stroke-width="8"/>
-    <path d="M44 58h52M44 80h40M44 102h28" stroke="#182019" stroke-width="8"/>
-    <path d="M110 54v50m0 0-14-14m14 14 14-14" stroke="#43a966" stroke-width="8"/>
+  <desc id="description">A record beside three precisely ordered tracks.</desc>
+  <g fill="none" stroke="#182019">
+    <circle cx="58" cy="80" r="42" stroke-width="7"/>
+    <circle cx="58" cy="80" r="28" stroke-width="2" opacity=".42"/>
+    <circle cx="58" cy="80" r="15" stroke-width="6"/>
+    <path d="M101 48h35M101 80h27M101 112h19" stroke-width="8" stroke-linecap="round"/>
   </g>
+  <circle cx="58" cy="80" r="5" fill="#43a966"/>
+  <path d="M94 39v82" stroke="#43a966" stroke-width="3"/>
 </svg>

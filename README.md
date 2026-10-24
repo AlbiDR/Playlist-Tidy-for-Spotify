@@ -31,7 +31,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/readme/desktop.webp" width="960" alt="Playlist Tidy showing the connect action, newest-first promise, and three-step sorting route">
+  <img src="https://albidr.github.io/PlaylistTidy/readme/desktop.png" width="960" alt="Playlist Tidy showing the connect action, newest-first promise, and three-step sorting route">
 </p>
 
 Playlist Tidy is a focused Spotify utility for playlists owned by the authenticated user. It restores a stable, newest-added-first order without replacing, removing, or duplicating playlist contents.
@@ -47,7 +47,7 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
 
 <p align="center">
-  <img src="docs/assets/readme/mobile.webp" width="320" alt="Playlist Tidy narrow layout showing the connect action and ordering visualization">
+  <img src="https://albidr.github.io/PlaylistTidy/readme/mobile.png" width="320" alt="Playlist Tidy narrow layout showing the connect action and ordering visualization">
 </p>
 
 The narrow layout retains the same product hierarchy and safety contract; it does not collapse into a separate mobile experience.

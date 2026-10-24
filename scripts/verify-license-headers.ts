@@ -14,8 +14,6 @@ const fix = process.argv.includes("--fix");
 const ignoredDirectories = new Set([".git", "coverage", "dist", "dist-cli", "node_modules"]);
 const licenseNoticeExemptFiles = new Set([
   "LICENSE",
-  "docs/assets/readme/desktop.webp",
-  "docs/assets/readme/mobile.webp",
 ]);
 const strictJsonFiles = new Set(["package.json", "package-lock.json", ".github/allowed-contributors.json"]);
 const requiredFiles = [
@@ -34,10 +32,8 @@ const requiredFiles = [
   "config/tsconfig.json",
   "config/vite.config.ts",
   "docs/architecture/cleanstack.md",
-  "docs/assets/readme/desktop.webp",
   "docs/assets/readme/mark-dark.svg",
   "docs/assets/readme/mark.svg",
-  "docs/assets/readme/mobile.webp",
   "LICENSE",
   "README.md",
   "src/interfaces/web/index.html",
