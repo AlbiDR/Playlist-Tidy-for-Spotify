@@ -32,39 +32,63 @@ function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
   app.innerHTML = `
     <header class="app-header">
-      <p class="wordmark">Playlist Tidy <span>for Spotify</span></p>
-      <p class="build-label">Development preview</p>
+      <a class="wordmark" href="./" aria-label="Playlist Tidy home">
+        <span class="wordmark__disc" aria-hidden="true"></span>
+        <span>Playlist Tidy <small>for Spotify</small></span>
+      </a>
+      <p class="build-label"><span aria-hidden="true"></span> Live prototype</p>
     </header>
     <main>
-      <section class="connection-panel" aria-labelledby="connection-title">
-        <p class="step-label">Step 1 of 3</p>
-        <h1 id="connection-title">Connect your Spotify account</h1>
-        <p class="summary">
-          Playlist Tidy needs permission to read and reorder playlists you own.
-          It cannot add, remove, replace, create, or delete playlist items.
-        </p>
-        <div class="connection-row">
-          <button id="connection-action" class="connect-button" type="button"></button>
-          <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
+      <section class="hero" aria-labelledby="connection-title">
+        <div class="hero__copy">
+          <p class="eyebrow">Order for your listening life</p>
+          <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
+          <p class="summary">
+            Reorder playlists you own by date added—without replacing, removing,
+            or duplicating a single item.
+          </p>
+          <div class="connection-row">
+            <button id="connection-action" class="connect-button" type="button"></button>
+            <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
+          </div>
+          <p id="connection-error" class="error-message" role="alert"></p>
+          <ul class="trust-line" aria-label="Credential handling">
+            <li>PKCE login</li>
+            <li>Memory-only token</li>
+            <li>Reorder-only writes</li>
+          </ul>
         </div>
-        <p id="connection-error" class="error-message" role="alert"></p>
+        <div class="sort-visual" aria-hidden="true">
+          <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
+          <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
+          <div class="sort-visual__label">added_at ↓</div>
+          <div class="track-stack">
+            <div class="track-strip track-strip--one"><span>01</span><i></i><time>24 OCT</time></div>
+            <div class="track-strip track-strip--two"><span>02</span><i></i><time>18 OCT</time></div>
+            <div class="track-strip track-strip--three"><span>03</span><i></i><time>02 OCT</time></div>
+          </div>
+          <div class="sort-visual__stamp">stable sort<br>verified</div>
+        </div>
       </section>
-      <section class="workflow" aria-label="Playlist sorting workflow">
-        <article class="workflow__step${state.kind === "connected" ? "" : " workflow__step--current"}">
-          <p class="number">01</p>
-          <h2>Connect</h2>
-          <p>Authorize access through Spotify using PKCE.</p>
-        </article>
-        <article class="workflow__step${state.kind === "connected" ? " workflow__step--current" : ""}">
-          <p class="number">02</p>
-          <h2>Choose and preview</h2>
-          <p>Playlist discovery is the next implementation milestone.</p>
-        </article>
-        <article class="workflow__step">
-          <p class="number">03</p>
-          <h2>Sort and verify</h2>
-          <p>Reorder newest-first and independently verify the result.</p>
-        </article>
+      <section class="route" aria-labelledby="route-heading">
+        <div class="route__intro">
+          <p class="eyebrow">The route</p>
+          <h2 id="route-heading">Three deliberate steps.<br>No hidden magic.</h2>
+        </div>
+        <ol class="route__steps">
+          <li class="route__step${state.kind === "connected" ? "" : " route__step--current"}">
+            <span class="route__number">1</span>
+            <div><h3>Connect</h3><p>Spotify authorization through PKCE. No client secret in the browser.</p></div>
+          </li>
+          <li class="route__step${state.kind === "connected" ? " route__step--current" : ""}">
+            <span class="route__number">2</span>
+            <div><h3>Preview</h3><p>See the exact move count before anything changes.</p></div>
+          </li>
+          <li class="route__step">
+            <span class="route__number">3</span>
+            <div><h3>Sort + verify</h3><p>Apply range moves, then prove membership and order are intact.</p></div>
+          </li>
+        </ol>
       </section>
       <section id="playlist-catalog" class="playlist-catalog" aria-labelledby="playlist-heading" hidden>
         <div class="section-heading">
@@ -78,8 +102,8 @@ function render(state: ViewState): void {
       </section>
     </main>
     <footer>
-      Access tokens stay in memory and disappear when this page reloads.
-      Independently developed; not affiliated with or endorsed by Spotify.
+      <span>Built with a deliberately narrow permission boundary.</span>
+      <span>Independent project · Not affiliated with or endorsed by Spotify.</span>
     </footer>
   `;
 
