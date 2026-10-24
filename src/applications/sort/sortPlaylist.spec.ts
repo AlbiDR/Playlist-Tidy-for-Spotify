@@ -155,6 +155,33 @@ describe("sortPlaylist", () => {
     expect(spotify.reorderCalls).toBe(0);
   });
 
+  it("reuses a coherent preview and performs only the final full read", async () => {
+    const spotify = createUnsortedPort();
+    const initialView: PlaylistView = {
+      playlistId: "playlist",
+      ownerId: spotify.ownerId,
+      snapshotId: "snapshot-1",
+      occurrences: spotify.occurrences,
+    };
+    const result = await sortPlaylist(spotify, "playlist", { initialView });
+    expect(result.status).toBe("sorted");
+    expect(spotify.coherentReads).toBe(1);
+  });
+
+  it("rejects a preview for a different playlist without writing", async () => {
+    const spotify = createUnsortedPort();
+    const initialView: PlaylistView = {
+      playlistId: "different-playlist",
+      ownerId: spotify.ownerId,
+      snapshotId: "snapshot-1",
+      occurrences: spotify.occurrences,
+    };
+    await expect(
+      sortPlaylist(spotify, "playlist", { initialView }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "VALIDATION_FAILED" });
+    expect(spotify.reorderCalls).toBe(0);
+  });
+
   it("recognizes an ambiguous write that was already applied without replaying it", async () => {
     const spotify = createUnsortedPort();
     spotify.ambiguousMode = "after-apply";

@@ -27,6 +27,7 @@ export interface PlaylistSortPort
 
 export interface SortPlaylistOptions {
   readonly dryRun?: boolean;
+  readonly initialView?: PlaylistView;
   readonly deadlineMs?: number;
   readonly replanLimit?: number;
   readonly reconciliationAttempts?: number;
@@ -80,10 +81,18 @@ export async function sortPlaylist(
   let replans = 0;
   let firstSnapshot: string | undefined;
   let latestPlan: readonly RangeMove[] = [];
+  let initialView = options.initialView;
 
   planning: for (;;) {
     assertWithinDeadline(now, deadline);
-    const view = await spotify.getCoherentPlaylist(playlistId);
+    const view = initialView ?? await spotify.getCoherentPlaylist(playlistId);
+    initialView = undefined;
+    if (view.playlistId !== playlistId) {
+      throw new PlaylistTidyError(
+        "VALIDATION_FAILED",
+        "The supplied playlist preview does not match the selected playlist.",
+      );
+    }
     assertOwnership(view, user.id);
     firstSnapshot ??= view.snapshotId;
 

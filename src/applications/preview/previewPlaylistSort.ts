@@ -3,7 +3,7 @@
 
 import { PlaylistTidyError } from "../../core/errors.js";
 import { getTargetOrder, planPlaylistSort } from "../../core/playlist/index.js";
-import type { PlaylistOccurrence, RangeMove } from "../../core/playlist/types.js";
+import type { PlaylistOccurrence, PlaylistView, RangeMove } from "../../core/playlist/types.js";
 import type { SpotifyPlaylistReadPort } from "../ports/SpotifyPlaylistPort.js";
 
 export interface PlaylistSortPreview {
@@ -12,6 +12,7 @@ export interface PlaylistSortPreview {
   readonly occurrenceCount: number;
   readonly moves: readonly RangeMove[];
   readonly target: readonly PlaylistOccurrence[];
+  readonly view: PlaylistView;
 }
 
 export async function previewPlaylistSort(
@@ -41,6 +42,7 @@ export async function previewPlaylistSort(
     occurrenceCount: view.occurrences.length,
     moves: planPlaylistSort(view.occurrences),
     target: getTargetOrder(view.occurrences),
+    view,
   };
 }
 

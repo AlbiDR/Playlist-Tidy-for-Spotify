@@ -7,6 +7,7 @@ import type { SpotifyPlaylistSummary } from "../../applications/ports/SpotifyPla
 import { previewPlaylistSort } from "../../applications/preview/previewPlaylistSort.js";
 import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
+import type { PlaylistView } from "../../core/playlist/types.js";
 import "./styles.css";
 
 type ViewState =
@@ -239,7 +240,7 @@ async function previewPlaylist(
       sortButton.textContent = "Sort now";
       sortButton.setAttribute("aria-label", `Apply ${String(preview.moves.length)} planned sorting moves`);
       sortButton.addEventListener("click", () =>
-        void applyPlaylistSort(playlistId, previewButton, sortButton, result, resultMessage, resultActions),
+        void applyPlaylistSort(preview.view, previewButton, sortButton, result, resultMessage, resultActions),
       );
       resultActions.append(sortButton);
     }
@@ -254,7 +255,7 @@ async function previewPlaylist(
 }
 
 async function applyPlaylistSort(
-  playlistId: string,
+  previewView: PlaylistView,
   previewButton: HTMLButtonElement,
   sortButton: HTMLButtonElement,
   result: HTMLElement,
@@ -266,9 +267,11 @@ async function applyPlaylistSort(
   sortButton.textContent = "Sorting…";
   result.className = "preview-result preview-result--working";
   result.setAttribute("role", "status");
-  resultMessage.textContent = "Sorting and reconciling each move. Keep this page open until verification finishes.";
+  resultMessage.textContent = "Applying snapshot-guarded moves, then verifying the final order. Keep this page open until verification finishes.";
   try {
-    const outcome = await sortPlaylist(new SpotifyWebApiClient(auth), playlistId);
+    const outcome = await sortPlaylist(new SpotifyWebApiClient(auth), previewView.playlistId, {
+      initialView: previewView,
+    });
     result.className = "preview-result preview-result--success";
     resultMessage.textContent =
       outcome.status === "already-sorted"
