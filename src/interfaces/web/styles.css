@@ -92,23 +92,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .build-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   margin: 0;
   color: #8a948c;
   font-size: 0.7rem;
   font-weight: 650;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.build-label > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 0 4px rgb(121 238 157 / 10%);
 }
 
 .hero {
@@ -161,14 +150,15 @@ h1 em {
 }
 
 .connect-button,
-.preview-button {
+.preview-button,
+.sort-button {
   position: relative;
   min-height: 48px;
-  border-radius: 999px;
+  border-radius: 10px;
   font: inherit;
   font-weight: 760;
   cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
 .connect-button {
@@ -180,9 +170,8 @@ h1 em {
   box-shadow: 0 12px 30px rgb(71 178 104 / 14%);
 }
 
-.connect-button:hover:not(:disabled) { transform: translateY(-2px); background: #a0f6ba; }
-.connect-button:active:not(:disabled) { transform: translateY(0); }
-.connect-button:focus-visible, .preview-button:focus-visible { outline: 3px solid #d6ffe4; outline-offset: 4px; }
+.connect-button:hover:not(:disabled) { background: #a0f6ba; }
+.connect-button:focus-visible, .preview-button:focus-visible, .sort-button:focus-visible { outline: 3px solid #d6ffe4; outline-offset: 4px; }
 .connect-button:disabled {
   border-color: #3a443d;
   color: #7b877e;
@@ -214,18 +203,12 @@ h1 em {
 
 .error-message:empty { display: none; }
 
-.trust-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
+.trust-note {
   margin: 25px 0 0;
-  padding: 0;
   color: #737e75;
   font-size: 0.72rem;
-  list-style: none;
+  letter-spacing: 0.025em;
 }
-
-.trust-line li::before { margin-right: 7px; color: var(--green); content: "✓"; }
 
 .sort-visual {
   position: relative;
@@ -405,10 +388,10 @@ h1 em {
   border: 1px solid rgb(236 242 237 / 9%);
   border-radius: 17px 7px 17px 7px;
   background: #181d18;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition: border-color 140ms ease, background 140ms ease;
 }
 
-.playlist-row:hover { border-color: rgb(121 238 157 / 25%); background: #1b211b; transform: translateX(3px); }
+.playlist-row:hover { border-color: rgb(121 238 157 / 25%); background: #1b211b; }
 .playlist-row h3 { overflow: hidden; margin: 0 0 5px; font-size: 1rem; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-row div > p { margin: 0; color: #7f8c82; font-size: 0.79rem; }
 
@@ -421,7 +404,8 @@ h1 em {
   font-size: 0.83rem;
 }
 
-.preview-button:hover { border-color: var(--green); color: var(--green); transform: translateY(-1px); }
+.preview-button:hover { border-color: var(--green); color: var(--green); }
+.preview-button:disabled, .sort-button:disabled { cursor: wait; opacity: 0.58; }
 
 .preview-result {
   grid-column: 1 / -1;
@@ -437,7 +421,24 @@ h1 em {
   user-select: text;
 }
 
+.preview-result[hidden] { display: none; }
+.preview-result > p { margin: 0; }
+.preview-result__actions { display: flex; gap: 10px; margin-top: 12px; }
+.preview-result__actions:empty { display: none; }
+.preview-result--working { border-color: rgb(223 231 220 / 18%); background: rgb(223 231 220 / 4%); }
+.preview-result--success { border-color: rgb(121 238 157 / 36%); color: #cdf5d8; }
 .preview-result--error { border-color: rgb(255 139 114 / 24%); color: #ffb9a9; background: rgb(255 139 114 / 6%); }
+
+.sort-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--green);
+  color: #081009;
+  background: var(--green);
+  font-size: 0.82rem;
+}
+
+.sort-button:hover:not(:disabled) { background: #a0f6ba; }
 .empty-message { margin: 0; padding: 24px; }
 
 footer {
@@ -449,15 +450,6 @@ footer {
   color: #68736b;
   font-size: 0.7rem;
   line-height: 1.6;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .sort-visual { animation: settle 700ms cubic-bezier(.2, .75, .3, 1) both; }
-  .track-strip { animation: track-in 520ms cubic-bezier(.2, .75, .3, 1) both; }
-  .track-strip--two { animation-delay: 80ms; }
-  .track-strip--three { animation-delay: 160ms; }
-  @keyframes settle { from { opacity: 0; transform: rotate(5deg) scale(.96); } }
-  @keyframes track-in { from { opacity: 0; transform: translateX(22px); } }
 }
 
 @media (max-width: 900px) {

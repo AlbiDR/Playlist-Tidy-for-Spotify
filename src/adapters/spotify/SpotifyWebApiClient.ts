@@ -228,7 +228,13 @@ export class SpotifyWebApiClient
       if (response.status >= 500) {
         throw new PlaylistTidyError("AMBIGUOUS_WRITE", `Spotify reorder outcome is unknown after HTTP ${String(response.status)}.`);
       }
-      if (!response.ok) throw createHttpError(response.status, "Spotify reorder request failed");
+      if (!response.ok) {
+        throw createHttpError(
+          response.status,
+          "Spotify reorder request failed",
+          await readSafeResponseText(response),
+        );
+      }
       return await response.json();
     }
     throw new PlaylistTidyError("RETRY_EXHAUSTED", "Spotify reorder retry budget was exhausted before a write was accepted.");
@@ -275,7 +281,13 @@ function getRetryDelay(response: Response): number {
   return Math.min(milliseconds, MAX_RATE_LIMIT_DELAY_MS);
 }
 
-function createHttpError(status: number, context: string): PlaylistTidyError {
+function createHttpError(status: number, context: string, detail = ""): PlaylistTidyError {
+  if (/snapshot/iu.test(detail)) {
+    return new PlaylistTidyError(
+      "CONCURRENT_EDIT",
+      `${context}: Spotify rejected a stale playlist snapshot.`,
+    );
+  }
   if (status === 401) return new PlaylistTidyError("AUTHENTICATION_FAILED", `${context}: authentication failed.`);
   if (status === 429) return new PlaylistTidyError("RATE_LIMITED", `${context}: rate limited.`);
   if (status === 403) return new PlaylistTidyError("AUTHORIZATION_FAILED", `${context}: access was forbidden.`);
@@ -284,5 +296,13 @@ function createHttpError(status: number, context: string): PlaylistTidyError {
     return new PlaylistTidyError("REQUEST_REJECTED", `${context}: Spotify rejected the request with HTTP ${String(status)}.`);
   }
   return new PlaylistTidyError("TRANSIENT_READ_FAILED", `${context}: HTTP ${String(status)}.`);
+}
+
+async function readSafeResponseText(response: Response): Promise<string> {
+  try {
+    return (await response.text()).slice(0, 2_000);
+  } catch {
+    return "";
+  }
 }
 

@@ -121,6 +121,10 @@ export async function sortPlaylist(
         returnedSnapshot = await spotify.reorderPlaylistRange(playlistId, currentSnapshot, move);
         writeCalls += 1;
       } catch (error) {
+        if (error instanceof PlaylistTidyError && error.code === "CONCURRENT_EDIT") {
+          replans = registerReplan(replans, replanLimit, playlistId);
+          continue planning;
+        }
         if (!(error instanceof PlaylistTidyError) || error.code !== "AMBIGUOUS_WRITE") throw error;
         writeCalls += 1;
         const live = await spotify.getCoherentPlaylist(playlistId);

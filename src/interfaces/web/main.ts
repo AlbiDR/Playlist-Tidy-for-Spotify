@@ -5,6 +5,7 @@ import { SpotifyPkceAuth } from "../../adapters/oauth/SpotifyPkceAuth.js";
 import { SpotifyWebApiClient } from "../../adapters/spotify/SpotifyWebApiClient.js";
 import type { SpotifyPlaylistSummary } from "../../applications/ports/SpotifyPlaylistPort.js";
 import { previewPlaylistSort } from "../../applications/preview/previewPlaylistSort.js";
+import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
 import "./styles.css";
 
@@ -16,7 +17,6 @@ type ViewState =
       readonly kind: "connected";
       readonly userId: string;
       readonly playlists: readonly SpotifyPlaylistSummary[];
-      readonly preview?: { readonly playlistId: string; readonly message: string; readonly isError: boolean };
     }
   | { readonly kind: "error"; readonly message: string };
 
@@ -36,7 +36,7 @@ function render(state: ViewState): void {
         <span class="wordmark__disc" aria-hidden="true"></span>
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
-      <p class="build-label"><span aria-hidden="true"></span> Live prototype</p>
+      <p class="build-label">Working build / 2026</p>
     </header>
     <main>
       <section class="hero" aria-labelledby="connection-title">
@@ -52,11 +52,7 @@ function render(state: ViewState): void {
             <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
           </div>
           <p id="connection-error" class="error-message" role="alert"></p>
-          <ul class="trust-line" aria-label="Credential handling">
-            <li>PKCE login</li>
-            <li>Memory-only token</li>
-            <li>Reorder-only writes</li>
-          </ul>
+          <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
         <div class="sort-visual" aria-hidden="true">
           <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
@@ -200,40 +196,91 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     previewButton.className = "preview-button";
     previewButton.textContent = "Preview";
     previewButton.setAttribute("aria-label", `Preview sorting ${playlist.name}`);
-    previewButton.addEventListener("click", () => void previewPlaylist(state, playlist.id));
-    row.append(details, previewButton);
-
-    if (state.preview?.playlistId === playlist.id) {
-      const result = document.createElement("p");
-      result.className = state.preview.isError ? "preview-result preview-result--error" : "preview-result";
-      result.textContent = state.preview.message;
-      result.setAttribute("role", state.preview.isError ? "alert" : "status");
-      row.append(result);
-    }
+    const result = document.createElement("div");
+    result.className = "preview-result";
+    result.hidden = true;
+    const resultMessage = document.createElement("p");
+    const resultActions = document.createElement("div");
+    resultActions.className = "preview-result__actions";
+    result.append(resultMessage, resultActions);
+    previewButton.addEventListener("click", () =>
+      void previewPlaylist(playlist.id, previewButton, result, resultMessage, resultActions),
+    );
+    row.append(details, previewButton, result);
     list.append(row);
   }
 }
 
 async function previewPlaylist(
-  state: Extract<ViewState, { readonly kind: "connected" }>,
   playlistId: string,
+  previewButton: HTMLButtonElement,
+  result: HTMLElement,
+  resultMessage: HTMLElement,
+  resultActions: HTMLElement,
 ): Promise<void> {
-  render({
-    ...state,
-    preview: { playlistId, message: "Calculating a write-free preview…", isError: false },
-  });
+  previewButton.disabled = true;
+  previewButton.textContent = "Checking…";
+  result.hidden = false;
+  result.className = "preview-result";
+  result.setAttribute("role", "status");
+  resultMessage.textContent = "Reading the complete playlist and calculating a write-free plan…";
+  resultActions.replaceChildren();
   try {
     const preview = await previewPlaylistSort(new SpotifyWebApiClient(auth), playlistId);
-    const message =
-      preview.moves.length === 0
-        ? `Already newest-first. ${String(preview.occurrenceCount)} items checked; no writes needed.`
-        : `${String(preview.moves.length)} range ${preview.moves.length === 1 ? "move" : "moves"} planned for ${String(preview.occurrenceCount)} items. No changes were made.`;
-    render({ ...state, preview: { playlistId, message, isError: false } });
+    if (preview.moves.length === 0) {
+      resultMessage.textContent = `Already newest-first. ${String(preview.occurrenceCount)} items checked; no writes needed.`;
+    } else {
+      resultMessage.textContent = `${String(preview.moves.length)} range ${preview.moves.length === 1 ? "move" : "moves"} planned for ${String(preview.occurrenceCount)} items. Nothing has changed yet.`;
+      const sortButton = document.createElement("button");
+      sortButton.type = "button";
+      sortButton.className = "sort-button";
+      sortButton.textContent = "Sort now";
+      sortButton.setAttribute("aria-label", `Apply ${String(preview.moves.length)} planned sorting moves`);
+      sortButton.addEventListener("click", () =>
+        void applyPlaylistSort(playlistId, previewButton, sortButton, result, resultMessage, resultActions),
+      );
+      resultActions.append(sortButton);
+    }
   } catch (error) {
-    render({
-      ...state,
-      preview: { playlistId, message: getSafeErrorMessage(error), isError: true },
-    });
+    result.className = "preview-result preview-result--error";
+    result.setAttribute("role", "alert");
+    resultMessage.textContent = getSafeErrorMessage(error);
+  } finally {
+    previewButton.disabled = false;
+    previewButton.textContent = "Preview again";
+  }
+}
+
+async function applyPlaylistSort(
+  playlistId: string,
+  previewButton: HTMLButtonElement,
+  sortButton: HTMLButtonElement,
+  result: HTMLElement,
+  resultMessage: HTMLElement,
+  resultActions: HTMLElement,
+): Promise<void> {
+  previewButton.disabled = true;
+  sortButton.disabled = true;
+  sortButton.textContent = "Sorting…";
+  result.className = "preview-result preview-result--working";
+  result.setAttribute("role", "status");
+  resultMessage.textContent = "Sorting and reconciling each move. Keep this page open until verification finishes.";
+  try {
+    const outcome = await sortPlaylist(new SpotifyWebApiClient(auth), playlistId);
+    result.className = "preview-result preview-result--success";
+    resultMessage.textContent =
+      outcome.status === "already-sorted"
+        ? `No changes needed. ${String(outcome.occurrenceCount)} items were already newest-first.`
+        : `Sorted and verified ${String(outcome.occurrenceCount)} items with ${String(outcome.writeCalls)} ${outcome.writeCalls === 1 ? "write" : "writes"}. Membership is unchanged.`;
+    resultActions.replaceChildren();
+  } catch (error) {
+    result.className = "preview-result preview-result--error";
+    result.setAttribute("role", "alert");
+    resultMessage.textContent = getSafeErrorMessage(error);
+    sortButton.disabled = false;
+    sortButton.textContent = "Try sort again";
+  } finally {
+    previewButton.disabled = false;
   }
 }
 
@@ -255,7 +302,7 @@ function getConnectionPresentation(state: ViewState): {
       return {
         buttonLabel: "Disconnect",
         disabled: false,
-        status: `Connected as ${state.userId}. Playlist browsing is not implemented yet.`,
+        status: `Connected as ${state.userId}. ${String(state.playlists.length)} owned ${state.playlists.length === 1 ? "playlist" : "playlists"} loaded.`,
       };
     case "error":
       return { buttonLabel: "Try again", disabled: false, status: "Spotify is not connected." };

@@ -133,6 +133,21 @@ describe("SpotifyWebApiClient", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("classifies a stale snapshot rejection as a concurrent edit", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ error: { status: 400, message: "Snapshot ID is stale" } }, 400),
+    );
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(
+      client.reorderPlaylistRange("playlist", "stale-snapshot", {
+        rangeStart: 1,
+        rangeLength: 1,
+        insertBefore: 0,
+      }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "CONCURRENT_EDIT" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("rejects malformed Spotify data at the adapter boundary", async () => {
     const client = new SpotifyWebApiClient(tokens, {
       fetch: vi.fn(async () => jsonResponse({ owner: {} })),
