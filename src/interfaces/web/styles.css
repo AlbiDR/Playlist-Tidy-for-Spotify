@@ -48,6 +48,23 @@ button, a { -webkit-tap-highlight-color: transparent; }
   padding: 26px 0 44px;
 }
 
+.boot-status {
+  padding: 12vh 0;
+}
+
+.boot-status p {
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.boot-status h1 {
+  margin-top: 18px;
+  font-size: clamp(2rem, 6vw, 4rem);
+}
+
 .app-header {
   display: flex;
   align-items: center;

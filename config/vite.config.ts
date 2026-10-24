@@ -14,6 +14,13 @@ export default defineConfig({
   build: {
     outDir: fileURLToPath(new URL("../dist/web", import.meta.url)),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        assetFileNames: "assets/[name][extname]",
+        chunkFileNames: "assets/[name].js",
+        entryFileNames: "assets/app.js",
+      },
+    },
   },
   test: {
     exclude: [...configDefaults.exclude, "dist/**", "dist-cli/**"],

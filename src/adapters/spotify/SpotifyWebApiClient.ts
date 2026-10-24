@@ -3,6 +3,7 @@
 
 import * as v from "valibot";
 import { PlaylistTidyError } from "../../core/errors.js";
+import { fetchWithDeadline } from "../http/fetchWithDeadline.js";
 import type { PlaylistOccurrence, PlaylistView, RangeMove } from "../../core/playlist/types.js";
 import type {
   PlaylistMetadata,
@@ -244,7 +245,10 @@ export class SpotifyWebApiClient
     const token = await this.tokens.getAccessToken();
     const headers = new Headers(init.headers);
     headers.set("Authorization", `Bearer ${token}`);
-    return this.fetchImplementation(`${API_BASE_URL}${path}`, { ...init, headers });
+    return fetchWithDeadline(this.fetchImplementation, `${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+    });
   }
 
   private parse<TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(

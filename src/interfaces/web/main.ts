@@ -2,6 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { SpotifyPkceAuth } from "../../adapters/oauth/SpotifyPkceAuth.js";
+import type { SessionStoragePort } from "../../adapters/oauth/SpotifyPkceAuth.js";
 import { SpotifyWebApiClient } from "../../adapters/spotify/SpotifyWebApiClient.js";
 import type { SpotifyPlaylistSummary } from "../../applications/ports/SpotifyPlaylistPort.js";
 import { previewPlaylistSort } from "../../applications/preview/previewPlaylistSort.js";
@@ -18,6 +19,7 @@ type ViewState =
       readonly kind: "connected";
       readonly userId: string;
       readonly playlists: readonly SpotifyPlaylistSummary[];
+      readonly libraryStatus: "loading" | "ready";
     }
   | { readonly kind: "error"; readonly message: string };
 
@@ -27,7 +29,8 @@ const app: HTMLElement = appRoot;
 
 const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim() ?? "";
 const redirectUri = `${window.location.origin}${window.location.pathname}`;
-const auth = new SpotifyPkceAuth(window.sessionStorage);
+const auth = new SpotifyPkceAuth(getSessionStorage());
+let connectionEpoch = 0;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
@@ -119,6 +122,7 @@ function render(state: ViewState): void {
 
   if (state.kind === "connected") {
     button.addEventListener("click", () => {
+      connectionEpoch += 1;
       auth.disconnect();
       render({ kind: "disconnected" });
     });
@@ -129,6 +133,7 @@ function render(state: ViewState): void {
 }
 
 async function beginLogin(): Promise<void> {
+  connectionEpoch += 1;
   render({ kind: "connecting" });
   try {
     const authorizationUrl = await auth.createAuthorizationUrl(clientId, redirectUri);
@@ -147,6 +152,7 @@ async function initialize(): Promise<void> {
   const callbackUrl = window.location.href;
   const callbackParameters = new URL(callbackUrl).searchParams;
   if (callbackParameters.has("code") || callbackParameters.has("error")) {
+    const callbackEpoch = ++connectionEpoch;
     window.history.replaceState({}, "", redirectUri);
     render({ kind: "connecting" });
     try {
@@ -154,11 +160,15 @@ async function initialize(): Promise<void> {
       if (result.status === "connected") {
         const spotify = new SpotifyWebApiClient(auth);
         const user = await spotify.getCurrentUser();
+        if (callbackEpoch !== connectionEpoch) return;
+        render({ kind: "connected", userId: user.id, playlists: [], libraryStatus: "loading" });
         const playlists = await spotify.getOwnedPlaylists(user.id);
-        render({ kind: "connected", userId: user.id, playlists });
+        if (callbackEpoch !== connectionEpoch) return;
+        render({ kind: "connected", userId: user.id, playlists, libraryStatus: "ready" });
         return;
       }
     } catch (error) {
+      if (callbackEpoch !== connectionEpoch) return;
       render({ kind: "error", message: getSafeErrorMessage(error) });
       return;
     }
@@ -174,6 +184,14 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     throw new Error("Playlist catalog controls are missing.");
   }
   catalog.hidden = false;
+  if (state.libraryStatus === "loading") {
+    count.textContent = "Loading…";
+    const loading = document.createElement("p");
+    loading.className = "empty-message";
+    loading.textContent = "Loading your owned playlists from Spotify…";
+    list.append(loading);
+    return;
+  }
   count.textContent = `${String(state.playlists.length)} owned ${state.playlists.length === 1 ? "playlist" : "playlists"}`;
 
   if (state.playlists.length === 0) {
@@ -307,7 +325,9 @@ function getConnectionPresentation(state: ViewState): {
       return {
         buttonLabel: "Disconnect",
         disabled: false,
-        status: `Connected as ${state.userId}. ${String(state.playlists.length)} owned ${state.playlists.length === 1 ? "playlist" : "playlists"} loaded.`,
+        status: state.libraryStatus === "loading"
+          ? `Connected as ${state.userId}. Loading your playlists…`
+          : `Connected as ${state.userId}. ${String(state.playlists.length)} owned ${state.playlists.length === 1 ? "playlist" : "playlists"} loaded.`,
       };
     case "error":
       return { buttonLabel: "Try again", disabled: false, status: "" };
@@ -319,6 +339,23 @@ function getConnectionPresentation(state: ViewState): {
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof PlaylistTidyError) return error.message;
   return "An unexpected error occurred while connecting to Spotify.";
+}
+
+function getSessionStorage(): SessionStoragePort {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return {
+      getItem: () => null,
+      removeItem: () => undefined,
+      setItem: () => {
+        throw new PlaylistTidyError(
+          "AUTHENTICATION_FAILED",
+          "This browser is blocking the temporary session storage required for secure Spotify login.",
+        );
+      },
+    };
+  }
 }
 
 void initialize();

@@ -3,6 +3,7 @@
 
 import * as v from "valibot";
 import { PlaylistTidyError } from "../../core/errors.js";
+import { fetchWithDeadline } from "../http/fetchWithDeadline.js";
 import type { SpotifyTokenProvider } from "../spotify/SpotifyWebApiClient.js";
 
 const AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
@@ -120,17 +121,26 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
     }
 
     assertOAuthConfiguration(clientId, redirectUri);
-    const response = await this.fetchImplementation(TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: clientId,
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        code_verifier: verifier,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetchWithDeadline(this.fetchImplementation, TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+          code_verifier: verifier,
+        }),
+      });
+    } catch (error) {
+      throw new PlaylistTidyError(
+        "AUTHENTICATION_FAILED",
+        "Spotify login did not respond in time. Please connect again.",
+        { cause: error },
+      );
+    }
     const payload: unknown = await response.json();
     if (!response.ok) {
       throw new PlaylistTidyError(

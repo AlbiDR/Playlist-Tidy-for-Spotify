@@ -6,6 +6,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://accounts.spotify.com" crossorigin />
+    <link rel="preconnect" href="https://api.spotify.com" crossorigin />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <meta
       http-equiv="Content-Security-Policy"
@@ -18,7 +20,13 @@
     <title>Playlist Tidy for Spotify</title>
   </head>
   <body>
-    <main id="app"></main>
+    <main id="app">
+      <section class="boot-status" aria-live="polite">
+        <p>Playlist Tidy for Spotify</p>
+        <h1>Loading the application…</h1>
+        <noscript>JavaScript is required to connect to Spotify and sort a playlist.</noscript>
+      </section>
+    </main>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
