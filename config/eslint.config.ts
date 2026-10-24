@@ -9,16 +9,16 @@ const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 
 export default tseslint.config(
   {
-    ignores: ["dist/", "dist-cli/", "coverage/", "node_modules/", "config/eslint.config.js"],
+    ignores: ["dist/", "dist-cli/", "coverage/", "node_modules/", "config/eslint.config.ts"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {
     ...tseslint.configs.disableTypeChecked,
-    files: ["scripts/**/*.mjs"],
+    files: ["scripts/**/*.ts"],
   },
   {
-    files: ["**/*.ts"],
+    files: ["src/**/*.ts", "config/vite.config.ts"],
     languageOptions: {
       parserOptions: {
         project: ["./config/tsconfig.json"],

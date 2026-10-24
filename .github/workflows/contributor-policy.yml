@@ -28,4 +28,4 @@ jobs:
           persist-credentials: false
 
       - name: Reject unapproved or automated attribution
-        run: node scripts/verify-contributors.mjs
+        run: node scripts/verify-contributors.ts

@@ -16,21 +16,22 @@
   },
   "homepage": "https://albidr.github.io/Playlist-Tidy-for-Spotify/",
   "scripts": {
-    "build": "npm run build:web && npm run build:cli",
+    "build": "npm run clean && npm run build:web && npm run build:cli",
     "build:cli": "tsc -p config/tsconfig.cli.json",
     "build:web": "vite build --config config/vite.config.ts",
+    "clean": "node scripts/clean.ts",
     "dev": "vite --config config/vite.config.ts --host 127.0.0.1",
-    "lint": "eslint --config config/eslint.config.js .",
-    "license:fix": "node scripts/verify-license-headers.mjs --fix",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "lint": "eslint --config config/eslint.config.ts .",
+    "license:fix": "node scripts/verify-license-headers.ts --fix",
+    "test": "vitest run --config config/vite.config.ts",
+    "test:watch": "vitest --config config/vite.config.ts",
     "typecheck": "tsc --project config/tsconfig.json --noEmit",
     "verify": "npm run verify:licenses && npm run verify:contributors && npm run typecheck && npm run lint && npm test && npm run build",
-    "verify:contributors": "node scripts/verify-contributors.mjs",
-    "verify:licenses": "node scripts/verify-license-headers.mjs"
+    "verify:contributors": "node scripts/verify-contributors.ts",
+    "verify:licenses": "node scripts/verify-license-headers.ts"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18.0"
   },
   "dependencies": {
     "valibot": "^1.1.0"
@@ -39,6 +40,7 @@
     "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
     "eslint": "^9.38.0",
+    "jiti": "^2.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
     "vite": "^7.1.12",

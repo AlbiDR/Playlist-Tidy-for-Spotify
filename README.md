@@ -39,7 +39,7 @@ The root is reserved for repository identity (`README.md`, `LICENSE`), the npm m
 
 ## Development
 
-Requires Node.js 22 or newer.
+Requires Node.js 22.18 or newer so repository TypeScript tooling runs natively.
 
 ```sh
 npm ci

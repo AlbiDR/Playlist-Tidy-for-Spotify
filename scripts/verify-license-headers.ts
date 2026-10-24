@@ -25,7 +25,7 @@ const requiredFiles = [
   ".github/pull_request_template.md",
   ".github/SECURITY.md",
   ".github/workflows/repository-policy.yml",
-  "config/eslint.config.js",
+  "config/eslint.config.ts",
   "config/tsconfig.cli.json",
   "config/tsconfig.json",
   "config/vite.config.ts",
@@ -35,7 +35,12 @@ const requiredFiles = [
   "src/interfaces/web/index.html",
 ];
 
-const commentStyles = new Map([
+interface CommentStyle {
+  readonly prefix: string;
+  readonly suffix: string;
+}
+
+const commentStyles = new Map<string, CommentStyle>([
   [".css", { prefix: "/* ", suffix: " */" }],
   [".env", { prefix: "# ", suffix: "" }],
   [".example", { prefix: "# ", suffix: "" }],
@@ -94,7 +99,7 @@ if (violations.length > 0) {
   );
 }
 
-async function collectFiles(directory) {
+async function collectFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const collected = [];
   for (const entry of entries) {
@@ -106,7 +111,7 @@ async function collectFiles(directory) {
   return collected.sort();
 }
 
-function getCommentStyle(relativePath) {
+function getCommentStyle(relativePath: string): CommentStyle | undefined {
   if (
     relativePath === ".editorconfig" ||
     relativePath === ".gitattributes" ||
@@ -118,7 +123,7 @@ function getCommentStyle(relativePath) {
   return commentStyles.get(path.extname(relativePath));
 }
 
-function removeExistingHeader(source) {
+function removeExistingHeader(source: string): string {
   const lines = source.split("\n");
   const filtered = lines.filter(
     (line, index) =>
@@ -129,9 +134,9 @@ function removeExistingHeader(source) {
   return filtered.join("\n");
 }
 
-async function verifyJsonMetadata(absolutePath, relativePath) {
+async function verifyJsonMetadata(absolutePath: string, relativePath: string): Promise<void> {
   const source = await readFile(absolutePath, "utf8");
-  let document;
+  let document: unknown;
   try {
     document = JSON.parse(source);
   } catch {
@@ -139,7 +144,13 @@ async function verifyJsonMetadata(absolutePath, relativePath) {
     return;
   }
 
-  const metadata = relativePath === "package-lock.json" ? document.packages?.[""] : document;
+  if (!isRecord(document)) {
+    violations.push(`${relativePath}: expected a JSON object.`);
+    return;
+  }
+  const packages = isRecord(document.packages) ? document.packages : undefined;
+  const rootPackage = packages && isRecord(packages[""]) ? packages[""] : undefined;
+  const metadata = relativePath === "package-lock.json" ? rootPackage : document;
   if (metadata?.license === "GPL-3.0-only" && metadata?.copyright === copyright) return;
 
   if (!fix) {
@@ -153,4 +164,8 @@ async function verifyJsonMetadata(absolutePath, relativePath) {
   metadata.license = "GPL-3.0-only";
   metadata.copyright = copyright;
   await writeFile(absolutePath, `${JSON.stringify(document, null, 2)}\n`, "utf8");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

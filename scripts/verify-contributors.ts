@@ -6,9 +6,16 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import { URL } from "node:url";
 
+interface ContributorPolicy {
+  readonly humans: readonly {
+    readonly name: string;
+    readonly emails: readonly string[];
+  }[];
+}
+
 const policy = JSON.parse(
   readFileSync(new URL("../.github/allowed-contributors.json", import.meta.url), "utf8"),
-);
+) as ContributorPolicy;
 
 if (!Array.isArray(policy.humans) || policy.humans.length === 0) {
   throw new Error("Contributor policy must contain at least one explicitly allowed human.");
@@ -36,7 +43,7 @@ const log = execFileSync(
   { encoding: "utf8" },
 );
 
-const violations = [];
+const violations: string[] = [];
 for (const record of log.split("\u001e")) {
   const normalized = record.replace(/^\s+|\s+$/gu, "");
   if (normalized.length === 0) continue;
