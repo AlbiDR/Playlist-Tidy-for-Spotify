@@ -70,7 +70,7 @@ The tab must remain open until verification finishes. Reloading or closing it di
 | Missing dates | Occurrences without an addition date move below dated occurrences. |
 | Membership | Duplicate, local, unavailable, and unidentified occurrences are preserved. |
 | Preview | Reads and plans only; it performs zero Spotify writes. |
-| Mutation | Uses Spotify's reorder operation only—never add, remove, replace, create, or delete. |
+| Mutation | Uses Spotify's reorder operation only; never add, remove, replace, create, or delete. |
 | Ownership | Refuses to sort a playlist not owned by the authenticated user. |
 | Concurrency | Detects snapshot changes, replans within a fixed budget, and never hides ambiguous writes. |
 | Completion | Verifies both membership and final ordering before reporting success. |

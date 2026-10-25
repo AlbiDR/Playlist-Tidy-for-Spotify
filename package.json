@@ -28,10 +28,11 @@
     "test": "vitest run --config config/vite.config.ts",
     "test:watch": "vitest --config config/vite.config.ts",
     "typecheck": "tsc --project config/tsconfig.json --noEmit",
-    "verify": "npm run verify:licenses && npm run verify:contributors && npm run typecheck && npm run lint && npm test && npm run build",
+    "verify": "npm run verify:licenses && npm run verify:contributors && npm run verify:typography && npm run typecheck && npm run lint && npm test && npm run build",
     "verify:contributors": "node scripts/verify-contributors.ts",
     "verify:deployment": "node scripts/verify-deployment.ts",
-    "verify:licenses": "node scripts/verify-license-headers.ts"
+    "verify:licenses": "node scripts/verify-license-headers.ts",
+    "verify:typography": "node scripts/verify-typography.ts"
   },
   "engines": {
     "node": ">=22.18.0"

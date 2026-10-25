@@ -37,3 +37,6 @@ jobs:
 
       - name: Verify current-year license policy
         run: npm run verify:licenses
+
+      - name: Verify typography policy
+        run: npm run verify:typography
