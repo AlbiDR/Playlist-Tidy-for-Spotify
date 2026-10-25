@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 AlbiDR
+
+name: Scheduled Playlist Sort
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      playlist_ids:
+        description: Optional comma-separated playlist IDs; defaults to the PLAYLIST_IDS variable
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-playlist-sort
+  cancel-in-progress: false
+
+jobs:
+  sort:
+    if: github.event_name == 'workflow_dispatch' || vars.PLAYLIST_IDS != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build automation CLI
+        run: npm run build:cli
+
+      - name: Sort configured playlists
+        id: sort
+        continue-on-error: true
+        run: node dist-cli/interfaces/cli/main.js run
+        env:
+          PLAYLIST_IDS: ${{ inputs.playlist_ids || vars.PLAYLIST_IDS }}
+          ROTATED_REFRESH_TOKEN_FILE: ${{ runner.temp }}/spotify-refresh-token
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+
+      - name: Persist a rotated Spotify credential
+        if: always()
+        run: |
+          if [[ -s "$RUNNER_TEMP/spotify-refresh-token" ]]; then
+            gh secret set SPOTIFY_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/spotify-refresh-token"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.PLAYLIST_TIDY_SECRET_ADMIN_TOKEN }}
+
+      - name: Remove transient credential file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/spotify-refresh-token"
+
+      - name: Preserve sorting failure
+        if: steps.sort.outcome == 'failure'
+        run: exit 1

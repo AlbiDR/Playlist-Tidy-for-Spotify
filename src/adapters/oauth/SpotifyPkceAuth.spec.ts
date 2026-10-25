@@ -93,6 +93,34 @@ describe("SpotifyPkceAuth", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("hands a refresh token only to an explicitly configured enrollment sink", async () => {
+    const storage = new MemoryStorage();
+    const sink = vi.fn<(token: string) => void>();
+    const auth = new SpotifyPkceAuth(storage, {
+      crypto: webcrypto as Crypto,
+      onRefreshToken: sink,
+      fetch: vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            token_type: "Bearer",
+            expires_in: 3600,
+            refresh_token: "enrollment-token",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    });
+    const authorizationUrl = new URL(await auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI));
+    const state = authorizationUrl.searchParams.get("state") as string;
+    await auth.completeAuthorizationCallback(
+      `${REDIRECT_URI}?code=authorization-code&state=${encodeURIComponent(state)}`,
+      CLIENT_ID,
+      REDIRECT_URI,
+    );
+    expect(sink).toHaveBeenCalledWith("enrollment-token");
+  });
+
   it("rejects a mismatched state and deletes transient values before returning", async () => {
     const storage = new MemoryStorage();
     const fetchMock = vi.fn();

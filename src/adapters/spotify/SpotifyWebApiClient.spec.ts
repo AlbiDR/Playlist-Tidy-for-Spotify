@@ -32,6 +32,16 @@ function item(uri: string | null, addedAt: string | null): unknown {
 }
 
 describe("SpotifyWebApiClient", () => {
+  it("reuses the authenticated profile across a batch", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ id: "owner" }));
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(Promise.all([client.getCurrentUser(), client.getCurrentUser()])).resolves.toEqual([
+      { id: "owner" },
+      { id: "owner" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("reads all pages between matching playlist snapshots", async () => {
     const responses = [
       jsonResponse(metadata("snapshot-a")),

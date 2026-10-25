@@ -26,7 +26,10 @@ const requiredFiles = [
   ".github/ISSUE_TEMPLATE/feature.yml",
   ".github/pull_request_template.md",
   ".github/SECURITY.md",
+  ".github/workflows/deployment-health.yml",
+  ".github/workflows/pages.yml",
   ".github/workflows/repository-policy.yml",
+  ".github/workflows/scheduled-sort.yml",
   "config/eslint.config.ts",
   "config/tsconfig.cli.json",
   "config/tsconfig.json",
@@ -36,7 +39,9 @@ const requiredFiles = [
   "docs/assets/readme/mark.svg",
   "LICENSE",
   "README.md",
+  "scripts/verify-deployment.ts",
   "src/interfaces/web/index.html",
+  "src/interfaces/cli/main.ts",
 ];
 
 interface CommentStyle {

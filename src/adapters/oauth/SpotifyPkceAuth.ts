@@ -37,6 +37,7 @@ export interface SpotifyPkceAuthOptions {
   readonly fetch?: typeof fetch;
   readonly crypto?: Crypto;
   readonly now?: () => number;
+  readonly onRefreshToken?: (refreshToken: string) => Promise<void> | void;
 }
 
 export type OAuthCallbackResult =
@@ -47,6 +48,7 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
   private readonly fetchImplementation: typeof fetch;
   private readonly cryptoImplementation: Crypto;
   private readonly now: () => number;
+  private readonly onRefreshToken: ((refreshToken: string) => Promise<void> | void) | undefined;
   private accessToken: string | undefined;
   private expiresAt = 0;
 
@@ -57,6 +59,7 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
     this.fetchImplementation = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.cryptoImplementation = options.crypto ?? globalThis.crypto;
     this.now = options.now ?? Date.now;
+    this.onRefreshToken = options.onRefreshToken;
   }
 
   public async createAuthorizationUrl(clientId: string, redirectUri: string): Promise<string> {
@@ -159,6 +162,9 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
 
     this.accessToken = parsed.output.access_token;
     this.expiresAt = this.now() + parsed.output.expires_in * 1000;
+    if (parsed.output.refresh_token !== undefined && this.onRefreshToken !== undefined) {
+      await this.onRefreshToken(parsed.output.refresh_token);
+    }
     return { status: "connected" };
   }
 

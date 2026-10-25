@@ -6,6 +6,7 @@ import type { SessionStoragePort } from "../../adapters/oauth/SpotifyPkceAuth.js
 import { SpotifyWebApiClient } from "../../adapters/spotify/SpotifyWebApiClient.js";
 import type { SpotifyPlaylistSummary } from "../../applications/ports/SpotifyPlaylistPort.js";
 import { previewPlaylistSort } from "../../applications/preview/previewPlaylistSort.js";
+import type { PlaylistSortPreview } from "../../applications/preview/previewPlaylistSort.js";
 import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
 import type { PlaylistView } from "../../core/playlist/types.js";
@@ -99,6 +100,14 @@ function render(state: ViewState): void {
             <h2 id="playlist-heading">Choose a playlist</h2>
           </div>
           <p id="playlist-count" class="playlist-count"></p>
+        </div>
+        <div id="batch-toolbar" class="batch-toolbar" hidden>
+          <p><strong id="batch-count">0 selected</strong><span>Choose playlists, preview them together, then confirm one bounded sorting queue.</span></p>
+          <div class="batch-toolbar__actions">
+            <button id="batch-preview" class="preview-button" type="button" disabled>Preview selected</button>
+            <button id="batch-sort" class="sort-button" type="button" disabled>Sort selected</button>
+          </div>
+          <p id="batch-status" class="batch-status" role="status" aria-live="polite"></p>
         </div>
         <div id="playlist-list" class="playlist-list"></div>
       </section>
@@ -202,9 +211,50 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     return;
   }
 
+  const toolbar = document.querySelector<HTMLElement>("#batch-toolbar");
+  const batchCount = document.querySelector<HTMLElement>("#batch-count");
+  const batchStatus = document.querySelector<HTMLElement>("#batch-status");
+  const batchPreview = document.querySelector<HTMLButtonElement>("#batch-preview");
+  const batchSort = document.querySelector<HTMLButtonElement>("#batch-sort");
+  if (
+    toolbar === null ||
+    batchCount === null ||
+    batchStatus === null ||
+    batchPreview === null ||
+    batchSort === null
+  ) {
+    throw new Error("Batch playlist controls are missing.");
+  }
+  const batchStatusElement = batchStatus;
+  toolbar.hidden = false;
+  const spotify = new SpotifyWebApiClient(auth);
+  const selected = new Set<string>();
+  const previews = new Map<string, PlaylistSortPreview>();
+  const rows = new Map<string, PlaylistRowControls>();
+  let batchBusy = false;
+
+  const updateBatchControls = (): void => {
+    const selectedIds = [...selected];
+    const previewed = selectedIds.filter((id) => previews.has(id));
+    const sortable = previewed.filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
+    batchCount.textContent = `${String(selectedIds.length)} selected`;
+    batchPreview.disabled = batchBusy || selectedIds.length === 0;
+    batchSort.disabled =
+      batchBusy || selectedIds.length === 0 || previewed.length !== selectedIds.length || sortable.length === 0;
+    for (const controls of rows.values()) controls.selection.disabled = batchBusy;
+  };
+
   for (const playlist of state.playlists) {
     const row = document.createElement("article");
     row.className = "playlist-row";
+    const selector = document.createElement("label");
+    selector.className = "playlist-selector";
+    const selection = document.createElement("input");
+    selection.type = "checkbox";
+    selection.setAttribute("aria-label", `Select ${playlist.name}`);
+    const selectionMark = document.createElement("span");
+    selectionMark.setAttribute("aria-hidden", "true");
+    selector.append(selection, selectionMark);
     const details = document.createElement("div");
     const name = document.createElement("h3");
     name.textContent = playlist.name;
@@ -224,21 +274,93 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     const resultActions = document.createElement("div");
     resultActions.className = "preview-result__actions";
     result.append(resultMessage, resultActions);
-    previewButton.addEventListener("click", () =>
-      void previewPlaylist(playlist.id, previewButton, result, resultMessage, resultActions),
-    );
-    row.append(details, previewButton, result);
+    const controls = { selection, previewButton, result, resultMessage, resultActions };
+    rows.set(playlist.id, controls);
+    selection.addEventListener("change", () => {
+      if (selection.checked) selected.add(playlist.id);
+      else selected.delete(playlist.id);
+      row.classList.toggle("playlist-row--selected", selection.checked);
+      batchStatus.textContent = "";
+      updateBatchControls();
+    });
+    previewButton.addEventListener("click", () => {
+      void previewPlaylist(spotify, playlist.id, controls, () => {
+        previews.delete(playlist.id);
+        updateBatchControls();
+      }).then((preview) => {
+        if (preview !== undefined) previews.set(playlist.id, preview);
+        updateBatchControls();
+      });
+    });
+    row.append(selector, details, previewButton, result);
     list.append(row);
+  }
+
+  batchPreview.addEventListener("click", () => {
+    void runBatchPreview();
+  });
+  batchSort.addEventListener("click", () => {
+    void runBatchSort();
+  });
+  updateBatchControls();
+
+  async function runBatchPreview(): Promise<void> {
+    const ids = [...selected];
+    batchBusy = true;
+    updateBatchControls();
+    let completed = 0;
+    let failed = 0;
+    await runWithConcurrency(ids, 2, async (id) => {
+      const controls = rows.get(id);
+      if (controls === undefined) return;
+      const preview = await previewPlaylist(spotify, id, controls, () => {
+        previews.delete(id);
+        updateBatchControls();
+      });
+      if (preview === undefined) failed += 1;
+      else previews.set(id, preview);
+      completed += 1;
+      batchStatusElement.textContent = `Previewed ${String(completed)} of ${String(ids.length)} selected playlists.`;
+    });
+    batchBusy = false;
+    batchStatusElement.textContent = failed === 0
+      ? `${String(ids.length)} playlists previewed. Review the plans, then confirm the batch.`
+      : `${String(ids.length - failed)} playlists previewed; ${String(failed)} need attention below.`;
+    updateBatchControls();
+  }
+
+  async function runBatchSort(): Promise<void> {
+    const ids = [...selected].filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
+    batchBusy = true;
+    updateBatchControls();
+    let completed = 0;
+    let failed = 0;
+    await runWithConcurrency(ids, 2, async (id) => {
+      const controls = rows.get(id);
+      const preview = previews.get(id);
+      const sortButton = controls?.resultActions.querySelector<HTMLButtonElement>(".sort-button");
+      if (controls === undefined || preview === undefined || sortButton === null || sortButton === undefined) return;
+      const succeeded = await applyPlaylistSort(spotify, preview.view, controls, sortButton);
+      if (!succeeded) failed += 1;
+      else previews.delete(id);
+      completed += 1;
+      batchStatusElement.textContent = `Sorted ${String(completed)} of ${String(ids.length)} queued playlists.`;
+    });
+    batchBusy = false;
+    batchStatusElement.textContent = failed === 0
+      ? `${String(ids.length)} playlists sorted and verified.`
+      : `${String(ids.length - failed)} playlists sorted; ${String(failed)} need attention below.`;
+    updateBatchControls();
   }
 }
 
 async function previewPlaylist(
+  spotify: SpotifyWebApiClient,
   playlistId: string,
-  previewButton: HTMLButtonElement,
-  result: HTMLElement,
-  resultMessage: HTMLElement,
-  resultActions: HTMLElement,
-): Promise<void> {
+  controls: PlaylistRowControls,
+  onSorted?: () => void,
+): Promise<PlaylistSortPreview | undefined> {
+  const { previewButton, result, resultMessage, resultActions } = controls;
   previewButton.disabled = true;
   previewButton.textContent = "Checking…";
   result.hidden = false;
@@ -247,7 +369,7 @@ async function previewPlaylist(
   resultMessage.textContent = "Reading the complete playlist and calculating a write-free plan…";
   resultActions.replaceChildren();
   try {
-    const preview = await previewPlaylistSort(new SpotifyWebApiClient(auth), playlistId);
+    const preview = await previewPlaylistSort(spotify, playlistId);
     if (preview.moves.length === 0) {
       resultMessage.textContent = `Already newest-first. ${String(preview.occurrenceCount)} items checked; no writes needed.`;
     } else {
@@ -257,15 +379,19 @@ async function previewPlaylist(
       sortButton.className = "sort-button";
       sortButton.textContent = "Sort now";
       sortButton.setAttribute("aria-label", `Apply ${String(preview.moves.length)} planned sorting moves`);
-      sortButton.addEventListener("click", () =>
-        void applyPlaylistSort(preview.view, previewButton, sortButton, result, resultMessage, resultActions),
-      );
+      sortButton.addEventListener("click", () => {
+        void applyPlaylistSort(spotify, preview.view, controls, sortButton).then((succeeded) => {
+          if (succeeded) onSorted?.();
+        });
+      });
       resultActions.append(sortButton);
     }
+    return preview;
   } catch (error) {
     result.className = "preview-result preview-result--error";
     result.setAttribute("role", "alert");
     resultMessage.textContent = getSafeErrorMessage(error);
+    return undefined;
   } finally {
     previewButton.disabled = false;
     previewButton.textContent = "Preview again";
@@ -273,13 +399,12 @@ async function previewPlaylist(
 }
 
 async function applyPlaylistSort(
+  spotify: SpotifyWebApiClient,
   previewView: PlaylistView,
-  previewButton: HTMLButtonElement,
+  controls: PlaylistRowControls,
   sortButton: HTMLButtonElement,
-  result: HTMLElement,
-  resultMessage: HTMLElement,
-  resultActions: HTMLElement,
-): Promise<void> {
+): Promise<boolean> {
+  const { previewButton, result, resultMessage, resultActions } = controls;
   previewButton.disabled = true;
   sortButton.disabled = true;
   sortButton.textContent = "Sorting…";
@@ -287,7 +412,7 @@ async function applyPlaylistSort(
   result.setAttribute("role", "status");
   resultMessage.textContent = "Applying snapshot-guarded moves, then verifying the final order. Keep this page open until verification finishes.";
   try {
-    const outcome = await sortPlaylist(new SpotifyWebApiClient(auth), previewView.playlistId, {
+    const outcome = await sortPlaylist(spotify, previewView.playlistId, {
       initialView: previewView,
     });
     result.className = "preview-result preview-result--success";
@@ -296,15 +421,41 @@ async function applyPlaylistSort(
         ? `No changes needed. ${String(outcome.occurrenceCount)} items were already newest-first.`
         : `Sorted and verified ${String(outcome.occurrenceCount)} items with ${String(outcome.writeCalls)} ${outcome.writeCalls === 1 ? "write" : "writes"}. Membership is unchanged.`;
     resultActions.replaceChildren();
+    return true;
   } catch (error) {
     result.className = "preview-result preview-result--error";
     result.setAttribute("role", "alert");
     resultMessage.textContent = getSafeErrorMessage(error);
     sortButton.disabled = false;
     sortButton.textContent = "Try sort again";
+    return false;
   } finally {
     previewButton.disabled = false;
   }
+}
+
+interface PlaylistRowControls {
+  readonly selection: HTMLInputElement;
+  readonly previewButton: HTMLButtonElement;
+  readonly result: HTMLElement;
+  readonly resultMessage: HTMLElement;
+  readonly resultActions: HTMLElement;
+}
+
+async function runWithConcurrency<T>(
+  values: readonly T[],
+  limit: number,
+  worker: (value: T) => Promise<void>,
+): Promise<void> {
+  const queue = [...values];
+  const workers = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    for (;;) {
+      const value = queue.shift();
+      if (value === undefined) return;
+      await worker(value);
+    }
+  });
+  await Promise.all(workers);
 }
 
 function getConnectionPresentation(state: ViewState): {

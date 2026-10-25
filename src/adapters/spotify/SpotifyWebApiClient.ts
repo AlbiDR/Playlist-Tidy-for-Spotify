@@ -47,6 +47,7 @@ export class SpotifyWebApiClient
   private readonly sleep: (milliseconds: number) => Promise<void>;
   private readonly readAttempts: number;
   private readonly coherentReadAttempts: number;
+  private currentUserRequest: Promise<SpotifyUser> | undefined;
 
   public constructor(
     private readonly tokens: SpotifyTokenProvider,
@@ -59,6 +60,16 @@ export class SpotifyWebApiClient
   }
 
   public async getCurrentUser(): Promise<SpotifyUser> {
+    this.currentUserRequest ??= this.readCurrentUser();
+    try {
+      return await this.currentUserRequest;
+    } catch (error) {
+      this.currentUserRequest = undefined;
+      throw error;
+    }
+  }
+
+  private async readCurrentUser(): Promise<SpotifyUser> {
     const payload = await this.readJson("/me");
     const parsed = this.parse(SpotifyUserSchema, payload, "current user");
     return { id: parsed.id };

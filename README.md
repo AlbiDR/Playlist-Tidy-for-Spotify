@@ -124,6 +124,23 @@ Register these Spotify redirect URIs exactly:
 - Local website: `http://127.0.0.1:5173/`
 - Reserved CLI enrollment: `http://127.0.0.1:8888/callback`
 
+### Scheduled sorting
+
+The browser can preview and sort multiple selected playlists in one bounded queue. For unattended sorting, enroll the repository once from a trusted local machine with GitHub CLI already authenticated:
+
+```sh
+SPOTIFY_CLIENT_ID=cc92650c2f3a452ca396fb3fc6e372cb \
+  npm run cli -- enroll --playlists=PLAYLIST_ID_ONE,PLAYLIST_ID_TWO
+```
+
+Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. The playlist list is stored as the `PLAYLIST_IDS` repository variable and can be changed without rebuilding the site.
+
+For fully autonomous refresh-token rotation, add a fine-grained token with repository Secrets write access as the `PLAYLIST_TIDY_SECRET_ADMIN_TOKEN` Actions secret. The scheduled workflow writes a replacement only when Spotify actually rotates the credential, then deletes its temporary mode-`0600` file. Without that secret, ordinary scheduled runs work, but a future rotation deliberately fails rather than losing the new credential.
+
+`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification; the queue runs at most two playlists concurrently.
+
+Spotify Development Mode may invalidate an automation credential after a later website login. The workflow fails closed if that happens; rerun the enrollment command to replace the secret. No playlist write is attempted with an unauthenticated session.
+
 ## Quality gate
 
 `npm run verify` is the single local and CI acceptance command:
@@ -136,6 +153,8 @@ Register these Spotify redirect URIs exactly:
 6. Produce clean web and CLI-library builds.
 
 GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
+
+Scheduled maintenance rebuilds, verifies, recaptures, and redeploys the site every Monday. A separate deployment-health workflow checks the live HTML and stable production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
 
 ## Repository map
 

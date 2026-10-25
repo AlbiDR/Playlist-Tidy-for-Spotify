@@ -272,12 +272,9 @@ Every reorder request includes the snapshot against which its expected transitio
 
 ### 7.2 After every successful write
 
-Until live evidence proves stale snapshots are rejected atomically, the application refetches a coherent view before issuing the next planned move. Both must match the expected intermediate state:
+An acknowledged reorder returns the snapshot for that exact write. The application applies the canonical move to its in-memory expected state and uses the returned snapshot as the guard for the next move. A rejected guard stops the current plan and is eligible for bounded replanning.
 
-- the returned snapshot identifier; and
-- the complete ordered-state signature sequence.
-
-Any difference stops the current plan. The application may refetch and recompute within the refetch cap and deadline; it never continues with stale positional instructions.
+The application does not refetch the complete playlist between acknowledged moves. That would multiply paginated reads without strengthening the next request's snapshot guard. Instead, one coherent post-plan read proves the actual final state. Ambiguous writes remain subject to the stricter recovery protocol below and are never chained without observation.
 
 ### 7.3 Ambiguous write outcomes
 
@@ -296,12 +293,11 @@ A rate-limit response may be retried only when the API guarantees that the rejec
 
 After the final write, a coherent refetch must prove:
 
-- the snapshot is the one expected from the last acknowledged write;
 - the full ordered-state signature sequence equals the expected target;
 - `added_at` is independently non-increasing with nulls last;
 - the membership-key multiset is unchanged.
 
-A changed snapshot is reported as a concurrent edit and is eligible for a fresh plan within policy. A mismatch at the expected snapshot is an integrity failure and produces a non-zero CLI exit or visible web error.
+The expected state may be accepted under a later snapshot when Spotify advanced metadata without changing the proven sequence. A mismatch at the last acknowledged snapshot is an integrity failure. A different snapshot with an unexpected state is retried for bounded read visibility and then fails closed without replaying acknowledged writes.
 
 ### 7.5 Bounds
 
@@ -377,12 +373,15 @@ The website must:
 - provide meaningful focus states and accessible labels;
 - use touch targets of at least 44 by 44 CSS pixels;
 - avoid presenting a success state before post-run verification completes.
+- allow multiple owned playlists to be selected, previewed, and explicitly confirmed as one batch;
+- isolate every playlist's plan, snapshot chain, result, and failure;
+- cap browser batch concurrency at two to bound Spotify API pressure.
 
 ### 10.2 CLI and Action
 
 The CLI provides explicit commands for login, preview or dry run, and sorting. Inputs are parsed and validated once at the control boundary.
 
-The scheduled and manually dispatched workflow share one concurrency group with `cancel-in-progress: false`. The workflow runs from the intended default branch, declares minimal permissions, pins third-party actions to immutable commits, and never echoes secrets.
+The scheduled and manually dispatched workflow share one concurrency group with `cancel-in-progress: false`. The workflow runs from the intended default branch, declares minimal permissions, pins third-party actions to immutable commits, and never echoes secrets. Configured playlists run with a concurrency cap of two and retain independent verification outcomes.
 
 ## 11. Testing and proof obligations
 
@@ -460,7 +459,7 @@ If web login invalidates the automation credential, the project must choose and 
 - Action and local CLI sorting without deployed web sorting; or
 - an explicitly accepted manual re-enrollment workflow.
 
-The product must not advertise simultaneous web and scheduled sorting until the chosen branch passes an integration test.
+The current Development Mode branch accepts explicit manual re-enrollment if a website login invalidates the automation credential. The scheduled workflow fails visibly and performs no further writes; rerunning the local enrollment command replaces the repository secret without exposing it. A stronger independent credential lineage may replace this fallback only after a live integration test.
 
 ## 13. Governance and lifecycle
 
@@ -509,4 +508,4 @@ The project begins in this order:
 
 ## 16. Decision summary
 
-Playlist Tidy for Spotify uses a small CleanStack architecture centered on a pure playlist kernel and narrow external capabilities. Safety comes from structural limitations, validated boundaries, coherent snapshots, deterministic planning, per-step reconciliation, and independent post-run verification. The website and automation are two composition roots over the same domain and application behavior; neither is allowed to become a separate implementation.
+Playlist Tidy for Spotify uses a small CleanStack architecture centered on a pure playlist kernel and narrow external capabilities. Safety comes from structural limitations, validated boundaries, coherent snapshots, deterministic planning, snapshot-chained writes, and independent post-run verification. The website and automation are two composition roots over the same domain and application behavior; neither is allowed to become a separate implementation.
