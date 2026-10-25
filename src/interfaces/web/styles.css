@@ -403,6 +403,8 @@ h1 em {
 
 .route__step--current { color: var(--ink); }
 .route__step--current .route__number { border-color: var(--green); color: #081009; background: var(--green); box-shadow: 0 0 0 7px rgb(121 238 157 / 8%); }
+.route__step--complete { color: var(--ink); }
+.route__step--complete .route__number { border-color: var(--green); color: var(--green); background: #151a15; }
 .route__step h3 { margin: 1px 0 6px; font-size: 1rem; }
 .route__step p { max-width: 440px; margin: 0; color: #89948b; font-size: 0.88rem; line-height: 1.55; }
 

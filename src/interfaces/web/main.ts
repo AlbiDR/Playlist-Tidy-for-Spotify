@@ -101,15 +101,15 @@ function render(state: ViewState): void {
           <h2 id="route-heading">You stay in control<br>of every write.</h2>
         </div>
         <ol class="route__steps">
-          <li class="route__step${state.kind === "connected" ? "" : " route__step--current"}">
+          <li class="route__step${state.kind === "connected" ? " route__step--complete" : " route__step--current"}" data-route-step="1">
             <span class="route__number">1</span>
             <div><h3>Connect for now</h3><p>Authorize through Spotify. The website keeps no reusable login for later.</p></div>
           </li>
-          <li class="route__step${state.kind === "connected" ? " route__step--current" : ""}">
+          <li class="route__step${state.kind === "connected" ? " route__step--current" : ""}" data-route-step="2">
             <span class="route__number">2</span>
             <div><h3>Preview</h3><p>See the exact move count before anything changes.</p></div>
           </li>
-          <li class="route__step">
+          <li class="route__step" data-route-step="3">
             <span class="route__number">3</span>
             <div><h3>Confirm, sort, verify</h3><p>You approve the write. Playlist Tidy applies range moves, then proves membership and order are intact.</p></div>
           </li>
@@ -327,6 +327,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
   updateBatchControls();
 
   async function runBatchPreview(): Promise<void> {
+    setRouteProgress(2);
     const ids = [...selected];
     batchBusy = true;
     updateBatchControls();
@@ -354,6 +355,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
   async function runBatchSort(): Promise<void> {
     const ids = [...selected].filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
     batchBusy = true;
+    setRouteProgress(3);
     updateBatchControls();
     let completed = 0;
     let failed = 0;
@@ -362,7 +364,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
       const preview = previews.get(id);
       const sortButton = controls?.resultActions.querySelector<HTMLButtonElement>(".sort-button");
       if (controls === undefined || preview === undefined || sortButton === null || sortButton === undefined) return;
-      const succeeded = await applyPlaylistSort(spotify, preview.view, controls, sortButton);
+      const succeeded = await applyPlaylistSort(spotify, preview.view, controls, sortButton, false);
       if (!succeeded) failed += 1;
       else previews.delete(id);
       completed += 1;
@@ -372,6 +374,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     batchStatusElement.textContent = failed === 0
       ? `${String(ids.length)} playlists sorted and verified.`
       : `${String(ids.length - failed)} playlists sorted; ${String(failed)} need attention below.`;
+    setRouteProgress(3, failed === 0);
     updateBatchControls();
   }
 }
@@ -383,6 +386,7 @@ async function previewPlaylist(
   onSorted?: () => void,
 ): Promise<PlaylistSortPreview | undefined> {
   const { previewButton, result, resultMessage, resultActions } = controls;
+  setRouteProgress(2);
   previewButton.disabled = true;
   previewButton.textContent = "Checking…";
   result.hidden = false;
@@ -425,11 +429,13 @@ async function applyPlaylistSort(
   previewView: PlaylistView,
   controls: PlaylistRowControls,
   sortButton: HTMLButtonElement,
+  trackRoute = true,
 ): Promise<boolean> {
   const { previewButton, result, resultMessage, resultActions } = controls;
   previewButton.disabled = true;
   sortButton.disabled = true;
   sortButton.textContent = "Sorting…";
+  if (trackRoute) setRouteProgress(3);
   result.className = "preview-result preview-result--working";
   result.setAttribute("role", "status");
   resultMessage.textContent = "Applying snapshot-guarded moves, then verifying the final order. Keep this page open until verification finishes.";
@@ -443,6 +449,7 @@ async function applyPlaylistSort(
         ? `No changes needed. ${String(outcome.occurrenceCount)} items were already newest-first.`
         : `Sorted and verified ${String(outcome.occurrenceCount)} items with ${String(outcome.writeCalls)} ${outcome.writeCalls === 1 ? "write" : "writes"}. Membership is unchanged.`;
     resultActions.replaceChildren();
+    if (trackRoute) setRouteProgress(3, true);
     return true;
   } catch (error) {
     result.className = "preview-result preview-result--error";
@@ -450,9 +457,28 @@ async function applyPlaylistSort(
     resultMessage.textContent = getSafeErrorMessage(error);
     sortButton.disabled = false;
     sortButton.textContent = "Try sort again";
+    if (trackRoute) setRouteProgress(3);
     return false;
   } finally {
     previewButton.disabled = false;
+  }
+}
+
+function setRouteProgress(activeStep: 1 | 2 | 3, completed = false): void {
+  for (const element of document.querySelectorAll<HTMLElement>("[data-route-step]")) {
+    const step = Number(element.dataset.routeStep);
+    const isCurrent = step === activeStep && !completed;
+    const isComplete = step < activeStep || (step === activeStep && completed);
+    element.classList.toggle("route__step--current", isCurrent);
+    element.classList.toggle("route__step--complete", isComplete);
+    if (isCurrent) element.setAttribute("aria-current", "step");
+    else element.removeAttribute("aria-current");
+  }
+  const stepLabel = document.querySelector<HTMLElement>(".step-label");
+  if (stepLabel !== null) {
+    stepLabel.textContent = activeStep === 3
+      ? completed ? "Step 3 of 3 · Verified" : "Step 3 of 3 · Sorting and verification"
+      : "Step 2 of 3 · Preview and confirm";
   }
 }
 
