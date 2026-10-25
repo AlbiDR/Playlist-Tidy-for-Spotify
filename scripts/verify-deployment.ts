@@ -32,8 +32,8 @@ if (!notFoundAssetReferences.some((asset) => asset.endsWith(".css"))) {
   failures.push("The custom 404 response does not reference its production CSS asset.");
 }
 for (const asset of new Set(notFoundAssetReferences)) {
-  if (!/-[A-Za-z0-9_-]{8,}\.css$/u.test(asset)) {
-    failures.push(`${asset} is not a content-fingerprinted 404 stylesheet.`);
+  if (!/-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/u.test(asset)) {
+    failures.push(`${asset} is not a content-fingerprinted 404 asset.`);
   }
   await request(new URL(asset, deploymentUrl));
 }
