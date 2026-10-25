@@ -41,6 +41,9 @@ let pointerLightInitialized = false;
 let pointerFrame: number | undefined;
 let pointerX = 0;
 let pointerY = 0;
+let pointerRenderedX = 0;
+let pointerRenderedY = 0;
+let pointerHasPosition = false;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
@@ -453,6 +456,11 @@ function initializePointerLight(): void {
     if (event.pointerType === "touch") return;
     pointerX = event.clientX;
     pointerY = event.clientY;
+    if (!pointerHasPosition) {
+      pointerRenderedX = pointerX;
+      pointerRenderedY = pointerY;
+      pointerHasPosition = true;
+    }
     const target = event.target instanceof Element ? event.target : undefined;
     light.classList.toggle(
       "pointer-light--engaged",
@@ -460,19 +468,30 @@ function initializePointerLight(): void {
     );
     light.classList.add("pointer-light--visible");
     if (pointerFrame !== undefined) return;
-    pointerFrame = window.requestAnimationFrame(() => {
-      light.style.setProperty("--pointer-x", `${String(pointerX)}px`);
-      light.style.setProperty("--pointer-y", `${String(pointerY)}px`);
-      pointerFrame = undefined;
-    });
+    pointerFrame = window.requestAnimationFrame(() => renderPointerLight(light));
   }, { passive: true });
 
   document.documentElement.addEventListener("pointerleave", () => {
     light.classList.remove("pointer-light--visible", "pointer-light--engaged");
+    pointerHasPosition = false;
   });
   window.addEventListener("blur", () => {
     light.classList.remove("pointer-light--visible", "pointer-light--engaged");
+    pointerHasPosition = false;
   });
+}
+
+function renderPointerLight(light: HTMLElement): void {
+  pointerRenderedX += (pointerX - pointerRenderedX) * 0.16;
+  pointerRenderedY += (pointerY - pointerRenderedY) * 0.16;
+  light.style.setProperty("--pointer-x", `${pointerRenderedX.toFixed(2)}px`);
+  light.style.setProperty("--pointer-y", `${pointerRenderedY.toFixed(2)}px`);
+
+  const stillMoving =
+    Math.abs(pointerX - pointerRenderedX) > 0.2 || Math.abs(pointerY - pointerRenderedY) > 0.2;
+  pointerFrame = stillMoving
+    ? window.requestAnimationFrame(() => renderPointerLight(light))
+    : undefined;
 }
 
 function initializeScrollProgress(): void {

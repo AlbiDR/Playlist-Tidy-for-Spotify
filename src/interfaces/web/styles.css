@@ -59,23 +59,40 @@ button, a { -webkit-tap-highlight-color: transparent; }
   z-index: 0;
   top: 0;
   left: 0;
-  width: 240px;
-  height: 240px;
+  width: 290px;
+  height: 250px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgb(121 238 157 / 13%) 0, rgb(121 238 157 / 5%) 34%, transparent 70%);
+  background:
+    radial-gradient(circle at 42% 45%, rgb(121 238 157 / 9%) 0, transparent 52%),
+    radial-gradient(circle at 63% 58%, rgb(255 139 114 / 3%) 0, transparent 42%);
+  filter: blur(6px);
   opacity: 0;
   transform: translate3d(var(--pointer-x), var(--pointer-y), 0) translate(-50%, -50%);
-  transition: width 220ms ease, height 220ms ease, opacity 240ms ease, background 220ms ease;
+  transition: width 320ms ease, height 320ms ease, opacity 320ms ease;
   pointer-events: none;
   will-change: transform;
 }
 
-.pointer-light--visible { opacity: 0.72; }
+.pointer-light::after {
+  position: absolute;
+  inset: 22%;
+  border-radius: 44% 56% 51% 49%;
+  background: radial-gradient(circle at 35% 35%, rgb(179 248 199 / 8%), transparent 68%);
+  content: "";
+  animation: pointer-drift 5.8s ease-in-out infinite alternate;
+}
+
+.pointer-light--visible { opacity: 0.34; }
 
 .pointer-light--engaged {
-  width: 170px;
-  height: 170px;
-  background: radial-gradient(circle, rgb(121 238 157 / 18%) 0, rgb(121 238 157 / 6%) 38%, transparent 72%);
+  width: 225px;
+  height: 195px;
+  opacity: 0.46;
+}
+
+@keyframes pointer-drift {
+  from { transform: translate3d(-8%, 3%, 0) rotate(-8deg) scale(0.88); }
+  to { transform: translate3d(9%, -5%, 0) rotate(13deg) scale(1.12); }
 }
 
 .reading-progress {
