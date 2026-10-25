@@ -150,6 +150,10 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
       failures.push(`${browserName} did not protect an in-progress playlist write from accidental navigation.`);
     }
     await page.getByText("Sorted and verified 2 items with 1 write. Membership is unchanged.").waitFor();
+    await page.waitForFunction(() => {
+      const button = document.querySelector<HTMLButtonElement>("#connection-action");
+      return button !== null && !button.disabled;
+    });
     const idleLeaveWasPrevented = await page.evaluate(() => {
       const event = new Event("beforeunload", { cancelable: true });
       return !window.dispatchEvent(event);
