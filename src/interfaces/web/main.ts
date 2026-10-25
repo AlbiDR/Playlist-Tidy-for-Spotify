@@ -10,6 +10,7 @@ import type { PlaylistSortPreview } from "../../applications/preview/previewPlay
 import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
 import type { PlaylistView } from "../../core/playlist/types.js";
+import markUrl from "./favicon.svg";
 import "./styles.css";
 
 type ViewState =
@@ -38,10 +39,7 @@ function render(state: ViewState): void {
   app.innerHTML = `
     <header class="app-header">
       <a class="wordmark" href="./" aria-label="Playlist Tidy home">
-        <svg class="wordmark__symbol" viewBox="0 0 32 32" aria-hidden="true">
-          <path class="wordmark__symbol-p" d="M4 28V4h8.5C18 4 21.5 7.2 21.5 12s-3.5 8-9 8H9"/>
-          <path class="wordmark__symbol-t" d="M18 4h11M23.5 4v24"/>
-        </svg>
+        <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
     </header>

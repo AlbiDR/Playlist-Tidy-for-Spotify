@@ -90,22 +90,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .wordmark__symbol {
-  width: 29px;
-  height: 29px;
-  overflow: visible;
-  fill: none;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-}
-
-.wordmark__symbol-p {
-  stroke: var(--ink);
-  stroke-width: 3.5;
-}
-
-.wordmark__symbol-t {
-  stroke: var(--green);
-  stroke-width: 3;
+  flex: none;
+  width: 32px;
+  height: 32px;
 }
 
 .hero {
