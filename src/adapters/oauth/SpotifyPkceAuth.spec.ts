@@ -191,6 +191,31 @@ describe("SpotifyPkceAuth", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not let a URL error parameter bypass exchange of a verified authorization code", async () => {
+    const storage = new MemoryStorage();
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          access_token: "access-token",
+          token_type: "Bearer",
+          expires_in: 3600,
+          scope: SPOTIFY_SCOPES.join(" "),
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const auth = createAuth(storage, fetchMock);
+    const authorizationUrl = new URL(await auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI));
+    const state = authorizationUrl.searchParams.get("state") as string;
+
+    await expect(auth.completeAuthorizationCallback(
+      `${REDIRECT_URI}?code=authorization-code&error=access_denied&state=${encodeURIComponent(state)}`,
+      CLIENT_ID,
+      REDIRECT_URI,
+    )).resolves.toEqual({ status: "connected" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("rejects insecure non-loopback redirect addresses", async () => {
     const auth = createAuth(new MemoryStorage());
     await expect(

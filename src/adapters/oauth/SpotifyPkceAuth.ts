@@ -118,18 +118,18 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
         "Spotify login callback state was missing or did not match.",
       );
     }
-    if (callbackError !== null) {
+    if (code === null) {
       throw new PlaylistTidyError(
         "AUTHENTICATION_FAILED",
         callbackError === "access_denied"
           ? "Spotify access was not granted."
-          : `Spotify authorization failed: ${callbackError}.`,
+          : "Spotify login callback did not include an authorization code.",
       );
     }
-    if (code === null || verifier === null) {
+    if (verifier === null) {
       throw new PlaylistTidyError(
         "AUTHENTICATION_FAILED",
-        "Spotify login callback was missing its authorization code or PKCE verifier.",
+        "Spotify login callback was missing its PKCE verifier.",
       );
     }
 
