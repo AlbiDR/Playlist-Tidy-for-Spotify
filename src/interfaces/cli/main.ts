@@ -21,8 +21,20 @@ async function runScheduledSorting(): Promise<void> {
   const rotatedTokenPath = process.env.ROTATED_REFRESH_TOKEN_FILE?.trim();
   const auth = new SpotifyRefreshTokenAuth(clientId, refreshToken);
   const spotify = new SpotifyWebApiClient(auth, { readAttempts: 2 });
-  const playlistIds = await resolvePlaylistIds(spotify, requireEnvironment("PLAYLIST_IDS"));
-  if (process.env.PLAYLIST_IDS?.trim().toLowerCase() === "all") {
+  let playlistIds: readonly string[];
+  let discoveryDeferred = false;
+  try {
+    playlistIds = await resolvePlaylistIds(spotify, requireEnvironment("PLAYLIST_IDS"));
+  } catch (error) {
+    if (error instanceof PlaylistTidyError && error.code === "RATE_LIMITED") {
+      process.stdout.write(`Scheduled run deferred: ${error.message}\n`);
+      playlistIds = [];
+      discoveryDeferred = true;
+    } else {
+      throw error;
+    }
+  }
+  if (!discoveryDeferred && process.env.PLAYLIST_IDS?.trim().toLowerCase() === "all") {
     process.stdout.write(`${String(playlistIds.length)} owned playlists discovered for this run.\n`);
   }
   let completed = 0;
@@ -37,17 +49,17 @@ async function runScheduledSorting(): Promise<void> {
         `Playlist ${String(completed + failed)} of ${String(playlistIds.length)}: ${result.status}; ${String(result.writeCalls)} writes.\n`,
       );
     } catch (error) {
+      if (error instanceof PlaylistTidyError && error.code === "RATE_LIMITED") {
+        deferred = playlistIds.length - completed;
+        process.stdout.write(
+          `Spotify's rate-limit circuit breaker deferred ${String(deferred)} playlists to the next scheduled run: ${error.message}\n`,
+        );
+        break;
+      }
       failed += 1;
       process.stderr.write(
         `Playlist ${String(completed + failed)} of ${String(playlistIds.length)} failed: ${getSafeErrorMessage(error)}\n`,
       );
-      if (error instanceof PlaylistTidyError && error.code === "RATE_LIMITED") {
-        deferred = playlistIds.length - completed - failed;
-        process.stderr.write(
-          `Spotify's rate-limit circuit breaker deferred ${String(deferred)} remaining playlists to the next scheduled run.\n`,
-        );
-        break;
-      }
     }
     if (completed + failed < playlistIds.length) {
       await new Promise((resolve) => setTimeout(resolve, 1_000));
@@ -65,9 +77,11 @@ async function runScheduledSorting(): Promise<void> {
     await writeFile(rotatedTokenPath, rotatedToken, { encoding: "utf8", mode: 0o600 });
   }
   if (failed > 0) process.exitCode = 1;
-  process.stdout.write(
-    `${String(completed)} playlists sorted successfully; ${String(failed)} failed; ${String(deferred)} deferred.\n`,
-  );
+  if (!discoveryDeferred) {
+    process.stdout.write(
+      `${String(completed)} playlists sorted successfully; ${String(failed)} failed; ${String(deferred)} deferred.\n`,
+    );
+  }
 }
 
 async function enrollAutomation(): Promise<void> {
