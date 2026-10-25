@@ -101,34 +101,9 @@ function render(state: ViewState): void {
           </p>
           <div class="hero-actions">
             <button id="demo-action" class="connect-button" type="button">Try the interactive demo</button>
-            <button id="spotify-setup-action" class="secondary-button" type="button">Use with my Spotify app</button>
+            <button id="spotify-setup-action" class="secondary-button" type="button">Set up personal Spotify</button>
           </div>
-          <p class="demo-intro"><strong>No account needed.</strong> The demo uses clearly labelled sample tracks and the real Playlist Tidy planning engine. It never contacts Spotify.</p>
-          <div class="connection-row"${showConnection ? "" : " hidden"}>
-            <button id="connection-action" class="connect-button connect-button--compact" type="button" aria-describedby="connection-status connection-error personal-access-note"></button>
-            <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
-          </div>
-          <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
-          <p id="personal-access-note" class="session-note"${showConnection ? "" : " hidden"}><strong>Personal connection.</strong> Reloading or closing this page ends the Spotify access-token session.</p>
-          <details id="custom-app-setup" class="custom-app-setup"${showCustomApp ? " open" : ""}>
-            <summary>Advanced: connect your Spotify app</summary>
-            <div class="custom-app-setup__body">
-              <p>Real Spotify access is for personal and self-hosted use. Create an app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>, register the exact redirect URI below, and paste its public Client ID. Spotify requires the app owner to have Premium. Never paste a Client Secret.</p>
-              ${customClientId === undefined ? "" : '<p class="custom-app-setup__active"><strong>Active for this tab:</strong> Using your own Spotify Client ID.</p>'}
-              <p class="custom-app-setup__redirect"><strong>Redirect URI</strong><code id="custom-redirect-uri"></code></p>
-              <form id="custom-client-form" novalidate>
-                <label for="custom-client-id">Spotify Client ID</label>
-                <div class="custom-app-setup__controls">
-                  <input id="custom-client-id" name="spotify-client-id" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="custom-client-help custom-client-status" />
-                  <button class="custom-client-submit" type="submit">Connect with my Client ID</button>
-                </div>
-                <p id="custom-client-help" class="custom-app-setup__help">Stored only in this tab’s session storage so it survives Spotify’s redirect. A Client ID is public configuration, not a password.</p>
-                <p id="custom-client-status" class="custom-app-setup__status" role="alert"></p>
-              </form>
-              ${customClientId === undefined ? "" : '<button id="forget-custom-client" class="custom-client-forget" type="button">Forget my Client ID</button>'}
-            </div>
-          </details>
-          <p class="trust-note">Synthetic demo / optional PKCE login / reorder-only Spotify writes</p>
+          <p class="demo-intro"><strong>Start with the demo.</strong> It uses the real sorting engine with fictional tracks, no login, no storage, and no Spotify connection.</p>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
           <div class="sort-visual" aria-hidden="true">
@@ -190,33 +165,39 @@ function render(state: ViewState): void {
         </ol>
         <p class="purpose__boundary reveal"><strong>The boundary:</strong> track order changes; playlist membership and track metadata do not.</p>
       </section>
-      <section class="journeys" aria-labelledby="journeys-heading">
-        <header class="journeys__heading reveal">
-          <p class="eyebrow">Two honest ways to use it</p>
-          <h2 id="journeys-heading">Try it here.<br>Use Spotify from your own app.</h2>
-        </header>
-        <div class="journey reveal">
-          <p class="journey__index" aria-hidden="true">01</p>
-          <div>
-            <h3>Trying the public demo</h3>
-            <p>Anyone can preview, confirm, and verify a newest-first sort with synthetic data. It runs locally, contacts no service, stores nothing, and is always available.</p>
-          </div>
-          <p class="journey__outcome">Interactive · no account</p>
-        </div>
-        <div class="journey reveal reveal--delay-1">
-          <p class="journey__index" aria-hidden="true">02</p>
-          <div>
-            <h3>Using your Spotify playlists</h3>
-            <p>Bring the public Client ID from your own Spotify Development Mode app for a manual browser session, or clone the repository and enroll scheduled maintenance at 00:00 and 12:00 UTC.</p>
-            <a href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Read the self-hosting setup →</a>
-          </div>
-          <p class="journey__outcome">Personal · developer configured</p>
-        </div>
-      </section>
-      <section class="route reveal" aria-labelledby="route-heading">
+      <section id="personal-spotify" class="route reveal" aria-labelledby="route-heading">
         <div class="route__intro">
-          <p class="eyebrow">Inside this browser session</p>
-          <h2 id="route-heading">You stay in control<br>of every write.</h2>
+          <p class="eyebrow">Optional personal Spotify mode</p>
+          <h2 id="route-heading">Bring your own app.<br>Keep every write explicit.</h2>
+          <p class="route__summary">Spotify limits Development Mode apps to their owners and allowlisted users. To sort your real playlists here, use the public Client ID from an app you control. Never enter a Client Secret.</p>
+          <details id="custom-app-setup" class="custom-app-setup"${showCustomApp ? " open" : ""}>
+            <summary>${customClientId === undefined ? "Set up my Spotify app" : "My Spotify connection"}</summary>
+            <div class="custom-app-setup__body">
+              <p>Create an app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>, then register this exact redirect URI. Spotify requires the app owner to have Premium.</p>
+              <p class="custom-app-setup__redirect"><strong>Redirect URI</strong><code id="custom-redirect-uri"></code></p>
+              ${customClientId === undefined ? `
+                <form id="custom-client-form" novalidate>
+                  <label for="custom-client-id">Public Spotify Client ID</label>
+                  <div class="custom-app-setup__controls">
+                    <input id="custom-client-id" name="spotify-client-id" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="custom-client-help custom-client-status" />
+                    <button class="custom-client-submit" type="submit">Connect</button>
+                  </div>
+                  <p id="custom-client-help" class="custom-app-setup__help">Kept only in this tab’s session storage so it survives Spotify’s redirect. A Client ID is public configuration, not a password.</p>
+                  <p id="custom-client-status" class="custom-app-setup__status" role="alert"></p>
+                </form>
+              ` : `
+                <p class="custom-app-setup__active"><strong>Ready for this tab:</strong> Your public Client ID is configured.</p>
+                <div class="connection-row"${showConnection ? "" : " hidden"}>
+                  <button id="connection-action" class="connect-button connect-button--compact" type="button" aria-describedby="connection-status connection-error personal-access-note"></button>
+                  <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
+                </div>
+                <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
+                <p id="personal-access-note" class="session-note"><strong>Temporary session.</strong> Reloading or closing this page ends Spotify access.</p>
+                <button id="forget-custom-client" class="custom-client-forget" type="button">Forget my Client ID</button>
+              `}
+            </div>
+          </details>
+          <a class="route__self-host" href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Need automatic sorting? Read the self-hosting setup →</a>
         </div>
         <ol class="route__steps">
           <li class="route__step${state.kind === "connected" ? " route__step--complete" : " route__step--current"}" data-route-step="1">
@@ -257,10 +238,6 @@ function render(state: ViewState): void {
         <strong>Open source</strong>
         <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noopener noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Playlist Tidy repository</a>.</p>
       </div>
-      <div class="footer-credit">
-        <strong>Where automatic sorting lives</strong>
-        <p>Recurring sorting is powered by this repository’s <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/scheduled-sort.yml" target="_blank" rel="noopener noreferrer">Scheduled Playlist Sort workflow</a>, running inside each self-hosted copy, not this browser tab.</p>
-      </div>
       <p class="footer-legal"><a href="./privacy.html">Privacy &amp; safe use</a> · Independent project · Not affiliated with or endorsed by Spotify.</p>
     </footer>
   `;
@@ -268,13 +245,15 @@ function render(state: ViewState): void {
   const button = document.querySelector<HTMLButtonElement>("#connection-action");
   const status = document.querySelector<HTMLElement>("#connection-status");
   const error = document.querySelector<HTMLElement>("#connection-error");
-  if (button === null || status === null || error === null) {
+  if (customClientId !== undefined && (button === null || status === null || error === null)) {
     throw new Error("Connection controls are missing.");
   }
-  button.textContent = connection.buttonLabel;
-  button.disabled = connection.disabled;
-  status.textContent = connection.status;
-  error.textContent = state.kind === "error" ? state.message : "";
+  if (button !== null && status !== null && error !== null) {
+    button.textContent = connection.buttonLabel;
+    button.disabled = connection.disabled;
+    status.textContent = connection.status;
+    error.textContent = state.kind === "error" ? state.message : "";
+  }
   app.setAttribute("aria-busy", state.kind === "connecting" ? "true" : "false");
   initializeCustomClientControls();
   initializeDemo();
@@ -285,21 +264,22 @@ function render(state: ViewState): void {
     document.querySelector<HTMLButtonElement>("#demo-primary-action")?.focus({ preventScroll: true });
   });
   document.querySelector<HTMLButtonElement>("#spotify-setup-action")?.addEventListener("click", () => {
+    const section = document.querySelector<HTMLElement>("#personal-spotify");
     const setup = document.querySelector<HTMLDetailsElement>("#custom-app-setup");
     setup?.setAttribute("open", "");
-    setup?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
-    document.querySelector<HTMLInputElement>("#custom-client-id")?.focus({ preventScroll: true });
+    section?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    (document.querySelector<HTMLInputElement>("#custom-client-id") ?? setup)?.focus({ preventScroll: true });
   });
 
   if (state.kind === "connected") {
-    button.addEventListener("click", () => {
+    button?.addEventListener("click", () => {
       connectionEpoch += 1;
       auth.disconnect();
       render({ kind: "disconnected" });
     });
     renderPlaylistCatalog(state);
   } else if (state.kind === "disconnected" || state.kind === "error") {
-    button.addEventListener("click", () => void beginLogin());
+    button?.addEventListener("click", () => void beginLogin());
   }
   initializeMotion();
   initializeInteractions();
@@ -391,11 +371,20 @@ function initializeCustomClientControls(): void {
   const input = document.querySelector<HTMLInputElement>("#custom-client-id");
   const status = document.querySelector<HTMLElement>("#custom-client-status");
   const redirect = document.querySelector<HTMLElement>("#custom-redirect-uri");
-  if (form === null || input === null || status === null || redirect === null) {
+  if (redirect === null || (customClientId === undefined && (form === null || input === null || status === null))) {
     throw new Error("Custom Spotify application controls are missing.");
   }
   redirect.textContent = redirectUri;
-  input.value = customClientId ?? "";
+  document.querySelector<HTMLButtonElement>("#forget-custom-client")?.addEventListener("click", () => {
+    connectionEpoch += 1;
+    auth.disconnect();
+    sessionStorage.removeItem(CLIENT_ID_STORAGE_KEY);
+    customClientId = undefined;
+    clientId = "";
+    render({ kind: "config-missing" });
+  });
+  if (form === null || input === null || status === null) return;
+  input.value = "";
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const candidate = input.value.trim();
@@ -416,14 +405,6 @@ function initializeCustomClientControls(): void {
     void beginLogin();
   });
 
-  document.querySelector<HTMLButtonElement>("#forget-custom-client")?.addEventListener("click", () => {
-    connectionEpoch += 1;
-    auth.disconnect();
-    sessionStorage.removeItem(CLIENT_ID_STORAGE_KEY);
-    customClientId = undefined;
-    clientId = "";
-    render({ kind: "config-missing" });
-  });
 }
 
 function renderEmbeddedRefusal(): void {
