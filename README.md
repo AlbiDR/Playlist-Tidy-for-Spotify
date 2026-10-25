@@ -46,12 +46,6 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 4. **Confirm.** Start sorting only after an explicit user action.
 5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
 
-<p align="center">
-  <img src="https://albidr.github.io/PlaylistTidy/readme/mobile.png" width="320" alt="Playlist Tidy narrow layout showing the connect action and ordering visualization">
-</p>
-
-The narrow layout retains the same product hierarchy and safety contract; it does not collapse into a separate mobile experience.
-
 ## Behavioral contract
 
 | Concern | Guarantee |
