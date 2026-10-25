@@ -65,6 +65,14 @@ try {
               cookies: document.cookie,
               documentLanguage: document.documentElement.lang,
               duplicateIds: ids.filter((id, index) => ids.indexOf(id) !== index),
+              externalResourceHints: [...document.querySelectorAll<HTMLLinkElement>('link[rel="preconnect"], link[rel="dns-prefetch"]')]
+                .filter((link) => {
+                  try {
+                    return new URL(link.href).origin !== window.location.origin;
+                  } catch {
+                    return true;
+                  }
+                }).length,
               externalLinksWithoutProtection: [...document.querySelectorAll<HTMLAnchorElement>('a[target="_blank"]')]
                 .filter(({ relList }) => !relList.contains("noopener") || !relList.contains("noreferrer"))
                 .length,
@@ -96,6 +104,7 @@ try {
           if (facts.skippedHeadingLevel) failures.push(`${contextName} skips a heading level.`);
           if (facts.duplicateIds.length > 0) failures.push(`${contextName} has duplicate IDs: ${facts.duplicateIds.join(", ")}.`);
           if (facts.externalLinksWithoutProtection > 0) failures.push(`${contextName} has an unprotected external new-tab link.`);
+          if (facts.externalResourceHints > 0) failures.push(`${contextName} primes a third-party connection before user action.`);
           if (facts.unnamedControls > 0) failures.push(`${contextName} has ${String(facts.unnamedControls)} controls without accessible names.`);
           if (facts.imagesWithoutAlternatives > 0) failures.push(`${contextName} has an image without an alt attribute.`);
           if (facts.imagesWithoutDimensions > 0) failures.push(`${contextName} has an image without explicit dimensions.`);
