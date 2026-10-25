@@ -10,6 +10,7 @@ import sharp from "sharp";
 const outputRoot = fileURLToPath(new URL("../dist/web/", import.meta.url));
 const indexSource = readFileSync(join(outputRoot, "index.html"), "utf8");
 const privacySource = readFileSync(join(outputRoot, "privacy.html"), "utf8");
+const notFoundSource = readFileSync(join(outputRoot, "404.html"), "utf8");
 const failures: string[] = [];
 
 const requiredMarkup = [
@@ -52,6 +53,20 @@ for (const markup of [
   '<main id="main-content"',
 ]) {
   if (!privacySource.includes(markup)) failures.push(`privacy.html is missing ${markup}.`);
+}
+
+for (const markup of [
+  '<html lang="en">',
+  '<title>Page not found | Playlist Tidy</title>',
+  'name="robots" content="noindex, follow"',
+  'name="referrer" content="no-referrer"',
+  'http-equiv="Content-Security-Policy"',
+  '<main id="main-content"',
+  'href="/PlaylistTidy/assets/404-',
+  'href="/PlaylistTidy/"',
+  'href="/PlaylistTidy/privacy.html"',
+]) {
+  if (!notFoundSource.includes(markup)) failures.push(`404.html is missing ${markup}.`);
 }
 
 const manifest = JSON.parse(readFileSync(join(outputRoot, "site.webmanifest"), "utf8")) as Record<string, unknown>;

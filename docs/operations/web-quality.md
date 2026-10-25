@@ -42,6 +42,8 @@ The public privacy page is intentionally static and script-free. It documents th
 
 Production includes canonical, description, author, robot, Open Graph, and large-image social-card metadata together with a sitemap, robots policy, and scoped web manifest. Deterministically generated PNG icons cover Apple touch, 192-pixel, 512-pixel, and maskable install surfaces. A dedicated 1200 by 630 image covers link previews. Dimensions, public files, and both indexable documents are checked in the build artifact and again against the live deployment.
 
+Unknown routes return a branded, keyboard-accessible custom 404 document with recovery links, an explicit `noindex` directive, no JavaScript, and a restrictive Content Security Policy. Deployment health verifies both the HTTP 404 status and the recovery document served by GitHub Pages.
+
 ## Release gates
 
 `npm run verify` covers repository policy, strict TypeScript, linting, unit tests, deterministic image generation, production builds, asset sanitization, metadata, image dimensions, and performance budgets. `npm run audit:web` starts the built site in three browser engines and enforces the browser invariants above.

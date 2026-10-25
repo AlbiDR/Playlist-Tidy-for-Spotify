@@ -18,7 +18,7 @@
   "scripts": {
     "build": "npm run clean && npm run build:web && npm run build:cli",
     "build:cli": "tsc -p config/tsconfig.cli.json",
-    "build:web": "npm run generate:web-assets && vite build --config config/vite.config.ts && node scripts/sanitize-built-typography.ts && node scripts/verify-web-quality.ts",
+    "build:web": "npm run generate:web-assets && vite build --config config/vite.config.ts && node scripts/finalize-web-build.ts && node scripts/sanitize-built-typography.ts && node scripts/verify-web-quality.ts",
     "capture:readme": "node scripts/capture-readme.ts",
     "audit:web": "node scripts/audit-web.ts && node scripts/audit-user-journey.ts",
     "audit:dependencies": "npm audit --audit-level=high",
