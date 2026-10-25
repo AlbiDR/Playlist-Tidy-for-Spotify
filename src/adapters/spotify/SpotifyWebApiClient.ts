@@ -24,7 +24,7 @@ import {
 
 const API_BASE_URL = "https://api.spotify.com/v1";
 const PAGE_SIZE = 50;
-const DEFAULT_READ_ATTEMPTS = 3;
+const DEFAULT_READ_ATTEMPTS = 5;
 const DEFAULT_COHERENT_READ_ATTEMPTS = 3;
 const MAX_RATE_LIMIT_DELAY_MS = 60_000;
 
@@ -48,6 +48,7 @@ export class SpotifyWebApiClient
   private readonly readAttempts: number;
   private readonly coherentReadAttempts: number;
   private currentUserRequest: Promise<SpotifyUser> | undefined;
+  private rateLimitPause: Promise<void> | undefined;
 
   public constructor(
     private readonly tokens: SpotifyTokenProvider,
@@ -186,7 +187,8 @@ export class SpotifyWebApiClient
 
   private async readJson(path: string): Promise<unknown> {
     let refreshed = false;
-    for (let attempt = 1; attempt <= this.readAttempts; attempt += 1) {
+    let transientFailures = 0;
+    for (;;) {
       try {
         const response = await this.authorizedFetch(path, { method: "GET" });
         if (response.status === 401 && !refreshed) {
@@ -195,24 +197,54 @@ export class SpotifyWebApiClient
           continue;
         }
         if (response.status === 429) {
-          await this.sleep(getRetryDelay(response));
+          transientFailures += 1;
+          if (transientFailures >= this.readAttempts) {
+            throw new PlaylistTidyError(
+              "RATE_LIMITED",
+              "Spotify kept rate limiting playlist reads. Try again after the current Retry-After window.",
+            );
+          }
+          await this.pauseForRateLimit(getRetryDelay(response));
           continue;
         }
         if (response.status >= 500) {
-          await this.sleep(2 ** (attempt - 1) * 100);
+          transientFailures += 1;
+          if (transientFailures >= this.readAttempts) {
+            throw new PlaylistTidyError(
+              "TRANSIENT_READ_FAILED",
+              `Spotify playlist reads remained unavailable after ${String(this.readAttempts)} attempts (HTTP ${String(response.status)}).`,
+            );
+          }
+          await this.sleep(2 ** (transientFailures - 1) * 250);
           continue;
         }
         if (!response.ok) throw createHttpError(response.status, "Spotify read request failed");
         return await response.json();
       } catch (error) {
         if (error instanceof PlaylistTidyError) throw error;
-        if (attempt === this.readAttempts) {
-          throw new PlaylistTidyError("TRANSIENT_READ_FAILED", "Spotify read failed after bounded retries.", { cause: error });
+        transientFailures += 1;
+        if (transientFailures >= this.readAttempts) {
+          throw new PlaylistTidyError(
+            "TRANSIENT_READ_FAILED",
+            `Spotify playlist reads failed after ${String(this.readAttempts)} network attempts.`,
+            { cause: error },
+          );
         }
-        await this.sleep(2 ** (attempt - 1) * 100);
+        await this.sleep(2 ** (transientFailures - 1) * 250);
       }
     }
-    throw new PlaylistTidyError("RETRY_EXHAUSTED", "Spotify read retry budget was exhausted.");
+  }
+
+  private async pauseForRateLimit(milliseconds: number): Promise<void> {
+    if (this.rateLimitPause === undefined) {
+      this.rateLimitPause = this.sleep(milliseconds);
+    }
+    const pause = this.rateLimitPause;
+    try {
+      await pause;
+    } finally {
+      if (this.rateLimitPause === pause) this.rateLimitPause = undefined;
+    }
   }
 
   private async writeJson(path: string, body: Readonly<Record<string, unknown>>): Promise<unknown> {

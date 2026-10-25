@@ -110,6 +110,47 @@ describe("SpotifyWebApiClient", () => {
     expect(localTokens.refreshAccessToken).toHaveBeenCalledOnce();
   });
 
+  it("does not charge token renewal against the transient retry allowance", async () => {
+    const localTokens: SpotifyTokenProvider = {
+      getAccessToken: vi.fn(async () => "token"),
+      refreshAccessToken: vi.fn(async () => "new-token"),
+    };
+    const responses = [jsonResponse({}, 401), jsonResponse({ id: "owner" })];
+    const client = new SpotifyWebApiClient(localTokens, {
+      fetch: vi.fn(async () => responses.shift() as Response),
+      readAttempts: 1,
+    });
+
+    await expect(client.getCurrentUser()).resolves.toEqual({ id: "owner" });
+  });
+
+  it("reports persistent read rate limiting instead of a generic exhausted budget", async () => {
+    const sleep = vi.fn(async () => undefined);
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => jsonResponse({}, 429, { "Retry-After": "2" })),
+      readAttempts: 2,
+      sleep,
+    });
+
+    await expect(client.getCurrentUser()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "RATE_LIMITED",
+    });
+    expect(sleep).toHaveBeenCalledOnce();
+    expect(sleep).toHaveBeenCalledWith(2_000);
+  });
+
+  it("reports the final Spotify server status after exhausting read recovery", async () => {
+    const client = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => jsonResponse({}, 503)),
+      readAttempts: 2,
+      sleep: vi.fn(async () => undefined),
+    });
+
+    await expect(client.getCurrentUser()).rejects.toThrow(
+      "Spotify playlist reads remained unavailable after 2 attempts (HTTP 503).",
+    );
+  });
+
   it("honors a bounded Retry-After before retrying a rejected write", async () => {
     const sleep = vi.fn(async () => undefined);
     const responses = [
