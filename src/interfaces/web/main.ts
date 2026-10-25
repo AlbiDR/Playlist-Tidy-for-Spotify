@@ -62,8 +62,9 @@ function render(state: ViewState): void {
           <p class="eyebrow">Order for your listening life</p>
           <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
           <p class="summary">
-            Connect for this browser session, choose the playlists you own, and decide
-            exactly when to sort. Nothing runs in the background from this website.
+            Playlist Tidy sorts the tracks inside playlists you own by the date each track
+            was added, with the newest at the top. It does not delete tracks, edit music,
+            or rearrange the playlists in your library.
           </p>
           <div class="connection-row">
             <button id="connection-action" class="connect-button" type="button"></button>
@@ -87,16 +88,38 @@ function render(state: ViewState): void {
           </div>
         </div>
       </section>
+      <section class="purpose" aria-labelledby="purpose-heading">
+        <header class="purpose__heading reveal">
+          <p class="eyebrow">What Playlist Tidy does</p>
+          <h2 id="purpose-heading">One useful job.<br>Handled carefully.</h2>
+          <p>Spotify records when every track joined a playlist. Playlist Tidy uses that date to restore a clear newest-first order.</p>
+        </header>
+        <ol class="purpose__steps">
+          <li class="purpose__step reveal">
+            <span>01</span>
+            <div><h3>Reads the full playlist</h3><p>It loads every track and its Spotify <code>added_at</code> value. Nothing changes during this step.</p></div>
+          </li>
+          <li class="purpose__step reveal reveal--delay-1">
+            <span>02</span>
+            <div><h3>Shows the required moves</h3><p>You see how many reorder operations are needed before deciding whether to continue.</p></div>
+          </li>
+          <li class="purpose__step reveal reveal--delay-2">
+            <span>03</span>
+            <div><h3>Reorders and verifies</h3><p>After approval, it moves tracks into newest-first order and confirms that every original track remains.</p></div>
+          </li>
+        </ol>
+        <p class="purpose__boundary reveal"><strong>The boundary:</strong> track order changes; playlist membership and track metadata do not.</p>
+      </section>
       <section class="journeys" aria-labelledby="journeys-heading">
         <header class="journeys__heading reveal">
           <p class="eyebrow">Two ways to use it</p>
-          <h2 id="journeys-heading">Use the website now.<br>Automate your own copy.</h2>
+          <h2 id="journeys-heading">Sort once here.<br>Keep sorting from your own copy.</h2>
         </header>
         <div class="journey reveal">
           <p class="journey__index" aria-hidden="true">01</p>
           <div>
             <h3>Visiting the public website</h3>
-            <p>Connect, preview, and confirm each sort yourself. Your access token stays in memory and disappears when the page reloads. There is no recurring job attached to your account.</p>
+            <p>Anyone can connect Spotify, choose owned playlists, preview the work, and approve a sort. Each visit is manual. Your access token disappears when the page reloads.</p>
           </div>
           <p class="journey__outcome">Manual · works immediately</p>
         </div>
@@ -104,7 +127,7 @@ function render(state: ViewState): void {
           <p class="journey__index" aria-hidden="true">02</p>
           <div>
             <h3>Running scheduled maintenance</h3>
-            <p>Clone the repository and complete one local enrollment. Your own GitHub Actions secret can then sort playlists every six hours without leaving this page open.</p>
+            <p>The public website cannot keep sorting after you leave. For recurring sorting, clone the repository and complete one local enrollment. GitHub Actions can then maintain your chosen playlists every six hours.</p>
             <a href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Read the self-hosting setup →</a>
           </div>
           <p class="journey__outcome">Automatic · self-hosted</p>
