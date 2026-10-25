@@ -38,4 +38,3 @@ jobs:
         run: npm run verify:deployment
         env:
           EXPECTED_RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-          EXPECTED_SPOTIFY_WEB_CLIENT_ID: ${{ vars.SPOTIFY_WEB_CLIENT_ID }}
