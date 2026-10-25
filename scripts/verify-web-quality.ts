@@ -12,6 +12,7 @@ const indexSource = readFileSync(join(outputRoot, "index.html"), "utf8");
 const privacySource = readFileSync(join(outputRoot, "privacy.html"), "utf8");
 const notFoundSource = readFileSync(join(outputRoot, "404.html"), "utf8");
 const failures: string[] = [];
+const expectedReleaseRevision = process.env.PLAYLIST_TIDY_RELEASE_SHA?.trim();
 
 const requiredMarkup = [
   '<html lang="en">',
@@ -42,6 +43,22 @@ for (const name of [
   "social-card.png",
 ]) {
   if (!existsInOutput(name)) failures.push(`${name} is missing from the production output.`);
+}
+
+if (expectedReleaseRevision !== undefined) {
+  const releasePath = join(outputRoot, "release.json");
+  if (!existsInOutput("release.json")) {
+    failures.push("release.json is missing from the attested production output.");
+  } else {
+    try {
+      const release = JSON.parse(readFileSync(releasePath, "utf8")) as { readonly revision?: unknown };
+      if (release.revision !== expectedReleaseRevision) {
+        failures.push("release.json does not identify the requested deployment revision.");
+      }
+    } catch {
+      failures.push("release.json is not valid JSON.");
+    }
+  }
 }
 
 for (const markup of [

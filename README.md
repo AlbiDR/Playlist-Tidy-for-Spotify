@@ -149,11 +149,13 @@ The browser can preview and sort multiple selected playlists in one bounded queu
 Scheduled sorting is a **self-hosted repository feature**, not a service silently enabled by the public website. To maintain your own Spotify account without returning to the browser, fork or clone the repository and enroll that repository once from a trusted local machine with GitHub CLI already authenticated:
 
 ```sh
-SPOTIFY_CLIENT_ID=cc92650c2f3a452ca396fb3fc6e372cb \
+SPOTIFY_CLIENT_ID=your_spotify_client_id \
   npm run cli -- enroll
 ```
 
-Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. By default, `PLAYLIST_IDS` is set to `all`: every scheduled run discovers every playlist currently owned by the authenticated account, so newly created playlists join automatically. Followed and collaborative playlists owned by someone else are excluded.
+Replace `your_spotify_client_id` with the public Client ID of an app owned by the maintainer of the fork. Do not reuse the example project's hosted app. To keep public website traffic and background automation from competing for one Spotify Development Mode quota, use apps owned by different developer accounts; a second Client ID under the same developer account still shares that account's quota.
+
+Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. The command stores the automation app identity as the `SPOTIFY_AUTOMATION_CLIENT_ID` repository variable and never changes the separate `SPOTIFY_WEB_CLIENT_ID` used by the Pages deployment. By default, `PLAYLIST_IDS` is set to `all`: every scheduled run discovers every playlist currently owned by the authenticated account, so newly created playlists join automatically. Followed and collaborative playlists owned by someone else are excluded.
 
 To maintain only a fixed subset instead, enroll with `--playlists=PLAYLIST_ID_ONE,PLAYLIST_ID_TWO` or change the `PLAYLIST_IDS` repository variable later.
 
@@ -181,7 +183,7 @@ Spotify Development Mode may invalidate an automation credential after a later w
 
 GitHub Pages also serves a branded, script-free recovery page for unknown routes. The deployment-health workflow proves that missing URLs retain the correct HTTP 404 status instead of becoming misleading successful responses.
 
-GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
+GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. The artifact publishes that full SHA in `release.json`; deployment health compares it with the triggering revision and verifies the expected Spotify web Client ID and quota-recovery controls in the live entry bundle. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
 Scheduled Verify runs rebuild, recheck, recapture, and redeploy the site every Wednesday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs at 00:00 and 12:00 UTC once enrolled. These jobs never author commits, preserving the human-only contributor history.
 
