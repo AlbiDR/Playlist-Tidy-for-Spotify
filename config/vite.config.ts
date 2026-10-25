@@ -20,6 +20,7 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       input: {
+        "404": resolve(webRoot, "404.html"),
         index: resolve(webRoot, "index.html"),
         privacy: resolve(webRoot, "privacy.html"),
       },

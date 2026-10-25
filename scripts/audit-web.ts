@@ -24,6 +24,12 @@ const routes = [
     reciprocalLink: "./",
     requiredText: "Spotify limits it to five explicitly allowlisted users",
   },
+  {
+    path: "/404.html",
+    title: "Page not found | Playlist Tidy",
+    reciprocalLink: "/PlaylistTidy/",
+    requiredText: "That page does not exist",
+  },
 ] as const;
 const viewports = [
   { width: 320, height: 720 },
@@ -48,6 +54,7 @@ try {
         for (const route of routes) {
           const context = await browser.newContext({ colorScheme: "dark", reducedMotion: "reduce", viewport });
           const page = await context.newPage();
+          if (route.path === "/404.html") await mapProductionRootToPreview(page);
           const thirdPartyRequests: string[] = [];
           page.on("request", (request) => {
             const requestOrigin = new URL(request.url()).origin;
@@ -192,6 +199,14 @@ async function auditAxe(page: Page, contextName: string): Promise<void> {
   }
 }
 
+async function mapProductionRootToPreview(page: Page): Promise<void> {
+  await page.route(`${origin}/PlaylistTidy/**`, async (route) => {
+    const target = new URL(route.request().url());
+    target.pathname = target.pathname.replace(/^\/PlaylistTidy/u, "");
+    await route.continue({ url: target.href });
+  });
+}
+
 if (failures.length > 0) {
   process.stderr.write(`Browser audit failed:\n${failures.map((failure) => `- ${failure}`).join("\n")}\n`);
   process.exitCode = 1;
@@ -246,6 +261,7 @@ async function auditTextResize(browser: import("playwright").Browser): Promise<v
     });
     try {
       const page = await context.newPage();
+      if (route.path === "/404.html") await mapProductionRootToPreview(page);
       await page.goto(`${origin}${route.path}`, { waitUntil: "networkidle" });
       await page.evaluate(() => {
         document.documentElement.style.fontSize = "200%";
@@ -301,6 +317,7 @@ async function auditKeyboardNavigation(browser: import("playwright").Browser): P
     });
     try {
       const page = await context.newPage();
+      if (route.path === "/404.html") await mapProductionRootToPreview(page);
       await page.goto(`${origin}${route.path}`, { waitUntil: "networkidle" });
       const expectedCount = await page.locator(
         "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
