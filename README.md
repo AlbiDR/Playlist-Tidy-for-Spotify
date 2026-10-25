@@ -174,9 +174,9 @@ Spotify Development Mode may invalidate an automation credential after a later w
 
 `npm run audit:web` adds real Chromium, Firefox, and WebKit passes across the application and privacy page for landmarks, heading order, keyboard skip navigation, visible focus, accessible control names, image alternatives and dimensions, protected external links, pre-authorization storage and network activity, reduced-motion behavior, forced-colors behavior, responsive overflow, duplicate IDs, no-JavaScript fallback, and browser console failures. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
 
-GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
+GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
-Scheduled maintenance rebuilds, verifies, recaptures, and redeploys the site every Monday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
+Scheduled Verify runs rebuild, recheck, recapture, and redeploy the site every Wednesday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
 
 ## Repository map
 
