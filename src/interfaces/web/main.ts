@@ -190,7 +190,7 @@ function render(state: ViewState): void {
         <strong>Where automatic sorting lives</strong>
         <p>Recurring sorting is powered by this repository’s <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/scheduled-sort.yml" target="_blank" rel="noopener noreferrer">Scheduled Playlist Sort workflow</a>, running inside each self-hosted copy, not this browser tab.</p>
       </div>
-      <p class="footer-legal">Independent project · Not affiliated with or endorsed by Spotify.</p>
+      <p class="footer-legal"><a href="./privacy.html">Privacy &amp; safe use</a> · Independent project · Not affiliated with or endorsed by Spotify.</p>
     </footer>
   `;
 

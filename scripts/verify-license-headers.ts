@@ -14,6 +14,10 @@ const fix = process.argv.includes("--fix");
 const ignoredDirectories = new Set([".git", "coverage", "dist", "dist-cli", "node_modules"]);
 const licenseNoticeExemptFiles = new Set([
   "LICENSE",
+  "src/interfaces/web/public/app-icon-192.png",
+  "src/interfaces/web/public/app-icon-512.png",
+  "src/interfaces/web/public/apple-touch-icon.png",
+  "src/interfaces/web/public/social-card.png",
 ]);
 const strictJsonFiles = new Set([
   "package.json",
@@ -47,8 +51,10 @@ const requiredFiles = [
   "README.md",
   "scripts/verify-deployment.ts",
   "scripts/audit-web.ts",
+  "scripts/generate-web-assets.ts",
   "scripts/verify-web-quality.ts",
   "src/interfaces/web/index.html",
+  "src/interfaces/web/privacy.html",
   "src/interfaces/cli/main.ts",
 ];
 

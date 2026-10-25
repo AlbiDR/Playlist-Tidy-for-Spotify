@@ -5,9 +5,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import sharp from "sharp";
 
 const outputRoot = fileURLToPath(new URL("../dist/web/", import.meta.url));
 const indexSource = readFileSync(join(outputRoot, "index.html"), "utf8");
+const privacySource = readFileSync(join(outputRoot, "privacy.html"), "utf8");
 const failures: string[] = [];
 
 const requiredMarkup = [
@@ -19,7 +21,8 @@ const requiredMarkup = [
   'rel="manifest" href="./site.webmanifest"',
   'property="og:title"',
   'property="og:description"',
-  'name="twitter:card"',
+  'property="og:image" content="https://albidr.github.io/PlaylistTidy/social-card.png"',
+  'name="twitter:card" content="summary_large_image"',
   'http-equiv="Content-Security-Policy"',
   '<div id="app">',
 ];
@@ -27,14 +30,39 @@ for (const markup of requiredMarkup) {
   if (!indexSource.includes(markup)) failures.push(`index.html is missing ${markup}.`);
 }
 
-for (const name of ["app-icon.svg", "robots.txt", "site.webmanifest", "sitemap.xml"]) {
+for (const name of [
+  "app-icon.svg",
+  "app-icon-192.png",
+  "app-icon-512.png",
+  "apple-touch-icon.png",
+  "robots.txt",
+  "site.webmanifest",
+  "sitemap.xml",
+  "social-card.png",
+]) {
   if (!existsInOutput(name)) failures.push(`${name} is missing from the production output.`);
+}
+
+for (const markup of [
+  '<html lang="en">',
+  '<title>Privacy &amp; safe use | Playlist Tidy</title>',
+  'rel="canonical" href="https://albidr.github.io/PlaylistTidy/privacy.html"',
+  'name="referrer" content="no-referrer"',
+  'http-equiv="Content-Security-Policy"',
+  '<main id="main-content"',
+]) {
+  if (!privacySource.includes(markup)) failures.push(`privacy.html is missing ${markup}.`);
 }
 
 const manifest = JSON.parse(readFileSync(join(outputRoot, "site.webmanifest"), "utf8")) as Record<string, unknown>;
 if (manifest.start_url !== "/PlaylistTidy/" || manifest.scope !== "/PlaylistTidy/") {
   failures.push("The web manifest must stay scoped to the GitHub Pages project path.");
 }
+
+await verifyImageDimensions("app-icon-192.png", 192, 192);
+await verifyImageDimensions("app-icon-512.png", 512, 512);
+await verifyImageDimensions("apple-touch-icon.png", 180, 180);
+await verifyImageDimensions("social-card.png", 1200, 630);
 
 const budgets = new Map([
   [".js", 30 * 1024],
@@ -76,4 +104,15 @@ function collectFiles(directory: string): string[] {
     const path = join(directory, entry.name);
     return entry.isDirectory() ? collectFiles(path) : entry.isFile() ? [path] : [];
   });
+}
+
+async function verifyImageDimensions(name: string, width: number, height: number): Promise<void> {
+  try {
+    const metadata = await sharp(join(outputRoot, name)).metadata();
+    if (metadata.width !== width || metadata.height !== height) {
+      failures.push(`${name} must be ${String(width)}x${String(height)} pixels.`);
+    }
+  } catch {
+    failures.push(`${name} could not be inspected as an image.`);
+  }
 }

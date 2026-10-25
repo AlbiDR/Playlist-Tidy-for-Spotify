@@ -6,6 +6,8 @@ const failures: string[] = [];
 
 const documentResponse = await request(new URL(`?health=${String(Date.now())}`, deploymentUrl));
 const documentSource = documentResponse === undefined ? "" : await documentResponse.text();
+const privacyResponse = await request(new URL(`privacy.html?health=${String(Date.now())}`, deploymentUrl));
+const privacySource = privacyResponse === undefined ? "" : await privacyResponse.text();
 const assetReferences = [...documentSource.matchAll(/(?:href|src)="\.\/(assets\/[^"?#]+)"/gu)]
   .map((match) => match[1])
   .filter((asset): asset is string => asset !== undefined);
@@ -31,7 +33,24 @@ for (const requiredMarkup of [
 ]) {
   if (!documentSource.includes(requiredMarkup)) failures.push(`index.html is missing ${requiredMarkup}.`);
 }
-for (const publicAsset of ["app-icon.svg", "robots.txt", "site.webmanifest", "sitemap.xml"]) {
+for (const requiredMarkup of [
+  '<title>Privacy &amp; safe use | Playlist Tidy</title>',
+  'rel="canonical" href="https://albidr.github.io/PlaylistTidy/privacy.html"',
+  'name="referrer" content="no-referrer"',
+  'http-equiv="Content-Security-Policy"',
+]) {
+  if (!privacySource.includes(requiredMarkup)) failures.push(`privacy.html is missing ${requiredMarkup}.`);
+}
+for (const publicAsset of [
+  "app-icon.svg",
+  "app-icon-192.png",
+  "app-icon-512.png",
+  "apple-touch-icon.png",
+  "robots.txt",
+  "site.webmanifest",
+  "sitemap.xml",
+  "social-card.png",
+]) {
   await request(new URL(publicAsset, deploymentUrl));
 }
 

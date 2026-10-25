@@ -2,6 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { configDefaults, defineConfig } from "vitest/config";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -17,6 +18,12 @@ export default defineConfig({
     emptyOutDir: true,
     minify: "esbuild",
     sourcemap: false,
+    rollupOptions: {
+      input: {
+        index: resolve(webRoot, "index.html"),
+        privacy: resolve(webRoot, "privacy.html"),
+      },
+    },
   },
   preview: {
     headers: getLocalSecurityHeaders(),

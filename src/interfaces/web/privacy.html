@@ -1,0 +1,105 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="AlbiDR" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0c0f0c" />
+    <meta
+      name="description"
+      content="How Playlist Tidy handles Spotify authorization, playlist data, browser storage, and safe use."
+    />
+    <link rel="canonical" href="https://albidr.github.io/PlaylistTidy/privacy.html" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Playlist Tidy for Spotify" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Privacy &amp; safe use | Playlist Tidy" />
+    <meta property="og:description" content="A plain-language account of what Playlist Tidy reads, changes, stores, and never collects." />
+    <meta property="og:url" content="https://albidr.github.io/PlaylistTidy/privacy.html" />
+    <meta property="og:image" content="https://albidr.github.io/PlaylistTidy/social-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Playlist Tidy interface with tracks arranged newest first" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Privacy &amp; safe use | Playlist Tidy</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <header class="app-header">
+      <a class="wordmark" href="./" aria-label="Playlist Tidy home">
+        <img class="wordmark__symbol" src="./favicon.svg" alt="" width="32" height="32" />
+        <span>Playlist Tidy <small>for Spotify</small></span>
+      </a>
+      <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Source &amp; security ↗</a>
+    </header>
+    <main id="main-content" class="policy" tabindex="-1">
+      <header class="policy__hero">
+        <p class="eyebrow">Privacy &amp; safe use</p>
+        <h1>Nothing hidden.<br><em>Nothing retained.</em></h1>
+        <p class="summary">Playlist Tidy is a static, open-source browser application. It has no application server, database, analytics, advertising, or user account system.</p>
+        <p class="policy__updated">Effective 25 October 2026</p>
+      </header>
+
+      <section class="policy__section" aria-labelledby="plain-language-heading">
+        <h2 id="plain-language-heading">The plain-language version</h2>
+        <div class="policy__facts">
+          <article><strong>Read</strong><p>Your Spotify identity and the contents of playlists you own, only after you authorize access.</p></article>
+          <article><strong>Change</strong><p>Track order inside a playlist you own, only after preview and explicit confirmation.</p></article>
+          <article><strong>Store</strong><p>A one-time login verifier in session storage during the Spotify redirect. It is then deleted.</p></article>
+          <article><strong>Never collect</strong><p>No analytics, advertising identifiers, cookies, form submissions, or application database records.</p></article>
+        </div>
+      </section>
+
+      <section class="policy__section" aria-labelledby="authorization-heading">
+        <h2 id="authorization-heading">Spotify authorization</h2>
+        <p>Connection uses Spotify Authorization Code with PKCE. Playlist Tidy requests permission to read private and collaborative playlists and to reorder public and private playlists. It refuses to sort a playlist not owned by the authenticated account.</p>
+        <p>The access token exists only in this page's memory. It is not written to local storage, a cookie, a URL, the page, or an application server. Reloading or closing the page removes it. If Spotify returns a refresh token to the public website, the website discards it.</p>
+      </section>
+
+      <section class="policy__section" aria-labelledby="data-heading">
+        <h2 id="data-heading">Playlist data</h2>
+        <p>Playlist names, item identities, addition dates, ownership, and snapshot identifiers travel directly between your browser and Spotify. They are processed in memory to calculate and verify an ordering plan. The public website does not transmit that data to the project owner.</p>
+        <p>Sorting uses Spotify's reorder operation only. It does not add, remove, replace, create, or delete playlist items. A final read verifies both membership and order before success is reported.</p>
+      </section>
+
+      <section class="policy__section" aria-labelledby="third-parties-heading">
+        <h2 id="third-parties-heading">Infrastructure and third parties</h2>
+        <p>GitHub Pages serves the static files and may process ordinary network information under GitHub's own policies. Spotify processes authorization and API requests under Spotify's policies. Playlist Tidy includes no third-party scripts, analytics, session replay, advertising, or social embeds.</p>
+        <p>The self-hosted scheduled workflow described in the repository is separate from this public browser session. Its credentials remain in the repository owner's encrypted GitHub Actions secrets.</p>
+      </section>
+
+      <section class="policy__section" aria-labelledby="control-heading">
+        <h2 id="control-heading">Your control</h2>
+        <p>You can end the browser session by reloading, closing the page, or selecting Disconnect. You can also remove Playlist Tidy from the connected-apps area of your Spotify account. Because the public website keeps no account or database, it has no retained profile or playlist record to export, correct, or delete.</p>
+      </section>
+
+      <section class="policy__section" aria-labelledby="safe-use-heading">
+        <h2 id="safe-use-heading">Safe use and limitations</h2>
+        <p>Preview the proposed move count before sorting. For an early build, begin with a playlist you can restore. Keep the tab open until verification finishes, and avoid editing the same playlist elsewhere during a sort.</p>
+        <p>The software is provided under the GPL-3.0-only license without a service warranty. The project is independent and is not affiliated with or endorsed by Spotify.</p>
+      </section>
+
+      <section class="policy__section" aria-labelledby="contact-heading">
+        <h2 id="contact-heading">Questions and security reports</h2>
+        <p>For a privacy question, open a repository discussion or contact <a href="https://github.com/AlbiDR" target="_blank" rel="noopener noreferrer">AlbiDR through GitHub</a>. Report a vulnerability privately through <a href="https://github.com/AlbiDR/PlaylistTidy/security/advisories/new" target="_blank" rel="noopener noreferrer">GitHub's security advisory form</a>. Never include Spotify tokens, authorization codes, playlist identifiers, or private playlist contents in a public report.</p>
+      </section>
+    </main>
+    <footer class="policy-footer">
+      <p><a href="./">Return to Playlist Tidy</a> · <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">View source</a></p>
+      <p class="footer-legal">Independent project · Not affiliated with or endorsed by Spotify.</p>
+    </footer>
+  </body>
+</html>

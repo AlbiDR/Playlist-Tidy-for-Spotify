@@ -19,6 +19,7 @@
   <a href="https://albidr.github.io/PlaylistTidy/">Open app</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#safety-by-design">Safety</a> ·
+  <a href="https://albidr.github.io/PlaylistTidy/privacy.html">Privacy</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#development">Develop</a>
 </p>
@@ -83,10 +84,12 @@ These are executable invariants, not interface promises. Their authoritative def
 - Access tokens exist in memory only and disappear on reload.
 - The one-time PKCE verifier and OAuth state use `sessionStorage` only during the redirect round trip and are deleted afterward.
 - Refresh tokens returned to the website are discarded.
+- The public website has no analytics, advertising, cookies, session replay, application server, or user database.
 - Spotify access is limited to the scopes needed to read private playlists and reorder owned playlists.
 - Playlist identifiers, OAuth artifacts, tokens, and private playlist contents must never enter Git history or public issues.
 
 Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/AlbiDR/PlaylistTidy/security/advisories/new).
+The public [privacy and safe-use notice](https://albidr.github.io/PlaylistTidy/privacy.html) documents the browser data path, infrastructure boundary, user controls, and known limitations in plain language.
 
 ## Architecture
 
@@ -165,10 +168,11 @@ Spotify Development Mode may invalidate an automation credential after a later w
 4. Enforce architectural and code-quality lint rules.
 5. Run the complete automated test suite.
 6. Produce clean web and CLI-library builds.
-7. Verify production metadata, public discovery files, and compressed asset budgets.
-8. Sanitize the deployment artifact against prohibited typography.
+7. Generate and validate install icons and 1200 by 630 social preview artwork.
+8. Verify production metadata, public discovery files, and compressed asset budgets.
+9. Sanitize the deployment artifact against prohibited typography.
 
-`npm run audit:web` adds real Chromium, Firefox, and WebKit passes for landmarks, keyboard skip navigation, accessible control names, protected external links, reduced-motion behavior, responsive overflow, duplicate IDs, and browser console failures. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
+`npm run audit:web` adds real Chromium, Firefox, and WebKit passes across the application and privacy page for landmarks, heading order, keyboard skip navigation, visible focus, accessible control names, image alternatives and dimensions, protected external links, pre-authorization storage and network activity, reduced-motion behavior, forced-colors behavior, responsive overflow, duplicate IDs, no-JavaScript fallback, and browser console failures. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
 
 GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
