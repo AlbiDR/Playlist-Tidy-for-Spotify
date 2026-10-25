@@ -153,6 +153,7 @@ try {
       if (browserName === "Chromium") {
         await auditNoScriptFallback(browser);
         await auditForcedColors(browser);
+        await auditInteractionField(browser);
       }
     } finally {
       await browser.close();
@@ -202,6 +203,64 @@ async function auditForcedColors(browser: import("playwright").Browser): Promise
     }));
     if (facts.horizontalOverflow > 1) failures.push("Chromium forced-colors mode overflows horizontally.");
     if (facts.progressDisplay !== "none") failures.push("Chromium forced-colors mode retains decorative progress effects.");
+  } finally {
+    await context.close();
+  }
+}
+
+async function auditInteractionField(browser: import("playwright").Browser): Promise<void> {
+  const context = await browser.newContext({
+    colorScheme: "dark",
+    reducedMotion: "no-preference",
+    viewport: { width: 1440, height: 1024 },
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    await page.mouse.move(320, 280);
+    await page.waitForTimeout(80);
+    const bloomCount = await page.locator(".pointer-light__bloom").count();
+    if (bloomCount !== 3) {
+      failures.push(`The interaction field rendered ${String(bloomCount)} internal blooms instead of 3.`);
+    }
+
+    const field = page.locator(".pointer-light");
+    const morphBefore = await page.locator(".pointer-light__bloom--green").evaluate(
+      (element) => getComputedStyle(element).clipPath,
+    );
+    await page.waitForTimeout(220);
+    const morphAfter = await page.locator(".pointer-light__bloom--green").evaluate(
+      (element) => getComputedStyle(element).clipPath,
+    );
+    const polygonAnimations = await field.evaluate((element) =>
+      element.getAnimations({ subtree: true }).filter((animation) => {
+        if (!(animation.effect instanceof KeyframeEffect)) return false;
+        return animation.effect.getKeyframes().some(
+          (frame) => typeof frame.clipPath === "string" && frame.clipPath.startsWith("polygon("),
+        );
+      }).length,
+    );
+    if (morphBefore === morphAfter || polygonAnimations < 5) {
+      failures.push("The interaction field is not continuously morphing all five organic contours.");
+    }
+
+    await page.evaluate(() => window.scrollTo(0, 520));
+    await page.waitForTimeout(80);
+    const response = await field.evaluate((element) => ({
+      activity: Number.parseFloat(element.style.getPropertyValue("--pointer-activity")),
+      scaleY: Number.parseFloat(element.style.getPropertyValue("--pointer-scale-y")),
+      visible: element.classList.contains("pointer-light--visible"),
+    }));
+    if (!response.visible || response.activity <= 0 || response.scaleY <= 1) {
+      failures.push("The interaction field did not energize and change composition during scrolling.");
+    }
+
+    await page.mouse.down();
+    await page.waitForTimeout(20);
+    if (!(await field.evaluate((element) => element.classList.contains("pointer-light--pressed")))) {
+      failures.push("The interaction field did not react to pointer press activity.");
+    }
+    await page.mouse.up();
   } finally {
     await context.close();
   }
