@@ -262,10 +262,10 @@ async function auditBringOwnClientId(browser: Browser): Promise<void> {
 
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    await page.getByText("Advanced: connect your Spotify app", { exact: true }).click();
-    const input = page.getByLabel("Spotify Client ID");
+    await page.getByText("Set up my Spotify app", { exact: true }).click();
+    const input = page.getByLabel("Public Spotify Client ID");
     await input.fill("not a client secret!");
-    await page.getByRole("button", { name: "Connect with my Client ID" }).click();
+    await page.getByRole("button", { name: "Connect", exact: true }).click();
     await page.getByText("Enter the public Client ID only.", { exact: false }).waitFor();
     if (new URL(page.url()).origin !== origin || (await page.evaluate(() => window.sessionStorage.length)) !== 0) {
       failures.push("Chromium accepted or persisted an invalid custom Spotify Client ID.");
@@ -273,7 +273,7 @@ async function auditBringOwnClientId(browser: Browser): Promise<void> {
     await auditAxe(page, "Chromium custom Spotify app setup");
 
     await input.fill(personalClientId);
-    await page.getByRole("button", { name: "Connect with my Client ID" }).click();
+    await page.getByRole("button", { name: "Connect", exact: true }).click();
     await page.waitForURL("https://accounts.spotify.com/authorize**");
     const authorizationUrl = new URL(page.url());
     const state = authorizationUrl.searchParams.get("state");
@@ -299,13 +299,16 @@ async function auditBringOwnClientId(browser: Browser): Promise<void> {
     if (afterCallback.clientId !== personalClientId || afterCallback.count !== 1) {
       failures.push("Chromium did not clear PKCE state while retaining only the custom Client ID.");
     }
-    if (!(await page.getByText("Using your own Spotify Client ID", { exact: false }).isVisible())) {
+    if (!(await page.getByText("Your public Client ID is configured", { exact: false }).isVisible())) {
       failures.push("Chromium did not disclose that the connected session uses the visitor's Spotify app.");
     }
     await page.getByRole("button", { name: "Forget my Client ID" }).click();
-    await page.getByRole("button", { name: "Use with my Spotify app" }).waitFor();
-    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
-      failures.push("Chromium retained the custom Client ID after the explicit forget action.");
+    await page.getByRole("button", { name: "Set up personal Spotify" }).waitFor();
+    const remainingKeys = await page.evaluate(() =>
+      [...Array(window.sessionStorage.length)].map((_, index) => window.sessionStorage.key(index)),
+    );
+    if (remainingKeys.length !== 0) {
+      failures.push(`Chromium retained browser session data after the explicit forget action: ${remainingKeys.join(", ")}.`);
     }
     if (runtimeErrors.length > 0) {
       failures.push(`Chromium custom Spotify app journey emitted runtime errors: ${runtimeErrors.join("; ")}.`);
@@ -351,7 +354,7 @@ async function auditQuotaRecovery(browser: Browser): Promise<void> {
     if (!(await setup.evaluate((element) => (element as HTMLDetailsElement).open))) {
       failures.push("Chromium did not open the custom Client ID recovery path after quota exhaustion.");
     }
-    if (!(await page.getByLabel("Spotify Client ID").isVisible()) || profileRequests !== 1) {
+    if (!(await page.getByRole("button", { name: "Forget my Client ID" }).isVisible()) || profileRequests !== 1) {
       failures.push("Chromium did not expose quota recovery immediately or retried the exhausted quota.");
     }
     if ((await page.evaluate(() => window.sessionStorage.length)) !== 1) {
@@ -363,9 +366,9 @@ async function auditQuotaRecovery(browser: Browser): Promise<void> {
 }
 
 async function beginPersonalLogin(page: Page, id: string): Promise<void> {
-  await page.getByRole("button", { name: "Use with my Spotify app" }).click();
-  await page.getByLabel("Spotify Client ID").fill(id);
-  await page.getByRole("button", { name: "Connect with my Client ID" }).click();
+  await page.getByRole("button", { name: "Set up personal Spotify" }).click();
+  await page.getByLabel("Public Spotify Client ID").fill(id);
+  await page.getByRole("button", { name: "Connect", exact: true }).click();
 }
 
 interface MockPlaylistItem {

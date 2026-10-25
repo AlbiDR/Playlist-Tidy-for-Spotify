@@ -106,7 +106,7 @@ if (javascriptSources.length !== 1) {
   for (const marker of [
     "Try the interactive demo",
     "Synthetic sample data",
-    "Advanced: connect your Spotify app",
+    "Set up personal Spotify",
     "playlist-tidy.spotify-client-id",
   ] as const) {
     if (!javascript.includes(marker)) failures.push(`The deployed JavaScript is missing ${marker}.`);
