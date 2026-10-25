@@ -72,6 +72,7 @@ describe("SpotifyPkceAuth", () => {
           token_type: "Bearer",
           expires_in: 3600,
           refresh_token: "must-be-discarded",
+          scope: SPOTIFY_SCOPES.join(" "),
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
@@ -106,6 +107,7 @@ describe("SpotifyPkceAuth", () => {
             token_type: "Bearer",
             expires_in: 3600,
             refresh_token: "enrollment-token",
+            scope: SPOTIFY_SCOPES.join(" "),
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -150,7 +152,12 @@ describe("SpotifyPkceAuth", () => {
     let now = 0;
     const fetchMock = vi.fn(async () =>
       new Response(
-        JSON.stringify({ access_token: "access-token", token_type: "Bearer", expires_in: 60 }),
+        JSON.stringify({
+          access_token: "access-token",
+          token_type: "Bearer",
+          expires_in: 60,
+          scope: SPOTIFY_SCOPES.join(" "),
+        }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
@@ -167,6 +174,47 @@ describe("SpotifyPkceAuth", () => {
     await expect(auth.getAccessToken()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
       code: "AUTHENTICATION_FAILED",
     });
+  });
+
+  it("rejects a token response that omits a required permission", async () => {
+    const storage = new MemoryStorage();
+    const auth = createAuth(storage, vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          access_token: "access-token",
+          token_type: "Bearer",
+          expires_in: 3600,
+          scope: "playlist-read-private playlist-modify-private",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    ));
+    const authorizationUrl = new URL(await auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI));
+    const state = authorizationUrl.searchParams.get("state") as string;
+
+    await expect(auth.completeAuthorizationCallback(
+      `${REDIRECT_URI}?code=authorization-code&state=${encodeURIComponent(state)}`,
+      CLIENT_ID,
+      REDIRECT_URI,
+    )).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AUTHORIZATION_FAILED" });
+    await expect(auth.getAccessToken()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "AUTHENTICATION_FAILED",
+    });
+  });
+
+  it("reports a malformed successful token response as validation failure", async () => {
+    const storage = new MemoryStorage();
+    const auth = createAuth(storage, vi.fn(async () =>
+      new Response("not-json", { status: 200, headers: { "Content-Type": "application/json" } }),
+    ));
+    const authorizationUrl = new URL(await auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI));
+    const state = authorizationUrl.searchParams.get("state") as string;
+
+    await expect(auth.completeAuthorizationCallback(
+      `${REDIRECT_URI}?code=authorization-code&state=${encodeURIComponent(state)}`,
+      CLIENT_ID,
+      REDIRECT_URI,
+    )).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "VALIDATION_FAILED" });
   });
 });
 

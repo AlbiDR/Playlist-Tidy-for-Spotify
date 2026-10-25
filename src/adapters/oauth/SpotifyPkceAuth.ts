@@ -21,10 +21,11 @@ export const SPOTIFY_SCOPES = [
 ] as const;
 
 const TokenResponseSchema = v.object({
-  access_token: v.string(),
+  access_token: v.pipe(v.string(), v.minLength(1)),
   token_type: v.literal("Bearer"),
   expires_in: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  refresh_token: v.optional(v.string()),
+  refresh_token: v.optional(v.pipe(v.string(), v.minLength(1))),
+  scope: v.string(),
 });
 
 export interface SessionStoragePort {
@@ -144,11 +145,20 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
         { cause: error },
       );
     }
-    const payload: unknown = await response.json();
     if (!response.ok) {
       throw new PlaylistTidyError(
         "AUTHENTICATION_FAILED",
         `Spotify token exchange failed with HTTP ${String(response.status)}.`,
+      );
+    }
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw new PlaylistTidyError(
+        "VALIDATION_FAILED",
+        "Spotify returned an unreadable token response.",
+        { cause: error },
       );
     }
     const parsed = v.safeParse(TokenResponseSchema, payload);
@@ -157,6 +167,14 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
         "VALIDATION_FAILED",
         "Spotify returned an invalid token response.",
         { cause: parsed.issues },
+      );
+    }
+    const grantedScopes = new Set(parsed.output.scope.split(/\s+/u).filter((scope) => scope.length > 0));
+    const missingScopes = SPOTIFY_SCOPES.filter((scope) => !grantedScopes.has(scope));
+    if (missingScopes.length > 0) {
+      throw new PlaylistTidyError(
+        "AUTHORIZATION_FAILED",
+        `Spotify did not grant the required permissions: ${missingScopes.join(", ")}.`,
       );
     }
 

@@ -52,6 +52,7 @@ let scrollEnergy = 0;
 let scrollDirection = 0;
 let previousScrollY = window.scrollY;
 let runtimeFailureShown = false;
+let writeOperationActive = false;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
@@ -59,7 +60,7 @@ function render(state: ViewState): void {
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="reading-progress" aria-hidden="true"></div>
     <header class="app-header">
-      <a class="wordmark" href="./" aria-label="Playlist Tidy home">
+      <a class="wordmark" href="./" aria-label="Playlist Tidy for Spotify home">
         <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
@@ -311,17 +312,40 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
   const selected = new Set<string>();
   const previews = new Map<string, PlaylistSortPreview>();
   const rows = new Map<string, PlaylistRowControls>();
-  let batchBusy = false;
+  let catalogBusy = false;
 
   const updateBatchControls = (): void => {
     const selectedIds = [...selected];
     const previewed = selectedIds.filter((id) => previews.has(id));
     const sortable = previewed.filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
     batchCount.textContent = `${String(selectedIds.length)} selected`;
-    batchPreview.disabled = batchBusy || selectedIds.length === 0;
+    batchPreview.disabled = catalogBusy || selectedIds.length === 0;
     batchSort.disabled =
-      batchBusy || selectedIds.length === 0 || previewed.length !== selectedIds.length || sortable.length === 0;
-    for (const controls of rows.values()) controls.selection.disabled = batchBusy;
+      catalogBusy || selectedIds.length === 0 || previewed.length !== selectedIds.length || sortable.length === 0;
+    for (const controls of rows.values()) {
+      controls.selection.disabled = catalogBusy;
+      controls.previewButton.disabled = catalogBusy;
+      for (const action of controls.resultActions.querySelectorAll<HTMLButtonElement>("button")) {
+        action.disabled = catalogBusy;
+      }
+    }
+    const connectionButton = document.querySelector<HTMLButtonElement>("#connection-action");
+    if (connectionButton !== null) connectionButton.disabled = catalogBusy;
+    catalog.setAttribute("aria-busy", catalogBusy ? "true" : "false");
+  };
+
+  const runCatalogOperation: CatalogOperationRunner = async (operation, protectsNavigation = false) => {
+    if (catalogBusy) return undefined;
+    catalogBusy = true;
+    writeOperationActive = protectsNavigation;
+    updateBatchControls();
+    try {
+      return await operation();
+    } finally {
+      writeOperationActive = false;
+      catalogBusy = false;
+      updateBatchControls();
+    }
   };
 
   for (const playlist of state.playlists) {
@@ -336,10 +360,11 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     selectionMark.setAttribute("aria-hidden", "true");
     selector.append(selection, selectionMark);
     const details = document.createElement("div");
+    details.className = "playlist-details";
     const name = document.createElement("h3");
     name.textContent = playlist.name;
     const metadata = document.createElement("p");
-    metadata.textContent = `${String(playlist.itemCount)} ${playlist.itemCount === 1 ? "item" : "items"} · ${playlist.isPublic === true ? "Public" : "Private"}`;
+    metadata.textContent = `${String(playlist.itemCount)} ${playlist.itemCount === 1 ? "item" : "items"} · ${formatPlaylistVisibility(playlist.isPublic)}`;
     details.append(name, metadata);
 
     const previewButton = document.createElement("button");
@@ -354,7 +379,14 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     const resultActions = document.createElement("div");
     resultActions.className = "preview-result__actions";
     result.append(resultMessage, resultActions);
-    const controls = { selection, previewButton, result, resultMessage, resultActions };
+    const controls: PlaylistRowControls = {
+      selection,
+      previewButton,
+      result,
+      resultMessage,
+      resultActions,
+      playlistName: playlist.name,
+    };
     rows.set(playlist.id, controls);
     selection.addEventListener("change", () => {
       if (selection.checked) selected.add(playlist.id);
@@ -364,10 +396,11 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
       updateBatchControls();
     });
     previewButton.addEventListener("click", () => {
-      void previewPlaylist(spotify, playlist.id, controls, () => {
-        previews.delete(playlist.id);
-        updateBatchControls();
-      }).then((preview) => {
+      void runCatalogOperation(async () => {
+        const preview = await previewPlaylist(spotify, playlist.id, controls, () => {
+          previews.delete(playlist.id);
+          updateBatchControls();
+        }, runCatalogOperation);
         if (preview !== undefined) previews.set(playlist.id, preview);
         updateBatchControls();
       });
@@ -377,18 +410,16 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
   }
 
   batchPreview.addEventListener("click", () => {
-    void runBatchPreview();
+    void runCatalogOperation(runBatchPreview);
   });
   batchSort.addEventListener("click", () => {
-    void runBatchSort();
+    void runCatalogOperation(runBatchSort, true);
   });
   updateBatchControls();
 
   async function runBatchPreview(): Promise<void> {
     setRoutePhase("preview");
     const ids = [...selected];
-    batchBusy = true;
-    updateBatchControls();
     let completed = 0;
     let failed = 0;
     await runWithConcurrency(ids, 2, async (id) => {
@@ -397,13 +428,12 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
       const preview = await previewPlaylist(spotify, id, controls, () => {
         previews.delete(id);
         updateBatchControls();
-      });
+      }, runCatalogOperation);
       if (preview === undefined) failed += 1;
       else previews.set(id, preview);
       completed += 1;
       batchStatusElement.textContent = `Previewed ${String(completed)} of ${String(ids.length)} selected playlists.`;
     });
-    batchBusy = false;
     batchStatusElement.textContent = failed === 0
       ? `${String(ids.length)} playlists previewed. Review the plans, then confirm the batch.`
       : `${String(ids.length - failed)} playlists previewed; ${String(failed)} need attention below.`;
@@ -415,9 +445,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
 
   async function runBatchSort(): Promise<void> {
     const ids = [...selected].filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
-    batchBusy = true;
     setRoutePhase("sorting");
-    updateBatchControls();
     let completed = 0;
     let failed = 0;
     await runWithConcurrency(ids, 2, async (id) => {
@@ -431,7 +459,6 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
       completed += 1;
       batchStatusElement.textContent = `Sorted ${String(completed)} of ${String(ids.length)} queued playlists.`;
     });
-    batchBusy = false;
     batchStatusElement.textContent = failed === 0
       ? `${String(ids.length)} playlists sorted and verified.`
       : `${String(ids.length - failed)} playlists sorted; ${String(failed)} need attention below.`;
@@ -657,11 +684,13 @@ async function previewPlaylist(
   playlistId: string,
   controls: PlaylistRowControls,
   onSorted?: () => void,
+  runOperation?: CatalogOperationRunner,
 ): Promise<PlaylistSortPreview | undefined> {
   const { previewButton, result, resultMessage, resultActions } = controls;
   setRoutePhase("preview");
   previewButton.disabled = true;
   previewButton.textContent = "Checking…";
+  previewButton.setAttribute("aria-label", `Checking ${controls.playlistName}`);
   result.hidden = false;
   result.className = "preview-result";
   result.setAttribute("role", "status");
@@ -678,11 +707,14 @@ async function previewPlaylist(
       sortButton.type = "button";
       sortButton.className = "sort-button";
       sortButton.textContent = "Sort now";
-      sortButton.setAttribute("aria-label", `Apply ${String(preview.moves.length)} planned sorting moves`);
+      sortButton.setAttribute("aria-label", `Sort now: apply ${String(preview.moves.length)} planned sorting moves`);
       sortButton.addEventListener("click", () => {
-        void applyPlaylistSort(spotify, preview.view, controls, sortButton).then((succeeded) => {
+        const sort = async (): Promise<void> => {
+          const succeeded = await applyPlaylistSort(spotify, preview.view, controls, sortButton);
           if (succeeded) onSorted?.();
-        });
+        };
+        if (runOperation === undefined) void sort();
+        else void runOperation(sort, true);
       });
       resultActions.append(sortButton);
       setRoutePhase("confirm");
@@ -691,12 +723,16 @@ async function previewPlaylist(
   } catch (error) {
     result.className = "preview-result preview-result--error";
     result.setAttribute("role", "alert");
-    resultMessage.textContent = getSafeErrorMessage(error);
+    resultMessage.textContent = getSafeErrorMessage(
+      error,
+      "An unexpected error occurred while previewing this playlist. No playlist write was attempted.",
+    );
     setRoutePhase("preview");
     return undefined;
   } finally {
     previewButton.disabled = false;
     previewButton.textContent = "Preview again";
+    previewButton.setAttribute("aria-label", `Preview again ${controls.playlistName}`);
   }
 }
 
@@ -711,6 +747,7 @@ async function applyPlaylistSort(
   previewButton.disabled = true;
   sortButton.disabled = true;
   sortButton.textContent = "Sorting…";
+  sortButton.setAttribute("aria-label", `Sorting ${controls.playlistName}`);
   if (trackRoute) setRoutePhase("sorting");
   result.className = "preview-result preview-result--working";
   result.setAttribute("role", "status");
@@ -730,9 +767,13 @@ async function applyPlaylistSort(
   } catch (error) {
     result.className = "preview-result preview-result--error";
     result.setAttribute("role", "alert");
-    resultMessage.textContent = getSafeErrorMessage(error);
+    resultMessage.textContent = getSafeErrorMessage(
+      error,
+      "Playlist Tidy could not determine the sorting result. Check the playlist in Spotify before trying again.",
+    );
     sortButton.disabled = false;
     sortButton.textContent = "Try sort again";
+    sortButton.setAttribute("aria-label", `Try sort again for ${controls.playlistName}`);
     if (trackRoute) setRoutePhase("confirm");
     return false;
   } finally {
@@ -772,6 +813,18 @@ interface PlaylistRowControls {
   readonly result: HTMLElement;
   readonly resultMessage: HTMLElement;
   readonly resultActions: HTMLElement;
+  readonly playlistName: string;
+}
+
+type CatalogOperationRunner = <T>(
+  operation: () => Promise<T>,
+  protectsNavigation?: boolean,
+) => Promise<T | undefined>;
+
+function formatPlaylistVisibility(isPublic: boolean | null): string {
+  if (isPublic === true) return "Public";
+  if (isPublic === false) return "Private";
+  return "Visibility unavailable";
 }
 
 async function runWithConcurrency<T>(
@@ -819,9 +872,12 @@ function getConnectionPresentation(state: ViewState): {
   }
 }
 
-function getSafeErrorMessage(error: unknown): string {
+function getSafeErrorMessage(
+  error: unknown,
+  fallback = "An unexpected error occurred while connecting to Spotify.",
+): string {
   if (error instanceof PlaylistTidyError) return error.message;
-  return "An unexpected error occurred while connecting to Spotify.";
+  return fallback;
 }
 
 function getSessionStorage(): SessionStoragePort {
@@ -871,6 +927,10 @@ window.addEventListener("error", (event) => {
 window.addEventListener("unhandledrejection", (event) => {
   event.preventDefault();
   showRuntimeFailure();
+});
+window.addEventListener("beforeunload", (event) => {
+  if (!writeOperationActive) return;
+  event.preventDefault();
 });
 
 void initialize().catch(() => showRuntimeFailure());

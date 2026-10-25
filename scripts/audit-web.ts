@@ -2,7 +2,9 @@
 // Copyright (C) 2026 AlbiDR
 
 import { fileURLToPath } from "node:url";
+import AxeBuilder from "@axe-core/playwright";
 import { chromium, firefox, webkit } from "playwright";
+import type { Page } from "playwright";
 import { preview } from "vite";
 
 const host = "127.0.0.1";
@@ -116,6 +118,7 @@ try {
           if (thirdPartyRequests.length > 0) {
             failures.push(`${contextName} contacted third parties before user action: ${[...new Set(thirdPartyRequests)].join(", ")}.`);
           }
+          if (viewport.width === 1440) await auditAxe(page, contextName);
 
           const skipLink = page.locator(".skip-link");
           if (await skipLink.count() === 0) {
@@ -161,6 +164,17 @@ try {
   }
 } finally {
   await server.close();
+}
+
+async function auditAxe(page: Page, contextName: string): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  for (const violation of results.violations) {
+    failures.push(
+      `${contextName} fails axe rule ${violation.id}: ${violation.help} (${String(violation.nodes.length)} ${violation.nodes.length === 1 ? "node" : "nodes"}).`,
+    );
+  }
 }
 
 if (failures.length > 0) {

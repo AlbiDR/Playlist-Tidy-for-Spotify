@@ -15,7 +15,7 @@ This document records the production qualities that sit outside Playlist Tidy's 
 - Pointer-only decoration is never initialized for coarse pointers.
 - Forced-colors mode removes nonessential glow effects and preserves control borders.
 
-The Playwright browser audit enforces structural, heading, keyboard, focus, image, storage, network, no-JavaScript, reduced-motion, forced-colors, and responsive invariants across the application and privacy page. It runs Chromium, Firefox, and WebKit at narrow mobile, standard mobile, and desktop widths. Manual review remains required for copy clarity, screen-reader phrasing, zoom behavior, and color perception because automated checks cannot prove usability.
+The Playwright browser audit enforces structural, heading, keyboard, focus, image, storage, network, no-JavaScript, reduced-motion, forced-colors, and responsive invariants across the application and privacy page. It runs Chromium, Firefox, and WebKit at narrow mobile, standard mobile, and desktop widths. Axe scans enforce automatically detectable WCAG A and AA rules on both public documents and on connected, confirmation, and verified application states. A credential-free Spotify simulation drives the production interface through PKCE authorization, owned-playlist filtering, preview, explicit confirmation, reorder, verification, denial, cleanup, and disconnect in all three engines. Manual review remains required for copy clarity, screen-reader phrasing, zoom behavior, and color perception because automated checks cannot prove usability.
 
 ## Performance
 

@@ -35,6 +35,12 @@ export const SpotifyReorderResponseSchema = v.object({
   snapshot_id: v.string(),
 });
 
+export const SpotifyErrorResponseSchema = v.object({
+  error: v.object({
+    reason: v.optional(v.string()),
+  }),
+});
+
 const SpotifyPlaylistSummarySchema = v.object({
   id: v.string(),
   name: v.string(),

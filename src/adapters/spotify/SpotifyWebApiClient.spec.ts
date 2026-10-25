@@ -2,7 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it, vi } from "vitest";
-import type { PlaylistTidyError } from "../../core/errors.js";
+import { PlaylistTidyError } from "../../core/errors.js";
 import { SpotifyWebApiClient, type SpotifyTokenProvider } from "./SpotifyWebApiClient.js";
 
 const tokens: SpotifyTokenProvider = {
@@ -139,6 +139,22 @@ describe("SpotifyWebApiClient", () => {
     expect(sleep).toHaveBeenCalledWith(60_000);
   });
 
+  it("fails immediately when Spotify's development quota is exhausted", async () => {
+    const sleep = vi.fn(async () => undefined);
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ error: { status: 429, message: "Too many requests", reason: "QUOTA_EXCEEDED" } }, 429),
+    );
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock, sleep });
+
+    const failure: unknown = await client.getCurrentUser().catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(PlaylistTidyError);
+    if (!(failure instanceof PlaylistTidyError)) throw new Error("Expected a PlaylistTidyError.");
+    expect(failure.code).toBe("RATE_LIMITED");
+    expect(failure.message).toContain("development-mode API quota is exhausted");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
   it("reports the final Spotify server status after exhausting read recovery", async () => {
     const client = new SpotifyWebApiClient(tokens, {
       fetch: vi.fn(async () => jsonResponse({}, 503)),
@@ -169,6 +185,26 @@ describe("SpotifyWebApiClient", () => {
       }),
     ).resolves.toBe("snapshot-b");
     expect(sleep).toHaveBeenCalledWith(60_000);
+  });
+
+  it("does not retry a write rejected by Spotify's development quota", async () => {
+    const sleep = vi.fn(async () => undefined);
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ error: { status: 429, message: "Too many requests", reason: "QUOTA_EXCEEDED" } }, 429),
+    );
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock, sleep });
+
+    const failure: unknown = await client.reorderPlaylistRange("playlist", "snapshot-a", {
+      rangeStart: 1,
+      rangeLength: 1,
+      insertBefore: 0,
+    }).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(PlaylistTidyError);
+    if (!(failure instanceof PlaylistTidyError)) throw new Error("Expected a PlaylistTidyError.");
+    expect(failure.code).toBe("RATE_LIMITED");
+    expect(failure.message).toContain("No playlist write was attempted");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(sleep).not.toHaveBeenCalled();
   });
 
   it("never blindly retries a reorder after a server error", async () => {

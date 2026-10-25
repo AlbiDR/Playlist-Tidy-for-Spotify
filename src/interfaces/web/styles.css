@@ -782,7 +782,7 @@ h1 em {
 .playlist-row:hover { border-color: rgb(121 238 157 / 25%); background: #1b211b; }
 .playlist-row--selected { border-color: rgb(121 238 157 / 38%); }
 .playlist-row h3 { overflow: hidden; margin: 0 0 5px; font-size: 1rem; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
-.playlist-row div > p { margin: 0; color: #7f8c82; font-size: 0.79rem; }
+.playlist-row .playlist-details > p { margin: 0; color: #7f8c82; font-size: 0.79rem; }
 
 .playlist-selector {
   position: relative;

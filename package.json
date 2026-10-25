@@ -20,7 +20,7 @@
     "build:cli": "tsc -p config/tsconfig.cli.json",
     "build:web": "npm run generate:web-assets && vite build --config config/vite.config.ts && node scripts/sanitize-built-typography.ts && node scripts/verify-web-quality.ts",
     "capture:readme": "node scripts/capture-readme.ts",
-    "audit:web": "node scripts/audit-web.ts",
+    "audit:web": "node scripts/audit-web.ts && node scripts/audit-user-journey.ts",
     "audit:dependencies": "npm audit --audit-level=high",
     "cli": "npm run build:cli && node dist-cli/interfaces/cli/main.js",
     "clean": "node scripts/clean.ts",
@@ -44,6 +44,7 @@
     "valibot": "^1.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.38.0",
     "@types/node": "^24.9.1",
     "eslint": "^9.38.0",

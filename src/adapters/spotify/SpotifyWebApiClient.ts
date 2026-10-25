@@ -15,6 +15,7 @@ import type {
 } from "../../applications/ports/SpotifyPlaylistPort.js";
 import {
   SpotifyPlaylistCatalogPageSchema,
+  SpotifyErrorResponseSchema,
   SpotifyPlaylistItemsPageSchema,
   SpotifyPlaylistMetadataSchema,
   SpotifyReorderResponseSchema,
@@ -197,6 +198,12 @@ export class SpotifyWebApiClient
           continue;
         }
         if (response.status === 429) {
+          if (await isQuotaExceeded(response)) {
+            throw new PlaylistTidyError(
+              "RATE_LIMITED",
+              "Spotify's development-mode API quota is exhausted. Try again after Spotify resets the quota window.",
+            );
+          }
           const retry = getRetryDelay(response);
           transientFailures += 1;
           if (transientFailures >= this.readAttempts) {
@@ -267,6 +274,12 @@ export class SpotifyWebApiClient
         continue;
       }
       if (response.status === 429) {
+        if (await isQuotaExceeded(response)) {
+          throw new PlaylistTidyError(
+            "RATE_LIMITED",
+            "Spotify's development-mode API quota is exhausted. No playlist write was attempted; try again after Spotify resets the quota window.",
+          );
+        }
         await this.sleep(getRetryDelay(response).boundedMilliseconds);
         continue;
       }
@@ -366,6 +379,15 @@ async function readSafeResponseText(response: Response): Promise<string> {
     return (await response.text()).slice(0, 2_000);
   } catch {
     return "";
+  }
+}
+
+async function isQuotaExceeded(response: Response): Promise<boolean> {
+  try {
+    const parsed = v.safeParse(SpotifyErrorResponseSchema, await response.clone().json());
+    return parsed.success && parsed.output.error.reason === "QUOTA_EXCEEDED";
+  } catch {
+    return false;
   }
 }
 
