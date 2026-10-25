@@ -33,6 +33,8 @@ const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim() ?? "";
 const redirectUri = `${window.location.origin}${window.location.pathname}`;
 const auth = new SpotifyPkceAuth(getSessionStorage());
 let connectionEpoch = 0;
+let revealObserver: IntersectionObserver | undefined;
+let hasIntroducedPage = false;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
@@ -46,7 +48,7 @@ function render(state: ViewState): void {
     </header>
     <main>
       <section class="hero" aria-labelledby="connection-title">
-        <div class="hero__copy">
+        <div class="hero__copy reveal">
           <p class="eyebrow">Order for your listening life</p>
           <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
           <p class="summary">
@@ -61,7 +63,7 @@ function render(state: ViewState): void {
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
-        <div class="sort-visual" aria-hidden="true">
+        <div class="sort-visual reveal reveal--delay-1" aria-hidden="true">
           <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
           <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
           <div class="sort-visual__label">added_at ↓</div>
@@ -74,11 +76,11 @@ function render(state: ViewState): void {
         </div>
       </section>
       <section class="journeys" aria-labelledby="journeys-heading">
-        <header class="journeys__heading">
+        <header class="journeys__heading reveal">
           <p class="eyebrow">Two ways to use it</p>
           <h2 id="journeys-heading">Use the website now.<br>Automate your own copy.</h2>
         </header>
-        <div class="journey">
+        <div class="journey reveal">
           <p class="journey__index" aria-hidden="true">01</p>
           <div>
             <h3>Visiting the public website</h3>
@@ -86,7 +88,7 @@ function render(state: ViewState): void {
           </div>
           <p class="journey__outcome">Manual · works immediately</p>
         </div>
-        <div class="journey">
+        <div class="journey reveal reveal--delay-1">
           <p class="journey__index" aria-hidden="true">02</p>
           <div>
             <h3>Running scheduled maintenance</h3>
@@ -96,7 +98,7 @@ function render(state: ViewState): void {
           <p class="journey__outcome">Automatic · self-hosted</p>
         </div>
       </section>
-      <section class="route" aria-labelledby="route-heading">
+      <section class="route reveal" aria-labelledby="route-heading">
         <div class="route__intro">
           <p class="eyebrow">Inside this browser session</p>
           <h2 id="route-heading">You stay in control<br>of every write.</h2>
@@ -116,7 +118,7 @@ function render(state: ViewState): void {
           </li>
         </ol>
       </section>
-      <section id="playlist-catalog" class="playlist-catalog" aria-labelledby="playlist-heading" hidden>
+      <section id="playlist-catalog" class="playlist-catalog reveal" aria-labelledby="playlist-heading" hidden>
         <div class="section-heading">
           <div>
             <p class="step-label">Step 2 of 3</p>
@@ -135,7 +137,7 @@ function render(state: ViewState): void {
         <div id="playlist-list" class="playlist-list"></div>
       </section>
     </main>
-    <footer>
+    <footer class="reveal">
       <div class="footer-credit">
         <strong>Open source</strong>
         <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noreferrer">Playlist Tidy repository</a>.</p>
@@ -158,6 +160,7 @@ function render(state: ViewState): void {
   button.disabled = connection.disabled;
   status.textContent = connection.status;
   error.textContent = state.kind === "error" ? state.message : "";
+  app.setAttribute("aria-busy", state.kind === "connecting" ? "true" : "false");
 
   if (state.kind === "connected") {
     button.addEventListener("click", () => {
@@ -169,6 +172,7 @@ function render(state: ViewState): void {
   } else if (state.kind === "disconnected" || state.kind === "error") {
     button.addEventListener("click", () => void beginLogin());
   }
+  initializeMotion();
 }
 
 async function beginLogin(): Promise<void> {
@@ -385,6 +389,33 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     setRouteProgress(3, failed === 0);
     updateBatchControls();
   }
+}
+
+function initializeMotion(): void {
+  revealObserver?.disconnect();
+  const elements = [...document.querySelectorAll<HTMLElement>(".reveal")];
+  if (
+    hasIntroducedPage ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !("IntersectionObserver" in window)
+  ) {
+    for (const element of elements) element.classList.add("reveal--visible");
+    hasIntroducedPage = true;
+    return;
+  }
+  document.documentElement.classList.add("motion-ready");
+  revealObserver = new IntersectionObserver(
+    (entries, observer) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        (entry.target as HTMLElement).classList.add("reveal--visible");
+        observer.unobserve(entry.target);
+      }
+    },
+    { rootMargin: "0px 0px -8%", threshold: 0.12 },
+  );
+  for (const element of elements) revealObserver.observe(element);
+  hasIntroducedPage = true;
 }
 
 async function previewPlaylist(

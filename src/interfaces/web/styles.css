@@ -42,6 +42,8 @@ body::before {
 
 button, a { -webkit-tap-highlight-color: transparent; }
 
+::selection { color: #071009; background: var(--green); }
+
 #app {
   width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
@@ -104,7 +106,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
   flex: none;
   width: 32px;
   height: 32px;
+  transition: transform 220ms ease;
 }
+
+.wordmark:hover .wordmark__symbol { transform: rotate(-5deg) translateY(-1px); }
 
 .hero {
   display: grid;
@@ -166,8 +171,12 @@ h1 em {
   font: inherit;
   font-weight: 760;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  transition: transform 120ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 180ms ease;
 }
+
+.connect-button:active:not(:disabled),
+.preview-button:active:not(:disabled),
+.sort-button:active:not(:disabled) { transform: translateY(1px); }
 
 .connect-button {
   min-width: 166px;
@@ -231,6 +240,7 @@ h1 em {
 
 .sort-visual {
   position: relative;
+  overflow: hidden;
   aspect-ratio: 1;
   width: min(100%, 470px);
   margin-inline: auto;
@@ -239,6 +249,17 @@ h1 em {
   background: linear-gradient(145deg, rgb(36 45 37 / 90%), rgb(16 21 17 / 90%));
   box-shadow: 0 40px 90px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 5%);
   transform: rotate(2deg);
+}
+
+.sort-visual::before {
+  position: absolute;
+  z-index: 0;
+  inset: -45%;
+  background: linear-gradient(105deg, transparent 42%, rgb(121 238 157 / 6%) 49%, transparent 56%);
+  content: "";
+  transform: translateX(-45%) rotate(4deg);
+  animation: visual-sheen 8s ease-in-out 1.4s infinite;
+  pointer-events: none;
 }
 
 .sort-visual::after {
@@ -257,6 +278,8 @@ h1 em {
 
 .sort-visual__orbit--outer { inset: 13%; }
 .sort-visual__orbit--inner { inset: 26%; border-color: rgb(255 139 114 / 13%); }
+.sort-visual__orbit--outer { animation: orbit-breathe 7s ease-in-out infinite alternate; }
+.sort-visual__orbit--inner { animation: orbit-breathe 7s ease-in-out 1.2s infinite alternate-reverse; }
 
 .sort-visual__label {
   position: absolute;
@@ -277,7 +300,10 @@ h1 em {
   display: grid;
   gap: 10px;
   transform: rotate(-4deg);
+  transition: transform 500ms cubic-bezier(0.2, 0.75, 0.2, 1);
 }
+
+.sort-visual:hover .track-stack { transform: rotate(-2deg) translateY(-4px); }
 
 .track-strip {
   display: grid;
@@ -291,6 +317,7 @@ h1 em {
   color: #b5beb6;
   background: rgb(11 15 12 / 88%);
   box-shadow: 0 8px 22px rgb(0 0 0 / 20%);
+  animation: track-arrive 650ms both cubic-bezier(0.2, 0.75, 0.2, 1);
 }
 
 .track-strip span, .track-strip time { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.64rem; }
@@ -300,6 +327,8 @@ h1 em {
 .track-strip--two { margin-left: 6%; margin-right: -2%; }
 .track-strip--three { margin-left: 1%; margin-right: 7%; }
 .track-strip--three i { background: var(--coral); }
+.track-strip--two { animation-delay: 90ms; }
+.track-strip--three { animation-delay: 180ms; }
 
 .sort-visual__stamp {
   position: absolute;
@@ -397,6 +426,7 @@ h1 em {
   grid-template-columns: 44px 1fr;
   gap: 18px;
   color: #7e8980;
+  transition: color 240ms ease;
 }
 
 .route__number {
@@ -410,10 +440,12 @@ h1 em {
   background: #151a15;
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
+  transition: color 240ms ease, background 240ms ease, border-color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
 }
 
 .route__step--current { color: var(--ink); }
 .route__step--current .route__number { border-color: var(--green); color: #081009; background: var(--green); box-shadow: 0 0 0 7px rgb(121 238 157 / 8%); }
+.route__step--current .route__number { transform: translateX(2px); }
 .route__step--complete { color: var(--ink); }
 .route__step--complete .route__number { border-color: var(--green); color: var(--green); background: #151a15; }
 .route__step h3 { margin: 1px 0 6px; font-size: 1rem; }
@@ -466,7 +498,17 @@ h1 em {
   border-radius: 17px 7px 17px 7px;
   background: #181d18;
   transition: border-color 140ms ease, background 140ms ease;
+  animation: row-arrive 420ms both cubic-bezier(0.2, 0.75, 0.2, 1);
 }
+
+.playlist-row:nth-child(2) { animation-delay: 36ms; }
+.playlist-row:nth-child(3) { animation-delay: 72ms; }
+.playlist-row:nth-child(4) { animation-delay: 108ms; }
+.playlist-row:nth-child(5) { animation-delay: 144ms; }
+.playlist-row:nth-child(6) { animation-delay: 180ms; }
+.playlist-row:nth-child(7) { animation-delay: 216ms; }
+.playlist-row:nth-child(8) { animation-delay: 252ms; }
+.playlist-row:nth-child(n + 9) { animation-delay: 288ms; }
 
 .playlist-row:hover { border-color: rgb(121 238 157 / 25%); background: #1b211b; }
 .playlist-row--selected { border-color: rgb(121 238 157 / 38%); }
@@ -570,6 +612,35 @@ footer {
 .footer-credit a:hover { color: var(--green); }
 .footer-legal { grid-column: 1 / -1; color: #606b62; font-size: 0.68rem; }
 
+.motion-ready .reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 650ms ease, transform 700ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.motion-ready .reveal--delay-1 { transition-delay: 100ms; }
+.motion-ready .reveal--visible { opacity: 1; transform: translateY(0); }
+
+@keyframes track-arrive {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes row-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes orbit-breathe {
+  from { opacity: 0.55; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1.015); }
+}
+
+@keyframes visual-sheen {
+  0%, 62% { transform: translateX(-45%) rotate(4deg); }
+  82%, 100% { transform: translateX(45%) rotate(4deg); }
+}
+
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 64px; }
   .sort-visual { width: min(100%, 430px); }
@@ -596,4 +667,13 @@ footer {
   .batch-status { grid-column: 1; }
   .playlist-row { grid-template-columns: auto minmax(0, 1fr); }
   .preview-button { grid-column: 1 / -1; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
