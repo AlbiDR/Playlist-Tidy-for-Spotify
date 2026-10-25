@@ -50,7 +50,7 @@ jobs:
         env:
           PLAYLIST_IDS: ${{ inputs.playlist_ids || vars.PLAYLIST_IDS || 'all' }}
           ROTATED_REFRESH_TOKEN_FILE: ${{ runner.temp }}/spotify-refresh-token
-          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_AUTOMATION_CLIENT_ID }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
 
       - name: Persist a rotated Spotify credential

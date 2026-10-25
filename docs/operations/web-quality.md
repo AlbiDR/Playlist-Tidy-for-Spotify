@@ -34,11 +34,15 @@ The document applies a restrictive Content Security Policy, a no-referrer policy
 
 The hosted Development Mode Client ID is optional. A visitor can supply the public Client ID from a Spotify app they control, which moves API usage to that developer account's quota without exposing or requiring a Client Secret. The identifier is retained only in tab-scoped session storage across the OAuth redirect and can be explicitly forgotten. Browser journey tests prove that the chosen Client ID is used for both authorization and token exchange, survives only as documented, and is removed on request.
 
+The deployment reads its hosted app identity only from `SPOTIFY_WEB_CLIENT_ID`. Scheduled sorting reads `SPOTIFY_AUTOMATION_CLIENT_ID`, which enrollment manages independently. Keeping these variables distinct prevents automation setup from silently replacing the website's OAuth identity and permits the two workloads to use separate developer-account quota pools.
+
 GitHub Pages does not provide repository-controlled response headers. Consequently, protections that require HTTP headers, including `frame-ancestors`, HSTS, cross-origin isolation, and a server-level Permissions Policy, cannot be represented honestly by this deployment. Local Vite serving applies the headers it can. Moving to a configurable host is required before claiming those response-header protections in production.
 
 As defense in depth for the sensitive browser interface, the application also refuses to initialize whenever it detects that it is running inside a frame. The framed view performs no Spotify authorization or playlist operation and offers only a protected link that opens the application directly. The three-engine browser audit embeds the production application in an untrusted parent and verifies that this fail-closed behavior occurs without network or browser-storage side effects. This runtime control reduces the practical clickjacking surface but is not described as equivalent to an HTTP `frame-ancestors` policy.
 
 No service worker is registered. Playlist sorting cannot work offline, and caching an OAuth application shell would add stale-release and callback complexity without an offline user benefit.
+
+Every Pages artifact includes a generated `release.json` containing the complete verified Git commit SHA. Deployment health compares that marker with the triggering revision, verifies the configured web Client ID is present in the live entry bundle, and checks the quota-recovery controls in that same bundle. A stale or incorrectly configured build therefore cannot satisfy the live health gate merely by serving valid generic assets.
 
 The public privacy page is intentionally static and script-free. It documents the exact Spotify data path, ephemeral browser storage, GitHub Pages infrastructure boundary, lack of first-party tracking, and the separate ownership model for self-hosted automation.
 

@@ -110,7 +110,7 @@ async function enrollAutomation(): Promise<void> {
   }
 
   setGitHubSecret(repository, "SPOTIFY_REFRESH_TOKEN", refreshToken);
-  setGitHubVariable(repository, "SPOTIFY_CLIENT_ID", clientId);
+  setGitHubVariable(repository, "SPOTIFY_AUTOMATION_CLIENT_ID", clientId);
   setGitHubVariable(repository, "PLAYLIST_IDS", configuredPlaylists);
   process.stdout.write("Scheduled sorting credentials and configuration were saved to GitHub.\n");
 }

@@ -3,6 +3,15 @@
 
 const deploymentUrl = new URL("https://albidr.github.io/PlaylistTidy/");
 const failures: string[] = [];
+const expectedReleaseRevision = process.env.EXPECTED_RELEASE_SHA?.trim() ?? "";
+const expectedSpotifyClientId = process.env.EXPECTED_SPOTIFY_WEB_CLIENT_ID?.trim() ?? "";
+
+if (!/^[0-9a-f]{40}$/u.test(expectedReleaseRevision)) {
+  failures.push("EXPECTED_RELEASE_SHA is missing or is not a complete lowercase Git commit SHA.");
+}
+if (expectedSpotifyClientId.length === 0) {
+  failures.push("EXPECTED_SPOTIFY_WEB_CLIENT_ID is missing.");
+}
 
 const documentResponse = await request(new URL(`?health=${String(Date.now())}`, deploymentUrl));
 const documentSource = documentResponse === undefined ? "" : await documentResponse.text();
@@ -17,6 +26,7 @@ const notFoundAssetReferences = [...notFoundDocument.matchAll(/(?:href|src)="\/P
 const assetReferences = [...documentSource.matchAll(/(?:href|src)="\.\/(assets\/[^"?#]+)"/gu)]
   .map((match) => match[1])
   .filter((asset): asset is string => asset !== undefined);
+const javascriptSources: string[] = [];
 for (const extension of [".js", ".css", ".svg"] as const) {
   if (!assetReferences.some((asset) => asset.endsWith(extension))) {
     failures.push(`index.html does not reference a production ${extension} asset.`);
@@ -26,7 +36,8 @@ for (const asset of new Set(assetReferences)) {
   if (!/-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/u.test(asset)) {
     failures.push(`${asset} is not content fingerprinted.`);
   }
-  await request(new URL(asset, deploymentUrl));
+  const response = await request(new URL(`${asset}?health=${String(Date.now())}`, deploymentUrl));
+  if (response !== undefined && asset.endsWith(".js")) javascriptSources.push(await response.text());
 }
 if (!notFoundAssetReferences.some((asset) => asset.endsWith(".css"))) {
   failures.push("The custom 404 response does not reference its production CSS asset.");
@@ -78,6 +89,30 @@ for (const publicAsset of [
   "social-card.png",
 ]) {
   await request(new URL(publicAsset, deploymentUrl));
+}
+
+const releaseResponse = await request(new URL(`release.json?health=${String(Date.now())}`, deploymentUrl));
+if (releaseResponse !== undefined) {
+  try {
+    const release = await releaseResponse.json() as { readonly revision?: unknown };
+    if (release.revision !== expectedReleaseRevision) {
+      failures.push(`release.json identifies ${String(release.revision)} instead of ${expectedReleaseRevision}.`);
+    }
+  } catch {
+    failures.push("release.json is not valid JSON.");
+  }
+}
+
+if (javascriptSources.length !== 1) {
+  failures.push(`Expected one deployed JavaScript entry asset, received ${String(javascriptSources.length)}.`);
+} else {
+  const javascript = javascriptSources[0] as string;
+  if (!javascript.includes(expectedSpotifyClientId)) {
+    failures.push("The deployed JavaScript does not contain the configured Spotify web Client ID.");
+  }
+  for (const marker of ["Use your own Spotify app", "playlist-tidy.spotify-client-id"] as const) {
+    if (!javascript.includes(marker)) failures.push(`The deployed JavaScript is missing ${marker}.`);
+  }
 }
 
 if (failures.length > 0) {
