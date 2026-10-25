@@ -20,7 +20,7 @@ async function runScheduledSorting(): Promise<void> {
   const refreshToken = requireEnvironment("SPOTIFY_REFRESH_TOKEN");
   const rotatedTokenPath = process.env.ROTATED_REFRESH_TOKEN_FILE?.trim();
   const auth = new SpotifyRefreshTokenAuth(clientId, refreshToken);
-  const spotify = new SpotifyWebApiClient(auth);
+  const spotify = new SpotifyWebApiClient(auth, { readAttempts: 2 });
   const playlistIds = await resolvePlaylistIds(spotify, requireEnvironment("PLAYLIST_IDS"));
   if (process.env.PLAYLIST_IDS?.trim().toLowerCase() === "all") {
     process.stdout.write(`${String(playlistIds.length)} owned playlists discovered for this run.\n`);
@@ -28,7 +28,8 @@ async function runScheduledSorting(): Promise<void> {
   let completed = 0;
   let failed = 0;
 
-  await runWithConcurrency(playlistIds, 2, async (playlistId) => {
+  let deferred = 0;
+  for (const playlistId of playlistIds) {
     try {
       const result = await sortPlaylist(spotify, playlistId);
       completed += 1;
@@ -40,8 +41,18 @@ async function runScheduledSorting(): Promise<void> {
       process.stderr.write(
         `Playlist ${String(completed + failed)} of ${String(playlistIds.length)} failed: ${getSafeErrorMessage(error)}\n`,
       );
+      if (error instanceof PlaylistTidyError && error.code === "RATE_LIMITED") {
+        deferred = playlistIds.length - completed - failed;
+        process.stderr.write(
+          `Spotify's rate-limit circuit breaker deferred ${String(deferred)} remaining playlists to the next scheduled run.\n`,
+        );
+        break;
+      }
     }
-  });
+    if (completed + failed < playlistIds.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+  }
 
   const rotatedToken = auth.takeRotatedRefreshToken();
   if (rotatedToken !== undefined) {
@@ -54,7 +65,9 @@ async function runScheduledSorting(): Promise<void> {
     await writeFile(rotatedTokenPath, rotatedToken, { encoding: "utf8", mode: 0o600 });
   }
   if (failed > 0) process.exitCode = 1;
-  process.stdout.write(`${String(completed)} playlists sorted successfully; ${String(failed)} failed.\n`);
+  process.stdout.write(
+    `${String(completed)} playlists sorted successfully; ${String(failed)} failed; ${String(deferred)} deferred.\n`,
+  );
 }
 
 async function enrollAutomation(): Promise<void> {
@@ -154,23 +167,6 @@ function requireEnvironment(name: string): string {
 function readOption(name: string): string | undefined {
   const prefix = `${name}=`;
   return process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
-}
-
-async function runWithConcurrency<T>(
-  values: readonly T[],
-  limit: number,
-  worker: (value: T) => Promise<void>,
-): Promise<void> {
-  const queue = [...values];
-  await Promise.all(
-    Array.from({ length: Math.min(limit, queue.length) }, async () => {
-      for (;;) {
-        const value = queue.shift();
-        if (value === undefined) return;
-        await worker(value);
-      }
-    }),
-  );
 }
 
 function getSafeErrorMessage(error: unknown): string {

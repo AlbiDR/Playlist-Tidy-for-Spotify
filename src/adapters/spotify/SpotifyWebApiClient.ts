@@ -197,14 +197,15 @@ export class SpotifyWebApiClient
           continue;
         }
         if (response.status === 429) {
+          const retry = getRetryDelay(response);
           transientFailures += 1;
           if (transientFailures >= this.readAttempts) {
             throw new PlaylistTidyError(
               "RATE_LIMITED",
-              "Spotify kept rate limiting playlist reads. Try again after the current Retry-After window.",
+              `Spotify kept rate limiting playlist reads. Its latest Retry-After window was ${formatDuration(retry.requestedMilliseconds)}.`,
             );
           }
-          await this.pauseForRateLimit(getRetryDelay(response));
+          await this.pauseForRateLimit(retry.boundedMilliseconds);
           continue;
         }
         if (response.status >= 500) {
@@ -266,7 +267,7 @@ export class SpotifyWebApiClient
         continue;
       }
       if (response.status === 429) {
-        await this.sleep(getRetryDelay(response));
+        await this.sleep(getRetryDelay(response).boundedMilliseconds);
         continue;
       }
       if (response.status >= 500) {
@@ -322,10 +323,25 @@ function mapOccurrence(item: SpotifyPlaylistItemDto, originalPosition: number): 
   };
 }
 
-function getRetryDelay(response: Response): number {
+interface RetryDelay {
+  readonly requestedMilliseconds: number;
+  readonly boundedMilliseconds: number;
+}
+
+function getRetryDelay(response: Response): RetryDelay {
   const seconds = Number(response.headers.get("Retry-After") ?? "1");
-  const milliseconds = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 1000;
-  return Math.min(milliseconds, MAX_RATE_LIMIT_DELAY_MS);
+  const requestedMilliseconds = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 1000;
+  return {
+    requestedMilliseconds,
+    boundedMilliseconds: Math.min(requestedMilliseconds, MAX_RATE_LIMIT_DELAY_MS),
+  };
+}
+
+function formatDuration(milliseconds: number): string {
+  const seconds = Math.ceil(milliseconds / 1000);
+  if (seconds < 60) return `${String(seconds)} seconds`;
+  const minutes = Math.ceil(seconds / 60);
+  return `${String(minutes)} ${minutes === 1 ? "minute" : "minutes"}`;
 }
 
 function createHttpError(status: number, context: string, detail = ""): PlaylistTidyError {

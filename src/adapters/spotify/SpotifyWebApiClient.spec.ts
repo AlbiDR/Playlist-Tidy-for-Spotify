@@ -127,16 +127,16 @@ describe("SpotifyWebApiClient", () => {
   it("reports persistent read rate limiting instead of a generic exhausted budget", async () => {
     const sleep = vi.fn(async () => undefined);
     const client = new SpotifyWebApiClient(tokens, {
-      fetch: vi.fn(async () => jsonResponse({}, 429, { "Retry-After": "2" })),
+      fetch: vi.fn(async () => jsonResponse({}, 429, { "Retry-After": "120" })),
       readAttempts: 2,
       sleep,
     });
 
-    await expect(client.getCurrentUser()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
-      code: "RATE_LIMITED",
-    });
+    await expect(client.getCurrentUser()).rejects.toThrow(
+      "Spotify kept rate limiting playlist reads. Its latest Retry-After window was 2 minutes.",
+    );
     expect(sleep).toHaveBeenCalledOnce();
-    expect(sleep).toHaveBeenCalledWith(2_000);
+    expect(sleep).toHaveBeenCalledWith(60_000);
   });
 
   it("reports the final Spotify server status after exhausting read recovery", async () => {
