@@ -10,10 +10,10 @@ import type { SessionStoragePort } from "../../adapters/oauth/index.js";
 import { SpotifyWebApiClient } from "../../adapters/spotify/index.js";
 import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
+import { parsePlaylistIds, resolvePlaylistIds } from "./playlistSelection.js";
 
 const LOOPBACK_REDIRECT_URI = "http://127.0.0.1:8888/callback";
 const DEFAULT_REPOSITORY = "AlbiDR/PlaylistTidy";
-const PLAYLIST_ID_PATTERN = /^[A-Za-z0-9]{22}$/u;
 
 const command = process.argv[2];
 try {
@@ -28,10 +28,13 @@ try {
 async function runScheduledSorting(): Promise<void> {
   const clientId = requireEnvironment("SPOTIFY_CLIENT_ID");
   const refreshToken = requireEnvironment("SPOTIFY_REFRESH_TOKEN");
-  const playlistIds = parsePlaylistIds(requireEnvironment("PLAYLIST_IDS"));
   const rotatedTokenPath = process.env.ROTATED_REFRESH_TOKEN_FILE?.trim();
   const auth = new SpotifyRefreshTokenAuth(clientId, refreshToken);
   const spotify = new SpotifyWebApiClient(auth);
+  const playlistIds = await resolvePlaylistIds(spotify, requireEnvironment("PLAYLIST_IDS"));
+  if (process.env.PLAYLIST_IDS?.trim().toLowerCase() === "all") {
+    process.stdout.write(`${String(playlistIds.length)} owned playlists discovered for this run.\n`);
+  }
   let completed = 0;
   let failed = 0;
 
@@ -67,8 +70,8 @@ async function runScheduledSorting(): Promise<void> {
 async function enrollAutomation(): Promise<void> {
   const clientId = requireEnvironment("SPOTIFY_CLIENT_ID");
   const repository = readOption("--repo") ?? DEFAULT_REPOSITORY;
-  const configuredPlaylists = readOption("--playlists");
-  if (configuredPlaylists !== undefined) parsePlaylistIds(configuredPlaylists);
+  const configuredPlaylists = readOption("--playlists") ?? "all";
+  if (configuredPlaylists !== "all") parsePlaylistIds(configuredPlaylists);
 
   const storage = new MemoryStorage();
   let refreshToken: string | undefined;
@@ -91,9 +94,7 @@ async function enrollAutomation(): Promise<void> {
 
   setGitHubSecret(repository, "SPOTIFY_REFRESH_TOKEN", refreshToken);
   setGitHubVariable(repository, "SPOTIFY_CLIENT_ID", clientId);
-  if (configuredPlaylists !== undefined) {
-    setGitHubVariable(repository, "PLAYLIST_IDS", configuredPlaylists);
-  }
+  setGitHubVariable(repository, "PLAYLIST_IDS", configuredPlaylists);
   process.stdout.write("Scheduled sorting credentials and configuration were saved to GitHub.\n");
 }
 
@@ -150,17 +151,6 @@ function setGitHubVariable(repository: string, name: string, value: string): voi
   if (result.status !== 0) {
     throw new PlaylistTidyError("VALIDATION_FAILED", `GitHub rejected the ${name} repository variable.`);
   }
-}
-
-function parsePlaylistIds(value: string): readonly string[] {
-  const ids = [...new Set(value.split(/[\s,]+/u).map((entry) => entry.trim()).filter(Boolean))];
-  if (ids.length === 0 || ids.some((id) => !PLAYLIST_ID_PATTERN.test(id))) {
-    throw new PlaylistTidyError(
-      "VALIDATION_FAILED",
-      "PLAYLIST_IDS must contain one or more comma- or whitespace-separated Spotify playlist IDs.",
-    );
-  }
-  return ids;
 }
 
 function requireEnvironment(name: string): string {

@@ -124,14 +124,16 @@ The browser can preview and sort multiple selected playlists in one bounded queu
 
 ```sh
 SPOTIFY_CLIENT_ID=cc92650c2f3a452ca396fb3fc6e372cb \
-  npm run cli -- enroll --playlists=PLAYLIST_ID_ONE,PLAYLIST_ID_TWO
+  npm run cli -- enroll
 ```
 
-Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. The playlist list is stored as the `PLAYLIST_IDS` repository variable and can be changed without rebuilding the site.
+Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. By default, `PLAYLIST_IDS` is set to `all`: every scheduled run discovers every playlist currently owned by the authenticated account, so newly created playlists join automatically. Followed and collaborative playlists owned by someone else are excluded.
+
+To maintain only a fixed subset instead, enroll with `--playlists=PLAYLIST_ID_ONE,PLAYLIST_ID_TWO` or change the `PLAYLIST_IDS` repository variable later.
 
 For fully autonomous refresh-token rotation, add a fine-grained token with repository Secrets write access as the `PLAYLIST_TIDY_SECRET_ADMIN_TOKEN` Actions secret. The scheduled workflow writes a replacement only when Spotify actually rotates the credential, then deletes its temporary mode-`0600` file. Without that secret, ordinary scheduled runs work, but a future rotation deliberately fails rather than losing the new credential.
 
-`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification; the queue runs at most two playlists concurrently.
+`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with `all` or a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification; the queue runs at most two playlists concurrently.
 
 Spotify Development Mode may invalidate an automation credential after a later website login. The workflow fails closed if that happens; rerun the enrollment command to replace the secret. No playlist write is attempted with an unauthenticated session.
 

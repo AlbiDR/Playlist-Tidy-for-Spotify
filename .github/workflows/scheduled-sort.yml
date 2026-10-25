@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       playlist_ids:
-        description: Optional comma-separated playlist IDs; defaults to the PLAYLIST_IDS variable
+        description: Use "all" or comma-separated playlist IDs; defaults to the PLAYLIST_IDS variable
         required: false
         type: string
 
@@ -48,7 +48,7 @@ jobs:
         continue-on-error: true
         run: node dist-cli/interfaces/cli/main.js run
         env:
-          PLAYLIST_IDS: ${{ inputs.playlist_ids || vars.PLAYLIST_IDS }}
+          PLAYLIST_IDS: ${{ inputs.playlist_ids || vars.PLAYLIST_IDS || 'all' }}
           ROTATED_REFRESH_TOKEN_FILE: ${{ runner.temp }}/spotify-refresh-token
           SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}

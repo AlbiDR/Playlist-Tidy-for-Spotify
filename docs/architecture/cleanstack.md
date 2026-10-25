@@ -381,7 +381,7 @@ The website must:
 
 The CLI provides explicit commands for login, preview or dry run, and sorting. Inputs are parsed and validated once at the control boundary.
 
-The scheduled and manually dispatched workflow share one concurrency group with `cancel-in-progress: false`. The workflow runs from the intended default branch, declares minimal permissions, pins third-party actions to immutable commits, and never echoes secrets. Configured playlists run with a concurrency cap of two and retain independent verification outcomes.
+The scheduled and manually dispatched workflow share one concurrency group with `cancel-in-progress: false`. The workflow runs from the intended default branch, declares minimal permissions, pins third-party actions to immutable commits, and never echoes secrets. Its default configuration discovers every currently owned playlist at run time; an explicit fixed-ID subset remains available. Playlists run with a concurrency cap of two and retain independent verification outcomes.
 
 ## 11. Testing and proof obligations
 
