@@ -58,7 +58,7 @@
         <div class="policy__facts">
           <article><strong>Read</strong><p>Your Spotify identity and the contents of playlists you own, only after you authorize access.</p></article>
           <article><strong>Change</strong><p>Track order inside a playlist you own, only after preview and explicit confirmation.</p></article>
-          <article><strong>Store</strong><p>A one-time login verifier in session storage during the Spotify redirect. It is then deleted.</p></article>
+          <article><strong>Store</strong><p>A one-time login verifier during Spotify's redirect, plus your own public Client ID if you choose to supply one. Both use this tab's session storage.</p></article>
           <article><strong>Never collect</strong><p>No analytics, advertising identifiers, cookies, form submissions, or application database records.</p></article>
         </div>
       </section>
@@ -67,7 +67,8 @@
         <h2 id="authorization-heading">Spotify authorization</h2>
         <p>Connection uses Spotify Authorization Code with PKCE. Playlist Tidy requests permission to read private and collaborative playlists and to reorder public and private playlists. It refuses to sort a playlist not owned by the authenticated account.</p>
         <p>The access token exists only in this page's memory. It is not written to local storage, a cookie, a URL, the page, or an application server. Reloading or closing the page removes it. If Spotify returns a refresh token to the public website, the website discards it.</p>
-        <p>The hosted Spotify application uses Development Mode. Spotify limits it to five explicitly allowlisted users and requires the app owner's Premium subscription to remain active. A Spotify login can appear to succeed for an unlisted account, but the later API request will be refused. Self-hosted copies use their maintainer's own Spotify application and allowlist.</p>
+        <p>The hosted Spotify application uses Development Mode. Spotify limits it to five explicitly allowlisted users, requires the app owner's Premium subscription to remain active, and counts API quota across all Development Mode apps owned by one developer account. A Spotify login can appear to succeed for an unlisted account, but the later API request will be refused.</p>
+        <p>You may instead supply the public Client ID from your own Spotify Development Mode app. The website stores that non-secret identifier in this tab's session storage so it survives the authorization redirect, sends it only to Spotify as part of OAuth, and removes it when you select the forget action or close the tab. It never requests a Client Secret. Your app must register the exact redirect URI shown by the website, and its owner must have Premium.</p>
       </section>
 
       <section class="policy__section" aria-labelledby="data-heading">
@@ -84,7 +85,7 @@
 
       <section class="policy__section" aria-labelledby="control-heading">
         <h2 id="control-heading">Your control</h2>
-        <p>You can end the browser session by reloading, closing the page, or selecting Disconnect. You can also remove Playlist Tidy from the connected-apps area of your Spotify account. Because the public website keeps no account or database, it has no retained profile or playlist record to export, correct, or delete.</p>
+        <p>You can end the browser access-token session by reloading, closing the page, or selecting Disconnect. A supplied Client ID remains available within the same tab after reload so a Spotify redirect can complete; select the forget action or close the tab to remove it. You can also remove Playlist Tidy from the connected-apps area of your Spotify account. Because the public website keeps no account or database, it has no retained profile or playlist record to export, correct, or delete.</p>
       </section>
 
       <section class="policy__section" aria-labelledby="safe-use-heading">

@@ -41,7 +41,11 @@ try {
     const browser = await browserType.launch({ headless: true });
     try {
       await auditSuccessfulJourney(browser, browserName);
-      if (browserName === "Chromium") await auditDeniedAuthorization(browser);
+      if (browserName === "Chromium") {
+        await auditDeniedAuthorization(browser);
+        await auditQuotaRecovery(browser);
+        await auditBringOwnClientId(browser);
+      }
     } finally {
       await browser.close();
     }
@@ -213,6 +217,120 @@ async function auditDeniedAuthorization(browser: Browser): Promise<void> {
   }
 }
 
+async function auditBringOwnClientId(browser: Browser): Promise<void> {
+  const personalClientId = "personal-browser-audit-client-2026";
+  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  const mock = createSpotifyMock();
+  const runtimeErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+  });
+  page.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
+  await installSpotifyRoutes(page, mock, personalClientId);
+
+  try {
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    await page.getByText("Use your own Spotify app", { exact: true }).click();
+    const input = page.getByLabel("Spotify Client ID");
+    await input.fill("not a client secret!");
+    await page.getByRole("button", { name: "Connect with my Client ID" }).click();
+    await page.getByText("Enter the public Client ID only.", { exact: false }).waitFor();
+    if (new URL(page.url()).origin !== origin || (await page.evaluate(() => window.sessionStorage.length)) !== 0) {
+      failures.push("Chromium accepted or persisted an invalid custom Spotify Client ID.");
+    }
+    await auditAxe(page, "Chromium custom Spotify app setup");
+
+    await input.fill(personalClientId);
+    await page.getByRole("button", { name: "Connect with my Client ID" }).click();
+    await page.waitForURL("https://accounts.spotify.com/authorize**");
+    const authorizationUrl = new URL(page.url());
+    const state = authorizationUrl.searchParams.get("state");
+    if (authorizationUrl.searchParams.get("client_id") !== personalClientId || state === null) {
+      failures.push("Chromium did not use the supplied Client ID for Spotify authorization.");
+      return;
+    }
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    const beforeCallback = await page.evaluate(() => ({
+      clientId: window.sessionStorage.getItem("playlist-tidy.spotify-client-id"),
+      count: window.sessionStorage.length,
+    }));
+    if (beforeCallback.clientId !== personalClientId || beforeCallback.count !== 3) {
+      failures.push("Chromium did not retain the custom Client ID with exactly the two PKCE values.");
+    }
+
+    await page.goto(`${origin}/?code=audit-code&state=${encodeURIComponent(state)}`, { waitUntil: "networkidle" });
+    await page.getByText("2 owned playlists loaded.").waitFor();
+    const afterCallback = await page.evaluate(() => ({
+      clientId: window.sessionStorage.getItem("playlist-tidy.spotify-client-id"),
+      count: window.sessionStorage.length,
+    }));
+    if (afterCallback.clientId !== personalClientId || afterCallback.count !== 1) {
+      failures.push("Chromium did not clear PKCE state while retaining only the custom Client ID.");
+    }
+    if (!(await page.getByText("Using your own Spotify Client ID", { exact: false }).isVisible())) {
+      failures.push("Chromium did not disclose that the connected session uses the visitor's Spotify app.");
+    }
+    await page.getByRole("button", { name: "Forget my Client ID and use the hosted app" }).click();
+    await page.getByRole("button", { name: "Connect Spotify" }).waitFor();
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
+      failures.push("Chromium retained the custom Client ID after the explicit forget action.");
+    }
+    if (runtimeErrors.length > 0) {
+      failures.push(`Chromium custom Spotify app journey emitted runtime errors: ${runtimeErrors.join("; ")}.`);
+    }
+  } finally {
+    await context.close();
+  }
+}
+
+async function auditQuotaRecovery(browser: Browser): Promise<void> {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  let profileRequests = 0;
+  await page.route("https://accounts.spotify.com/authorize**", (route) => route.fulfill({
+    contentType: "text/html",
+    body: "<!doctype html><title>Mock Spotify authorization</title>",
+  }));
+  await page.route("https://accounts.spotify.com/api/token", (route) => fulfillJson(route, {
+    access_token: "quota-audit-access-token",
+    token_type: "Bearer",
+    expires_in: 3_600,
+    scope: "playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private",
+  }));
+  await page.route("https://api.spotify.com/v1/me", (route) => {
+    profileRequests += 1;
+    return fulfillJson(route, {
+      error: { status: 429, message: "Too many requests", reason: "QUOTA_EXCEEDED" },
+    }, 429);
+  });
+
+  try {
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Connect Spotify" }).click();
+    await page.waitForURL("https://accounts.spotify.com/authorize**");
+    const state = new URL(page.url()).searchParams.get("state");
+    if (state === null) {
+      failures.push("Chromium quota recovery journey did not generate OAuth state.");
+      return;
+    }
+    await page.goto(`${origin}/?code=quota-audit-code&state=${encodeURIComponent(state)}`, { waitUntil: "networkidle" });
+    await page.getByText("Development Mode quota is exhausted", { exact: false }).waitFor();
+    const setup = page.locator("#custom-app-setup");
+    if (!(await setup.evaluate((element) => (element as HTMLDetailsElement).open))) {
+      failures.push("Chromium did not open the custom Client ID recovery path after quota exhaustion.");
+    }
+    if (!(await page.getByLabel("Spotify Client ID").isVisible()) || profileRequests !== 1) {
+      failures.push("Chromium did not expose quota recovery immediately or retried the exhausted quota.");
+    }
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
+      failures.push("Chromium retained PKCE state after the quota-exhausted callback failed.");
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 interface MockPlaylistItem {
   readonly added_at: string;
   readonly added_by: { readonly id: string };
@@ -244,7 +362,7 @@ function createItem(uri: string, addedAt: string): MockPlaylistItem {
   };
 }
 
-async function installSpotifyRoutes(page: Page, mock: SpotifyMock): Promise<void> {
+async function installSpotifyRoutes(page: Page, mock: SpotifyMock, expectedClientId = clientId): Promise<void> {
   await page.route("https://accounts.spotify.com/authorize**", (route) => route.fulfill({
     contentType: "text/html",
     body: "<!doctype html><title>Mock Spotify authorization</title>",
@@ -254,7 +372,7 @@ async function installSpotifyRoutes(page: Page, mock: SpotifyMock): Promise<void
     const body = new URLSearchParams(request.postData() ?? "");
     if (
       request.method() !== "POST" ||
-      body.get("client_id") !== clientId ||
+      body.get("client_id") !== expectedClientId ||
       body.get("grant_type") !== "authorization_code" ||
       body.get("code") !== "audit-code" ||
       body.get("code_verifier") === null

@@ -150,7 +150,7 @@ describe("SpotifyWebApiClient", () => {
     expect(failure).toBeInstanceOf(PlaylistTidyError);
     if (!(failure instanceof PlaylistTidyError)) throw new Error("Expected a PlaylistTidyError.");
     expect(failure.code).toBe("RATE_LIMITED");
-    expect(failure.message).toContain("development-mode API quota is exhausted");
+    expect(failure.message).toContain("Development Mode quota is exhausted");
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(sleep).not.toHaveBeenCalled();
   });
@@ -203,6 +203,7 @@ describe("SpotifyWebApiClient", () => {
     if (!(failure instanceof PlaylistTidyError)) throw new Error("Expected a PlaylistTidyError.");
     expect(failure.code).toBe("RATE_LIMITED");
     expect(failure.message).toContain("No playlist write was attempted");
+    expect(failure.message).toContain("Client ID from a different developer account");
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(sleep).not.toHaveBeenCalled();
   });
