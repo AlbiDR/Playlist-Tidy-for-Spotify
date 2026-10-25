@@ -42,6 +42,7 @@ function render(state: ViewState): void {
         <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
+      <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noreferrer">Source &amp; automation ↗</a>
     </header>
     <main>
       <section class="hero" aria-labelledby="connection-title">
@@ -135,8 +136,15 @@ function render(state: ViewState): void {
       </section>
     </main>
     <footer>
-      <span>Built with a deliberately narrow permission boundary.</span>
-      <span>Independent project · Not affiliated with or endorsed by Spotify.</span>
+      <div class="footer-credit">
+        <strong>Open source</strong>
+        <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noreferrer">Playlist Tidy repository</a>.</p>
+      </div>
+      <div class="footer-credit">
+        <strong>Where automatic sorting lives</strong>
+        <p>Recurring sorting is powered by this repository’s <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/scheduled-sort.yml" target="_blank" rel="noreferrer">Scheduled Playlist Sort workflow</a>, running inside each self-hosted copy—not this browser tab.</p>
+      </div>
+      <p class="footer-legal">Independent project · Not affiliated with or endorsed by Spotify.</p>
     </footer>
   `;
 
