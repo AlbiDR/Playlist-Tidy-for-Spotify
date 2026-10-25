@@ -35,10 +35,13 @@ const auth = new SpotifyPkceAuth(getSessionStorage());
 let connectionEpoch = 0;
 let revealObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
+let progressListenersInitialized = false;
+let progressAnimation: Animation | undefined;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
   app.innerHTML = `
+    <div class="reading-progress" aria-hidden="true"></div>
     <header class="app-header">
       <a class="wordmark" href="./" aria-label="Playlist Tidy home">
         <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
@@ -63,16 +66,18 @@ function render(state: ViewState): void {
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
-        <div class="sort-visual reveal reveal--delay-1" aria-hidden="true">
-          <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
-          <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
-          <div class="sort-visual__label">added_at ↓</div>
-          <div class="track-stack">
-            <div class="track-strip track-strip--one"><span>01</span><i></i><time>24 OCT</time></div>
-            <div class="track-strip track-strip--two"><span>02</span><i></i><time>18 OCT</time></div>
-            <div class="track-strip track-strip--three"><span>03</span><i></i><time>02 OCT</time></div>
+        <div class="sort-visual-wrap reveal reveal--delay-1">
+          <div class="sort-visual" aria-hidden="true">
+            <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
+            <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
+            <div class="sort-visual__label">added_at ↓</div>
+            <div class="track-stack">
+              <div class="track-strip track-strip--one"><span>01</span><i></i><time>24 OCT</time></div>
+              <div class="track-strip track-strip--two"><span>02</span><i></i><time>18 OCT</time></div>
+              <div class="track-strip track-strip--three"><span>03</span><i></i><time>02 OCT</time></div>
+            </div>
+            <div class="sort-visual__stamp">stable sort<br>verified</div>
           </div>
-          <div class="sort-visual__stamp">stable sort<br>verified</div>
         </div>
       </section>
       <section class="journeys" aria-labelledby="journeys-heading">
@@ -173,6 +178,7 @@ function render(state: ViewState): void {
     button.addEventListener("click", () => void beginLogin());
   }
   initializeMotion();
+  initializeInteractions();
 }
 
 async function beginLogin(): Promise<void> {
@@ -416,6 +422,68 @@ function initializeMotion(): void {
   );
   for (const element of elements) revealObserver.observe(element);
   hasIntroducedPage = true;
+}
+
+function initializeInteractions(): void {
+  initializeScrollProgress();
+  const visual = document.querySelector<HTMLElement>(".sort-visual");
+  if (
+    visual === null ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  ) return;
+
+  let frame = 0;
+  let latestEvent: PointerEvent | undefined;
+  let visualAnimation: Animation | undefined;
+  const animateTo = (transform: string, duration: number): void => {
+    visualAnimation?.cancel();
+    visualAnimation = visual.animate(
+      { transform },
+      { duration, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)", fill: "forwards" },
+    );
+  };
+  visual.addEventListener("pointermove", (event) => {
+    latestEvent = event;
+    if (frame !== 0) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      if (latestEvent === undefined) return;
+      const bounds = visual.getBoundingClientRect();
+      const horizontal = (latestEvent.clientX - bounds.left) / bounds.width - 0.5;
+      const vertical = (latestEvent.clientY - bounds.top) / bounds.height - 0.5;
+      animateTo(
+        `perspective(900px) rotateX(${String(-vertical * 4)}deg) rotateY(${String(horizontal * 5)}deg) rotateZ(${String(2 + horizontal * 1.5)}deg) translate3d(${String(horizontal * 5)}px, ${String(vertical * 5)}px, 0)`,
+        280,
+      );
+    });
+  });
+  visual.addEventListener("pointerleave", () => {
+    latestEvent = undefined;
+    if (frame !== 0) window.cancelAnimationFrame(frame);
+    frame = 0;
+    animateTo("perspective(900px) rotateX(0deg) rotateY(0deg) rotateZ(2deg) translate3d(0, 0, 0)", 650);
+  });
+}
+
+function initializeScrollProgress(): void {
+  const update = (): void => {
+    const progress = document.querySelector<HTMLElement>(".reading-progress");
+    if (progress === null) return;
+    const available = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = available <= 0 ? 0 : Math.min(1, Math.max(0, window.scrollY / available));
+    progressAnimation?.cancel();
+    progressAnimation = progress.animate(
+      { transform: `scaleX(${String(ratio)})` },
+      { duration: 120, easing: "ease-out", fill: "forwards" },
+    );
+  };
+  if (!progressListenersInitialized) {
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update, { passive: true });
+    progressListenersInitialized = true;
+  }
+  update();
 }
 
 async function previewPlaylist(
