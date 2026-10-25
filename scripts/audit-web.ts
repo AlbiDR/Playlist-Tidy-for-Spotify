@@ -87,6 +87,36 @@ try {
         if (focusedId !== "main-content") failures.push(`${contextName} did not move skip-link focus to main.`);
         await context.close();
       }
+      if (browserName === "Chromium") {
+        const context = await browser.newContext({
+          colorScheme: "dark",
+          reducedMotion: "no-preference",
+          viewport: { width: 1440, height: 1024 },
+        });
+        const page = await context.newPage();
+        await page.goto(`http://${host}:${String(port)}/`, { waitUntil: "networkidle" });
+        await page.mouse.move(320, 280);
+        await page.waitForTimeout(80);
+        const bloomCount = await page.locator(".pointer-light__bloom").count();
+        if (bloomCount !== 3) failures.push(`The interaction field rendered ${String(bloomCount)} internal blooms instead of 3.`);
+        await page.evaluate(() => window.scrollTo(0, 520));
+        await page.waitForTimeout(80);
+        const response = await page.locator(".pointer-light").evaluate((element) => ({
+          activity: Number.parseFloat(element.style.getPropertyValue("--pointer-activity")),
+          scaleY: Number.parseFloat(element.style.getPropertyValue("--pointer-scale-y")),
+          visible: element.classList.contains("pointer-light--visible"),
+        }));
+        if (!response.visible || response.activity <= 0 || response.scaleY <= 1) {
+          failures.push("The interaction field did not visibly energize and stretch in response to scrolling.");
+        }
+        await page.mouse.down();
+        await page.waitForTimeout(20);
+        if (!(await page.locator(".pointer-light").evaluate((element) => element.classList.contains("pointer-light--pressed")))) {
+          failures.push("The interaction field did not react to pointer press activity.");
+        }
+        await page.mouse.up();
+        await context.close();
+      }
     } finally {
       await browser.close();
     }

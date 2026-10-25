@@ -44,6 +44,13 @@ let pointerY = 0;
 let pointerRenderedX = 0;
 let pointerRenderedY = 0;
 let pointerHasPosition = false;
+let pointerInside = false;
+let pointerVelocityX = 0;
+let pointerVelocityY = 0;
+let interactionEnergy = 0;
+let scrollEnergy = 0;
+let scrollDirection = 0;
+let previousScrollY = window.scrollY;
 let runtimeFailureShown = false;
 
 function render(state: ViewState): void {
@@ -476,12 +483,22 @@ function initializePointerLight(): void {
   const light = document.createElement("div");
   light.className = "pointer-light";
   light.setAttribute("aria-hidden", "true");
+  for (const name of ["green", "coral", "mist"]) {
+    const bloom = document.createElement("span");
+    bloom.className = `pointer-light__bloom pointer-light__bloom--${name}`;
+    light.append(bloom);
+  }
   document.body.append(light);
 
   window.addEventListener("pointermove", (event) => {
     if (event.pointerType === "touch") return;
+    if (pointerHasPosition) {
+      pointerVelocityX += event.clientX - pointerX;
+      pointerVelocityY += event.clientY - pointerY;
+    }
     pointerX = event.clientX;
     pointerY = event.clientY;
+    pointerInside = true;
     if (!pointerHasPosition) {
       pointerRenderedX = pointerX;
       pointerRenderedY = pointerY;
@@ -492,29 +509,121 @@ function initializePointerLight(): void {
       "pointer-light--engaged",
       target?.closest("a, button, label, input") !== null && target !== undefined,
     );
+    interactionEnergy = Math.max(
+      interactionEnergy,
+      Math.min(0.82, 0.18 + Math.hypot(pointerVelocityX, pointerVelocityY) / 90),
+    );
     light.classList.add("pointer-light--visible");
-    if (pointerFrame !== undefined) return;
-    pointerFrame = window.requestAnimationFrame(() => renderPointerLight(light));
+    schedulePointerLight(light);
   }, { passive: true });
 
+  window.addEventListener("scroll", () => {
+    const delta = window.scrollY - previousScrollY;
+    previousScrollY = window.scrollY;
+    if (Math.abs(delta) < 0.5) return;
+    ensurePointerLightPosition();
+    scrollDirection = Math.sign(delta);
+    scrollEnergy = Math.max(scrollEnergy, Math.min(1, Math.abs(delta) / 90));
+    interactionEnergy = Math.max(interactionEnergy, 0.42 + scrollEnergy * 0.32);
+    light.classList.add("pointer-light--visible");
+    schedulePointerLight(light);
+  }, { passive: true });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
+    interactionEnergy = 1;
+    light.classList.add("pointer-light--visible", "pointer-light--pressed");
+    window.setTimeout(() => light.classList.remove("pointer-light--pressed"), 420);
+    schedulePointerLight(light);
+  }, { passive: true });
+
+  document.addEventListener("focusin", (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    if (event.target.closest("a, button, label, input") === null) return;
+    const bounds = event.target.getBoundingClientRect();
+    pointerX = bounds.left + bounds.width / 2;
+    pointerY = bounds.top + bounds.height / 2;
+    if (!pointerHasPosition) {
+      pointerRenderedX = pointerX;
+      pointerRenderedY = pointerY;
+      pointerHasPosition = true;
+    }
+    interactionEnergy = Math.max(interactionEnergy, 0.68);
+    light.classList.add("pointer-light--visible", "pointer-light--engaged");
+    schedulePointerLight(light);
+  });
+
+  document.addEventListener("focusout", () => {
+    light.classList.remove("pointer-light--engaged");
+  });
+
+  document.addEventListener("keydown", () => {
+    ensurePointerLightPosition();
+    interactionEnergy = Math.max(interactionEnergy, 0.5);
+    light.classList.add("pointer-light--visible");
+    schedulePointerLight(light);
+  });
+
   document.documentElement.addEventListener("pointerleave", () => {
-    light.classList.remove("pointer-light--visible", "pointer-light--engaged");
-    pointerHasPosition = false;
+    pointerInside = false;
+    light.classList.remove("pointer-light--engaged");
+    schedulePointerLight(light);
   });
   window.addEventListener("blur", () => {
     light.classList.remove("pointer-light--visible", "pointer-light--engaged");
+    pointerInside = false;
     pointerHasPosition = false;
   });
 }
 
+function ensurePointerLightPosition(): void {
+  if (pointerHasPosition) return;
+  pointerX = window.innerWidth * 0.62;
+  pointerY = window.innerHeight * 0.42;
+  pointerRenderedX = pointerX;
+  pointerRenderedY = pointerY;
+  pointerHasPosition = true;
+}
+
+function schedulePointerLight(light: HTMLElement): void {
+  if (pointerFrame !== undefined) return;
+  pointerFrame = window.requestAnimationFrame(() => renderPointerLight(light));
+}
+
 function renderPointerLight(light: HTMLElement): void {
-  pointerRenderedX += (pointerX - pointerRenderedX) * 0.16;
-  pointerRenderedY += (pointerY - pointerRenderedY) * 0.16;
+  pointerRenderedX += (pointerX - pointerRenderedX) * 0.12;
+  pointerRenderedY += (pointerY - pointerRenderedY) * 0.12;
   light.style.setProperty("--pointer-x", `${pointerRenderedX.toFixed(2)}px`);
   light.style.setProperty("--pointer-y", `${pointerRenderedY.toFixed(2)}px`);
+  light.style.setProperty("--pointer-activity", interactionEnergy.toFixed(3));
+  const engagement = light.classList.contains("pointer-light--engaged") ? 0.035 : 0;
+  light.style.setProperty(
+    "--pointer-opacity",
+    Math.min(0.3, 0.1 + interactionEnergy * 0.13 + engagement).toFixed(3),
+  );
+
+  const velocity = Math.min(1, Math.hypot(pointerVelocityX, pointerVelocityY) / 42);
+  const rotation = Math.max(-8, Math.min(8, pointerVelocityX * 0.08 + scrollDirection * scrollEnergy * 5));
+  light.style.setProperty("--pointer-rotation", `${rotation.toFixed(2)}deg`);
+  light.style.setProperty("--pointer-scale-x", (1 + velocity * 0.1 - scrollEnergy * 0.025).toFixed(3));
+  light.style.setProperty("--pointer-scale-y", (1 - velocity * 0.025 + scrollEnergy * 0.18).toFixed(3));
+
+  pointerVelocityX *= 0.82;
+  pointerVelocityY *= 0.82;
+  interactionEnergy *= 0.955;
+  scrollEnergy *= 0.88;
 
   const stillMoving =
-    Math.abs(pointerX - pointerRenderedX) > 0.2 || Math.abs(pointerY - pointerRenderedY) > 0.2;
+    Math.abs(pointerX - pointerRenderedX) > 0.2 ||
+    Math.abs(pointerY - pointerRenderedY) > 0.2 ||
+    Math.abs(pointerVelocityX) > 0.1 ||
+    Math.abs(pointerVelocityY) > 0.1 ||
+    interactionEnergy > 0.01 ||
+    scrollEnergy > 0.01;
+  if (!stillMoving && !pointerInside && !light.classList.contains("pointer-light--engaged")) {
+    light.classList.remove("pointer-light--visible");
+    pointerHasPosition = false;
+  }
   pointerFrame = stillMoving
     ? window.requestAnimationFrame(() => renderPointerLight(light))
     : undefined;
