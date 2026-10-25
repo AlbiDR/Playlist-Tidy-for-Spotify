@@ -209,7 +209,7 @@ export class SpotifyWebApiClient
           if (await isQuotaExceeded(response)) {
             throw new PlaylistTidyError(
               "RATE_LIMITED",
-              "Spotify's development-mode API quota is exhausted. Try again after Spotify resets the quota window.",
+              "This Spotify developer account's Development Mode quota is exhausted. Use a Client ID from a different developer account below, or try again after Spotify resets the quota.",
             );
           }
           const retry = getRetryDelay(response);
@@ -293,7 +293,7 @@ export class SpotifyWebApiClient
         if (await isQuotaExceeded(response)) {
           throw new PlaylistTidyError(
             "RATE_LIMITED",
-            "Spotify's development-mode API quota is exhausted. No playlist write was attempted; try again after Spotify resets the quota window.",
+            "This Spotify developer account's Development Mode quota is exhausted. No playlist write was attempted. Use a Client ID from a different developer account below, or try again after Spotify resets the quota.",
           );
         }
         await this.sleep(getRetryDelay(response).boundedMilliseconds);

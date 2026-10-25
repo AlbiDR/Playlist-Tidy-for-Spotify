@@ -42,7 +42,7 @@ body::before {
 
 button, a { -webkit-tap-highlight-color: transparent; }
 
-:where(a, button, input):focus-visible {
+:where(a, button, input, summary):focus-visible {
   outline: 3px solid #d6ffe4;
   outline-offset: 4px;
 }
@@ -448,6 +448,129 @@ h1 em {
 }
 
 .availability-note strong { color: var(--ink); }
+
+.custom-app-setup {
+  max-width: 680px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid rgb(121 238 157 / 18%);
+  border-radius: 10px 24px 10px 24px;
+  background: rgb(18 22 18 / 78%);
+}
+
+.custom-app-setup summary {
+  padding: 15px 18px;
+  color: #c8d2ca;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.custom-app-setup summary::marker { color: var(--green); }
+.custom-app-setup[open] summary { border-bottom: 1px solid var(--line); }
+
+.custom-app-setup__body { padding: 18px; }
+
+.custom-app-setup__body > p {
+  margin: 0;
+  color: #9ca69e;
+  font-size: 0.79rem;
+  line-height: 1.65;
+}
+
+.custom-app-setup__body a { color: #c3cec5; text-underline-offset: 3px; }
+.custom-app-setup__body a:hover { color: var(--green); }
+
+.custom-app-setup__active {
+  margin-top: 14px !important;
+  color: #b9eec7 !important;
+}
+
+.custom-app-setup__active strong { color: var(--green); }
+
+.custom-app-setup__redirect {
+  margin-top: 14px !important;
+  padding: 12px 14px;
+  border: 1px solid rgb(228 237 229 / 9%);
+  border-radius: 8px;
+  background: #0e120e;
+}
+
+.custom-app-setup__redirect strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink);
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.custom-app-setup__redirect code {
+  display: block;
+  overflow-x: auto;
+  color: #b8c6bc;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  user-select: all;
+}
+
+#custom-client-form { margin-top: 16px; }
+
+#custom-client-form > label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 720;
+}
+
+.custom-app-setup__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+#custom-client-id {
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid #4c584f;
+  border-radius: 9px;
+  color: var(--ink);
+  background: #0c100c;
+  font: 0.84rem ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+#custom-client-id:hover { border-color: #68766b; }
+
+.custom-client-submit,
+.custom-client-forget {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--green);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.custom-client-submit { color: #081009; background: var(--green); }
+.custom-client-submit:hover:not(:disabled) { background: #a0f6ba; }
+.custom-client-forget { margin-top: 13px; color: #c3cec5; border-color: #4c584f; background: transparent; }
+.custom-client-forget:hover:not(:disabled) { color: var(--green); border-color: var(--green); }
+.custom-client-submit:disabled, .custom-client-forget:disabled, #custom-client-id:disabled { cursor: wait; opacity: 0.58; }
+
+.custom-app-setup__help,
+.custom-app-setup__status {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.custom-app-setup__help { color: #778279; }
+.custom-app-setup__status { color: #ffb9a9; }
+.custom-app-setup__status:empty { display: none; }
 
 .sort-visual-wrap {
   width: min(100%, 470px);
@@ -1067,6 +1190,8 @@ footer {
   .policy__section > p + p { margin-top: -4px; }
   .policy__facts { grid-template-columns: 1fr; }
   .policy-footer { width: min(100% - 28px, 880px); }
+  .custom-app-setup__controls { grid-template-columns: 1fr; }
+  .custom-client-submit { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1086,5 +1211,5 @@ footer {
 
 @media (forced-colors: active) {
   .reading-progress, .pointer-light, .sort-visual::before { display: none; }
-  .route__number, .connect-button, .safe-open-link, .preview-button, .sort-button { border: 1px solid CanvasText; }
+  .route__number, .connect-button, .safe-open-link, .preview-button, .sort-button, .custom-client-submit, .custom-client-forget, #custom-client-id { border: 1px solid CanvasText; }
 }

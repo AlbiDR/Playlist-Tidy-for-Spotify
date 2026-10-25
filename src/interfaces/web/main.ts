@@ -25,13 +25,19 @@ type ViewState =
     }
   | { readonly kind: "error"; readonly message: string };
 
+const CLIENT_ID_STORAGE_KEY = "playlist-tidy.spotify-client-id";
+const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,128}$/u;
+
 const appRoot = document.querySelector<HTMLElement>("#app");
 if (appRoot === null) throw new Error("The application root is missing.");
 const app: HTMLElement = appRoot;
 
-const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim() ?? "";
+const configuredClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim() ?? "";
 const redirectUri = `${window.location.origin}${window.location.pathname}`;
-const auth = new SpotifyPkceAuth(getSessionStorage());
+const sessionStorage = getSessionStorage();
+let customClientId = readCustomClientId(sessionStorage);
+let clientId = customClientId ?? configuredClientId;
+const auth = new SpotifyPkceAuth(sessionStorage);
 let connectionEpoch = 0;
 let revealObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
@@ -56,6 +62,8 @@ let writeOperationActive = false;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
+  const quotaExhausted = state.kind === "error" && state.message.includes("Development Mode quota");
+  const showCustomApp = customClientId !== undefined || quotaExhausted || state.kind === "config-missing";
   app.innerHTML = `
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="reading-progress" aria-hidden="true"></div>
@@ -82,7 +90,25 @@ function render(state: ViewState): void {
           </div>
           <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
-          <p id="hosted-access-note" class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Everyone can inspect or self-host the open-source project, but an unlisted account cannot use this hosted connection.</p>
+          <p id="hosted-access-note" class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Its API quota is shared across all apps owned by that Spotify developer account.</p>
+          <details id="custom-app-setup" class="custom-app-setup"${showCustomApp ? " open" : ""}>
+            <summary>Use your own Spotify app</summary>
+            <div class="custom-app-setup__body">
+              <p>Use this same website with quota from your own Spotify Development Mode app. Create an app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>, register the exact redirect URI below, and paste its public Client ID. Your developer account must have Premium. Never paste a Client Secret.</p>
+              ${customClientId === undefined ? "" : '<p class="custom-app-setup__active"><strong>Active for this tab:</strong> Using your own Spotify Client ID.</p>'}
+              <p class="custom-app-setup__redirect"><strong>Redirect URI</strong><code id="custom-redirect-uri"></code></p>
+              <form id="custom-client-form" novalidate>
+                <label for="custom-client-id">Spotify Client ID</label>
+                <div class="custom-app-setup__controls">
+                  <input id="custom-client-id" name="spotify-client-id" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="custom-client-help custom-client-status" />
+                  <button class="custom-client-submit" type="submit">Connect with my Client ID</button>
+                </div>
+                <p id="custom-client-help" class="custom-app-setup__help">Stored only in this tab’s session storage so it survives Spotify’s redirect. A Client ID is public configuration, not a password.</p>
+                <p id="custom-client-status" class="custom-app-setup__status" role="alert"></p>
+              </form>
+              ${customClientId === undefined ? "" : '<button id="forget-custom-client" class="custom-client-forget" type="button">Forget my Client ID and use the hosted app</button>'}
+            </div>
+          </details>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
@@ -138,7 +164,7 @@ function render(state: ViewState): void {
           <p class="journey__index" aria-hidden="true">02</p>
           <div>
             <h3>Running scheduled maintenance</h3>
-            <p>The public website cannot keep sorting after you leave. For recurring sorting, clone the repository and complete one local enrollment. GitHub Actions can then maintain your chosen playlists every six hours.</p>
+            <p>The public website cannot keep sorting after you leave. For recurring sorting, clone the repository and complete one local enrollment. GitHub Actions can then maintain your chosen playlists at 00:00 and 12:00 UTC.</p>
             <a href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Read the self-hosting setup →</a>
           </div>
           <p class="journey__outcome">Automatic · self-hosted</p>
@@ -207,6 +233,7 @@ function render(state: ViewState): void {
   status.textContent = connection.status;
   error.textContent = state.kind === "error" ? state.message : "";
   app.setAttribute("aria-busy", state.kind === "connecting" ? "true" : "false");
+  initializeCustomClientControls();
 
   if (state.kind === "connected") {
     button.addEventListener("click", () => {
@@ -220,6 +247,46 @@ function render(state: ViewState): void {
   }
   initializeMotion();
   initializeInteractions();
+}
+
+function initializeCustomClientControls(): void {
+  const form = document.querySelector<HTMLFormElement>("#custom-client-form");
+  const input = document.querySelector<HTMLInputElement>("#custom-client-id");
+  const status = document.querySelector<HTMLElement>("#custom-client-status");
+  const redirect = document.querySelector<HTMLElement>("#custom-redirect-uri");
+  if (form === null || input === null || status === null || redirect === null) {
+    throw new Error("Custom Spotify application controls are missing.");
+  }
+  redirect.textContent = redirectUri;
+  input.value = customClientId ?? "";
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const candidate = input.value.trim();
+    if (!CLIENT_ID_PATTERN.test(candidate)) {
+      status.textContent = "Enter the public Client ID only. It should contain 16 to 128 letters, numbers, underscores, or hyphens.";
+      input.focus();
+      return;
+    }
+    try {
+      sessionStorage.setItem(CLIENT_ID_STORAGE_KEY, candidate);
+    } catch {
+      status.textContent = "This browser blocked the temporary session storage needed to carry your Client ID through Spotify login.";
+      return;
+    }
+    auth.disconnect();
+    customClientId = candidate;
+    clientId = candidate;
+    void beginLogin();
+  });
+
+  document.querySelector<HTMLButtonElement>("#forget-custom-client")?.addEventListener("click", () => {
+    connectionEpoch += 1;
+    auth.disconnect();
+    sessionStorage.removeItem(CLIENT_ID_STORAGE_KEY);
+    customClientId = undefined;
+    clientId = configuredClientId;
+    render(clientId.length === 0 ? { kind: "config-missing" } : { kind: "disconnected" });
+  });
 }
 
 function renderEmbeddedRefusal(): void {
@@ -342,6 +409,11 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
       for (const action of controls.resultActions.querySelectorAll<HTMLButtonElement>("button")) {
         action.disabled = catalogBusy;
       }
+    }
+    for (const control of document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+      "#custom-app-setup input, #custom-app-setup button",
+    )) {
+      control.disabled = catalogBusy;
     }
     const connectionButton = document.querySelector<HTMLButtonElement>("#connection-action");
     if (connectionButton !== null) connectionButton.disabled = catalogBusy;
@@ -867,7 +939,7 @@ function getConnectionPresentation(state: ViewState): {
       return {
         buttonLabel: "Connect Spotify",
         disabled: true,
-        status: "A Spotify Client ID must be configured before login can be enabled.",
+        status: "Use your own Spotify Client ID below to enable login.",
       };
     case "connecting":
       return { buttonLabel: "Connecting…", disabled: true, status: "Completing Spotify login." };
@@ -882,8 +954,21 @@ function getConnectionPresentation(state: ViewState): {
     case "error":
       return { buttonLabel: "Try again", disabled: false, status: "" };
     case "disconnected":
-      return { buttonLabel: "Connect Spotify", disabled: false, status: "" };
+      return {
+        buttonLabel: customClientId === undefined ? "Connect Spotify" : "Connect with my Spotify app",
+        disabled: false,
+        status: customClientId === undefined ? "" : "Using your own Spotify Client ID for this tab.",
+      };
   }
+}
+
+function readCustomClientId(storage: SessionStoragePort): string | undefined {
+  const stored = storage.getItem(CLIENT_ID_STORAGE_KEY)?.trim();
+  if (stored === undefined || !CLIENT_ID_PATTERN.test(stored)) {
+    if (stored !== undefined) storage.removeItem(CLIENT_ID_STORAGE_KEY);
+    return undefined;
+  }
+  return stored;
 }
 
 function getSafeErrorMessage(

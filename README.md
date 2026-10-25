@@ -43,19 +43,19 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 
 | | Public website | Self-hosted automation |
 | --- | --- | --- |
-| Best for | Sorting playlists now with an allowlisted test account | Keeping playlists sorted without returning to the website |
-| Starts with | Join the app allowlist, then connect Spotify in the browser | Clone the repository and enroll once locally |
-| Control | You preview and confirm each sorting operation | GitHub Actions discovers and maintains owned playlists every six hours |
+| Best for | Sorting playlists now with an allowlisted test account or your own Spotify app | Keeping playlists sorted without returning to the website |
+| Starts with | Use the hosted test app, or paste your own public Spotify Client ID | Clone the repository and enroll once locally |
+| Control | You preview and confirm each sorting operation | GitHub Actions discovers and maintains owned playlists twice daily |
 | Credential lifetime | Access token lives in memory and disappears on reload | Refresh token lives in your repository's encrypted Actions secrets |
 | Background activity | None | Runs only in your own repository |
 
-Opening the public website does **not** enroll an account in recurring sorting. The hosted Spotify application is in Development Mode: Spotify permits at most five explicitly allowlisted users, and the app owner's Premium subscription must remain active. An allowlisted visitor connects only for the current browser session and manually chooses what to preview and sort. A visitor who is not on the allowlist can still inspect or self-host the project, but Spotify will reject the hosted app's API requests. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
+Opening the public website does **not** enroll an account in recurring sorting. The hosted Spotify application is in Development Mode: Spotify permits at most five explicitly allowlisted users, the app owner's Premium subscription must remain active, and all Development Mode apps under one developer account share an API quota. An allowlisted visitor connects only for the current browser session and manually chooses what to preview and sort. Anyone with their own Spotify Development Mode app can instead paste its public Client ID into the website and use that developer account's quota without cloning or rebuilding the project. The exact production redirect URI must be registered in that app, and the app owner must have Premium. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
 
 ## How it works
 
 ### Public website
 
-1. **Connect.** Authorize directly with Spotify through Authorization Code with PKCE.
+1. **Connect.** Use the hosted test app or your own public Client ID, then authorize directly with Spotify through Authorization Code with PKCE.
 2. **Choose.** Select a playlist owned by the authenticated account.
 3. **Preview.** Read the complete playlist and calculate the exact reorder plan with zero writes.
 4. **Confirm.** Start sorting only after an explicit user action.
@@ -85,6 +85,7 @@ These are executable invariants, not interface promises. Their authoritative def
 - The browser receives no Spotify client secret.
 - Access tokens exist in memory only and disappear on reload.
 - The one-time PKCE verifier and OAuth state use `sessionStorage` only during the redirect round trip and are deleted afterward.
+- A user-supplied public Client ID stays in `sessionStorage` for the tab so it survives Spotify's redirect; selecting the forget action or closing the tab removes it.
 - Refresh tokens returned to the website are discarded.
 - The public website has no analytics, advertising, cookies, session replay, application server, or user database.
 - The Spotify interface refuses to initialize inside another website's frame and performs no authorization or playlist operation there.
@@ -158,7 +159,7 @@ To maintain only a fixed subset instead, enroll with `--playlists=PLAYLIST_ID_ON
 
 For fully autonomous refresh-token rotation, add a fine-grained token with repository Secrets write access as the `PLAYLIST_TIDY_SECRET_ADMIN_TOKEN` Actions secret. The scheduled workflow writes a replacement only when Spotify actually rotates the credential, then deletes its temporary mode-`0600` file. Without that secret, ordinary scheduled runs work, but a future rotation deliberately fails rather than losing the new credential.
 
-`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with `all` or a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification. The scheduled queue is deliberately sequential and pauses between playlists to reduce Spotify API pressure. If Spotify closes its quota window, the circuit breaker defers unfinished work to the next scheduled run rather than repeatedly failing every playlist.
+`Scheduled Playlist Sort` runs at 00:00 and 12:00 UTC each day and can also be dispatched manually with `all` or a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification. The scheduled queue is deliberately sequential and pauses between playlists to reduce Spotify API pressure. If Spotify closes its quota window, the circuit breaker defers unfinished work to the next scheduled run rather than repeatedly failing every playlist.
 
 Spotify Development Mode may invalidate an automation credential after a later website login. The workflow fails closed if that happens; rerun the enrollment command to replace the secret. No playlist write is attempted with an unauthenticated session.
 
@@ -182,7 +183,7 @@ GitHub Pages also serves a branded, script-free recovery page for unknown routes
 
 GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
-Scheduled Verify runs rebuild, recheck, recapture, and redeploy the site every Wednesday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
+Scheduled Verify runs rebuild, recheck, recapture, and redeploy the site every Wednesday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs at 00:00 and 12:00 UTC once enrolled. These jobs never author commits, preserving the human-only contributor history.
 
 ## Repository map
 

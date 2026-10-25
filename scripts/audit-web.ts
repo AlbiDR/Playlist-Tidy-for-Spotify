@@ -144,7 +144,7 @@ try {
             continue;
           }
           const skipLinkIsFirst = await page.evaluate(() =>
-            document.querySelector("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")?.classList.contains("skip-link") === true,
+            document.querySelector("a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, textarea:not([disabled]), [tabindex]:not([tabindex='-1'])")?.classList.contains("skip-link") === true,
           );
           if (!skipLinkIsFirst) failures.push(`${contextName} does not place the skip link first in focus order.`);
           if (browserName === "WebKit") await skipLink.focus();
@@ -234,7 +234,7 @@ async function auditFramedApplication(
       activeElementId: document.activeElement?.id ?? "",
       connectButtons: document.querySelectorAll("#connection-action").length,
       firstFocusableIsSkipLink: document.querySelector(
-        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
       )?.classList.contains("skip-link") === true,
       localStorageCount: window.localStorage.length,
       sessionStorageCount: window.sessionStorage.length,
@@ -382,8 +382,12 @@ async function auditKeyboardNavigation(browser: import("playwright").Browser): P
       if (route.path === "/404.html") await mapProductionRootToPreview(page);
       await page.goto(`${origin}${route.path}`, { waitUntil: "networkidle" });
       const expectedCount = await page.locator(
-        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
-      ).count();
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ).evaluateAll((elements) => elements.filter((element) => {
+        if (!(element instanceof HTMLElement) || element.getClientRects().length === 0) return false;
+        const style = getComputedStyle(element);
+        return style.display !== "none" && style.visibility !== "hidden";
+      }).length);
       const visited = new Set<string>();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
       for (let index = 0; index < expectedCount; index += 1) {
