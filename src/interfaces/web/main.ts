@@ -9,7 +9,8 @@ import { previewPlaylistSort } from "../../applications/preview/previewPlaylistS
 import type { PlaylistSortPreview } from "../../applications/preview/previewPlaylistSort.js";
 import { sortPlaylist } from "../../applications/sort/sortPlaylist.js";
 import { PlaylistTidyError } from "../../core/errors.js";
-import type { PlaylistView } from "../../core/playlist/types.js";
+import { applyMovePlan, getTargetOrder, haveEqualMembership, isNewestFirst, planPlaylistSort } from "../../core/playlist/index.js";
+import type { PlaylistOccurrence, PlaylistView } from "../../core/playlist/types.js";
 import markUrl from "./favicon.svg";
 import "./styles.css";
 
@@ -27,16 +28,29 @@ type ViewState =
 
 const CLIENT_ID_STORAGE_KEY = "playlist-tidy.spotify-client-id";
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,128}$/u;
+const DEMO_TRACKS = [
+  { title: "Northbound", artist: "Paper Satellites", addedAt: "2026-09-29T18:10:00.000Z" },
+  { title: "Afterimage", artist: "Glass Hours", addedAt: "2026-10-24T21:45:00.000Z" },
+  { title: "Open Water", artist: "Mira Vale", addedAt: "2026-10-02T07:30:00.000Z" },
+  { title: "Soft Signal", artist: "Low Season", addedAt: "2026-10-21T16:05:00.000Z" },
+  { title: "Night Bus", artist: "Neon Static", addedAt: "2026-10-18T23:20:00.000Z" },
+] as const;
+const DEMO_OCCURRENCES: readonly PlaylistOccurrence[] = DEMO_TRACKS.map((track, originalPosition) => ({
+  originalPosition,
+  uri: `sample:track:${String(originalPosition)}`,
+  itemType: "track",
+  addedAt: track.addedAt,
+  addedById: "sample-listener",
+}));
 
 const appRoot = document.querySelector<HTMLElement>("#app");
 if (appRoot === null) throw new Error("The application root is missing.");
 const app: HTMLElement = appRoot;
 
-const configuredClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID?.trim() ?? "";
 const redirectUri = `${window.location.origin}${window.location.pathname}`;
 const sessionStorage = getSessionStorage();
 let customClientId = readCustomClientId(sessionStorage);
-let clientId = customClientId ?? configuredClientId;
+let clientId = customClientId ?? "";
 const auth = new SpotifyPkceAuth(sessionStorage);
 let connectionEpoch = 0;
 let revealObserver: IntersectionObserver | undefined;
@@ -63,7 +77,8 @@ let writeOperationActive = false;
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
   const quotaExhausted = state.kind === "error" && state.message.includes("Development Mode quota");
-  const showCustomApp = customClientId !== undefined || quotaExhausted || state.kind === "config-missing";
+  const showCustomApp = customClientId !== undefined || quotaExhausted;
+  const showConnection = customClientId !== undefined || state.kind === "connecting" || state.kind === "connected" || state.kind === "error";
   app.innerHTML = `
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="reading-progress" aria-hidden="true"></div>
@@ -84,17 +99,21 @@ function render(state: ViewState): void {
             was added, with the newest at the top. It does not delete tracks, edit music,
             or rearrange the playlists in your library.
           </p>
-          <div class="connection-row">
-            <button id="connection-action" class="connect-button" type="button" aria-describedby="connection-status connection-error hosted-access-note"></button>
+          <div class="hero-actions">
+            <button id="demo-action" class="connect-button" type="button">Try the interactive demo</button>
+            <button id="spotify-setup-action" class="secondary-button" type="button">Use with my Spotify app</button>
+          </div>
+          <p class="demo-intro"><strong>No account needed.</strong> The demo uses clearly labelled sample tracks and the real Playlist Tidy planning engine. It never contacts Spotify.</p>
+          <div class="connection-row"${showConnection ? "" : " hidden"}>
+            <button id="connection-action" class="connect-button connect-button--compact" type="button" aria-describedby="connection-status connection-error personal-access-note"></button>
             <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
           </div>
           <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
-          <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
-          <p id="hosted-access-note" class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Its API quota is shared across all apps owned by that Spotify developer account.</p>
+          <p id="personal-access-note" class="session-note"${showConnection ? "" : " hidden"}><strong>Personal connection.</strong> Reloading or closing this page ends the Spotify access-token session.</p>
           <details id="custom-app-setup" class="custom-app-setup"${showCustomApp ? " open" : ""}>
-            <summary>Use your own Spotify app</summary>
+            <summary>Advanced: connect your Spotify app</summary>
             <div class="custom-app-setup__body">
-              <p>Use this same website with quota from your own Spotify Development Mode app. Create an app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>, register the exact redirect URI below, and paste its public Client ID. Your developer account must have Premium. Never paste a Client Secret.</p>
+              <p>Real Spotify access is for personal and self-hosted use. Create an app in the <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Spotify Developer Dashboard ↗</a>, register the exact redirect URI below, and paste its public Client ID. Spotify requires the app owner to have Premium. Never paste a Client Secret.</p>
               ${customClientId === undefined ? "" : '<p class="custom-app-setup__active"><strong>Active for this tab:</strong> Using your own Spotify Client ID.</p>'}
               <p class="custom-app-setup__redirect"><strong>Redirect URI</strong><code id="custom-redirect-uri"></code></p>
               <form id="custom-client-form" novalidate>
@@ -106,10 +125,10 @@ function render(state: ViewState): void {
                 <p id="custom-client-help" class="custom-app-setup__help">Stored only in this tab’s session storage so it survives Spotify’s redirect. A Client ID is public configuration, not a password.</p>
                 <p id="custom-client-status" class="custom-app-setup__status" role="alert"></p>
               </form>
-              ${customClientId === undefined ? "" : '<button id="forget-custom-client" class="custom-client-forget" type="button">Forget my Client ID and use the hosted app</button>'}
+              ${customClientId === undefined ? "" : '<button id="forget-custom-client" class="custom-client-forget" type="button">Forget my Client ID</button>'}
             </div>
           </details>
-          <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
+          <p class="trust-note">Synthetic demo / optional PKCE login / reorder-only Spotify writes</p>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
           <div class="sort-visual" aria-hidden="true">
@@ -123,6 +142,30 @@ function render(state: ViewState): void {
             </div>
             <div class="sort-visual__stamp">stable sort<br>verified</div>
           </div>
+        </div>
+      </section>
+      <section id="interactive-demo" class="interactive-demo reveal" aria-labelledby="demo-heading">
+        <div class="interactive-demo__intro">
+          <p class="eyebrow">Interactive product demo</p>
+          <div class="demo-badge">Synthetic sample data</div>
+          <h2 id="demo-heading">See the safety flow.<br>No Spotify account needed.</h2>
+          <p>This walkthrough runs the production ordering and planning code entirely in your browser. The fictional tracks below are not Spotify content, and the demo performs no network request or persistent storage.</p>
+          <div class="interactive-demo__controls">
+            <button id="demo-primary-action" class="preview-button" type="button">Preview the sort</button>
+            <button id="demo-reset" class="custom-client-forget" type="button" hidden>Reset demo</button>
+          </div>
+          <p id="demo-status" class="demo-status" role="status" aria-live="polite">The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.</p>
+        </div>
+        <div class="demo-playlist" aria-label="Synthetic sample playlist">
+          <div class="demo-playlist__header">
+            <div>
+              <span>Sample playlist</span>
+              <strong>Late-night discoveries</strong>
+            </div>
+            <span id="demo-phase" class="demo-phase">Unsorted</span>
+          </div>
+          <ol id="demo-track-list" class="demo-track-list"></ol>
+          <p class="demo-proof"><strong>Boundary:</strong> the order may change; titles, artists, dates, and membership never do.</p>
         </div>
       </section>
       <section class="purpose" aria-labelledby="purpose-heading">
@@ -149,25 +192,25 @@ function render(state: ViewState): void {
       </section>
       <section class="journeys" aria-labelledby="journeys-heading">
         <header class="journeys__heading reveal">
-          <p class="eyebrow">Two ways to use it</p>
-          <h2 id="journeys-heading">Sort once here.<br>Keep sorting from your own copy.</h2>
+          <p class="eyebrow">Two honest ways to use it</p>
+          <h2 id="journeys-heading">Try it here.<br>Use Spotify from your own app.</h2>
         </header>
         <div class="journey reveal">
           <p class="journey__index" aria-hidden="true">01</p>
           <div>
-            <h3>Visiting the public website</h3>
-            <p>An allowlisted test account can connect Spotify, choose owned playlists, preview the work, and approve a sort. Each visit is manual. Your access token disappears when the page reloads.</p>
+            <h3>Trying the public demo</h3>
+            <p>Anyone can preview, confirm, and verify a newest-first sort with synthetic data. It runs locally, contacts no service, stores nothing, and is always available.</p>
           </div>
-          <p class="journey__outcome">Manual · allowlisted access</p>
+          <p class="journey__outcome">Interactive · no account</p>
         </div>
         <div class="journey reveal reveal--delay-1">
           <p class="journey__index" aria-hidden="true">02</p>
           <div>
-            <h3>Running scheduled maintenance</h3>
-            <p>The public website cannot keep sorting after you leave. For recurring sorting, clone the repository and complete one local enrollment. GitHub Actions can then maintain your chosen playlists at 00:00 and 12:00 UTC.</p>
+            <h3>Using your Spotify playlists</h3>
+            <p>Bring the public Client ID from your own Spotify Development Mode app for a manual browser session, or clone the repository and enroll scheduled maintenance at 00:00 and 12:00 UTC.</p>
             <a href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Read the self-hosting setup →</a>
           </div>
-          <p class="journey__outcome">Automatic · self-hosted</p>
+          <p class="journey__outcome">Personal · developer configured</p>
         </div>
       </section>
       <section class="route reveal" aria-labelledby="route-heading">
@@ -234,6 +277,19 @@ function render(state: ViewState): void {
   error.textContent = state.kind === "error" ? state.message : "";
   app.setAttribute("aria-busy", state.kind === "connecting" ? "true" : "false");
   initializeCustomClientControls();
+  initializeDemo();
+
+  document.querySelector<HTMLButtonElement>("#demo-action")?.addEventListener("click", () => {
+    const demo = document.querySelector<HTMLElement>("#interactive-demo");
+    demo?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    document.querySelector<HTMLButtonElement>("#demo-primary-action")?.focus({ preventScroll: true });
+  });
+  document.querySelector<HTMLButtonElement>("#spotify-setup-action")?.addEventListener("click", () => {
+    const setup = document.querySelector<HTMLDetailsElement>("#custom-app-setup");
+    setup?.setAttribute("open", "");
+    setup?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    document.querySelector<HTMLInputElement>("#custom-client-id")?.focus({ preventScroll: true });
+  });
 
   if (state.kind === "connected") {
     button.addEventListener("click", () => {
@@ -247,6 +303,87 @@ function render(state: ViewState): void {
   }
   initializeMotion();
   initializeInteractions();
+}
+
+function initializeDemo(): void {
+  const list = document.querySelector<HTMLOListElement>("#demo-track-list");
+  const primary = document.querySelector<HTMLButtonElement>("#demo-primary-action");
+  const reset = document.querySelector<HTMLButtonElement>("#demo-reset");
+  const status = document.querySelector<HTMLElement>("#demo-status");
+  const phase = document.querySelector<HTMLElement>("#demo-phase");
+  if (list === null || primary === null || reset === null || status === null || phase === null) {
+    throw new Error("Interactive demo controls are missing.");
+  }
+
+  const plan = planPlaylistSort(DEMO_OCCURRENCES);
+  let order: readonly PlaylistOccurrence[] = DEMO_OCCURRENCES;
+  let step: "initial" | "previewed" | "verified" = "initial";
+
+  const renderTracks = (): void => {
+    list.replaceChildren(...order.map((occurrence, index) => {
+      const track = DEMO_TRACKS[occurrence.originalPosition];
+      if (track === undefined) throw new Error("Interactive demo track identity is invalid.");
+      const item = document.createElement("li");
+      item.className = "demo-track";
+      const position = document.createElement("span");
+      position.className = "demo-track__position";
+      position.textContent = String(index + 1).padStart(2, "0");
+      const identity = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = track.title;
+      const artist = document.createElement("span");
+      artist.textContent = track.artist;
+      identity.append(title, artist);
+      const date = document.createElement("time");
+      date.dateTime = track.addedAt;
+      date.textContent = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" }).format(new Date(track.addedAt));
+      item.append(position, identity, date);
+      return item;
+    }));
+  };
+
+  const resetDemo = (): void => {
+    order = DEMO_OCCURRENCES;
+    step = "initial";
+    primary.textContent = "Preview the sort";
+    primary.disabled = false;
+    reset.hidden = true;
+    phase.textContent = "Unsorted";
+    phase.className = "demo-phase";
+    status.textContent = "The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.";
+    renderTracks();
+  };
+
+  primary.addEventListener("click", () => {
+    if (step === "initial") {
+      step = "previewed";
+      primary.textContent = "Apply sample sort";
+      reset.hidden = false;
+      phase.textContent = "Preview ready";
+      phase.className = "demo-phase demo-phase--preview";
+      status.textContent = `${String(plan.length)} range ${plan.length === 1 ? "move" : "moves"} planned for ${String(order.length)} sample tracks. The displayed order has not changed.`;
+      return;
+    }
+    if (step !== "previewed") return;
+    const sorted = applyMovePlan(order, plan);
+    if (!haveEqualMembership(order, sorted) || !isNewestFirst(sorted)) {
+      throw new Error("Interactive demo verification failed.");
+    }
+    const target = getTargetOrder(order);
+    if (!target.every((occurrence, index) => occurrence.originalPosition === sorted[index]?.originalPosition)) {
+      throw new Error("Interactive demo did not reach its target order.");
+    }
+    order = sorted;
+    step = "verified";
+    primary.textContent = "Sort verified";
+    primary.disabled = true;
+    phase.textContent = "Verified newest-first";
+    phase.className = "demo-phase demo-phase--verified";
+    status.textContent = `Sorted and verified ${String(order.length)} sample tracks with ${String(plan.length)} ${plan.length === 1 ? "move" : "moves"}. Membership and track details are unchanged.`;
+    renderTracks();
+  });
+  reset.addEventListener("click", resetDemo);
+  resetDemo();
 }
 
 function initializeCustomClientControls(): void {
@@ -284,8 +421,8 @@ function initializeCustomClientControls(): void {
     auth.disconnect();
     sessionStorage.removeItem(CLIENT_ID_STORAGE_KEY);
     customClientId = undefined;
-    clientId = configuredClientId;
-    render(clientId.length === 0 ? { kind: "config-missing" } : { kind: "disconnected" });
+    clientId = "";
+    render({ kind: "config-missing" });
   });
 }
 
@@ -937,9 +1074,9 @@ function getConnectionPresentation(state: ViewState): {
   switch (state.kind) {
     case "config-missing":
       return {
-        buttonLabel: "Connect Spotify",
+        buttonLabel: "Connect my Spotify app",
         disabled: true,
-        status: "Use your own Spotify Client ID below to enable login.",
+        status: "Add your public Spotify Client ID in the advanced setup to enable login.",
       };
     case "connecting":
       return { buttonLabel: "Connecting…", disabled: true, status: "Completing Spotify login." };
@@ -955,9 +1092,9 @@ function getConnectionPresentation(state: ViewState): {
       return { buttonLabel: "Try again", disabled: false, status: "" };
     case "disconnected":
       return {
-        buttonLabel: customClientId === undefined ? "Connect Spotify" : "Connect with my Spotify app",
+        buttonLabel: "Connect my Spotify app",
         disabled: false,
-        status: customClientId === undefined ? "" : "Using your own Spotify Client ID for this tab.",
+        status: "Using your own Spotify Client ID for this tab.",
       };
   }
 }

@@ -43,23 +43,23 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 
 | | Public website | Self-hosted automation |
 | --- | --- | --- |
-| Best for | Sorting playlists now with an allowlisted test account or your own Spotify app | Keeping playlists sorted without returning to the website |
-| Starts with | Use the hosted test app, or paste your own public Spotify Client ID | Clone the repository and enroll once locally |
-| Control | You preview and confirm each sorting operation | GitHub Actions discovers and maintains owned playlists twice daily |
-| Credential lifetime | Access token lives in memory and disappears on reload | Refresh token lives in your repository's encrypted Actions secrets |
+| Best for | Trying the complete safety flow, or manually sorting through your own Spotify app | Keeping playlists sorted without returning to the website |
+| Starts with | Run the synthetic demo with no account, or paste your own public Spotify Client ID | Clone the repository and enroll once locally |
+| Control | You preview and confirm each demo or real sorting operation | GitHub Actions discovers and maintains owned playlists twice daily |
+| Credential lifetime | The demo has none; Spotify access tokens live in memory and disappear on reload | Refresh token lives in your repository's encrypted Actions secrets |
 | Background activity | None | Runs only in your own repository |
 
-Opening the public website does **not** enroll an account in recurring sorting. The hosted Spotify application is in Development Mode: Spotify permits at most five explicitly allowlisted users, the app owner's Premium subscription must remain active, and all Development Mode apps under one developer account share an API quota. An allowlisted visitor connects only for the current browser session and manually chooses what to preview and sort. Anyone with their own Spotify Development Mode app can instead paste its public Client ID into the website and use that developer account's quota without cloning or rebuilding the project. The exact production redirect URI must be registered in that app, and the app owner must have Premium. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
+Opening the public website does **not** enroll an account in recurring sorting. Its default interactive demo uses fictional tracks, the production sorting planner, no network request, and no storage. Real Spotify access is an advanced personal-development path: paste the public Client ID from your own Spotify Development Mode app, register the exact production redirect URI in that app, and authorize a manual browser session. Spotify requires the app owner to have Premium and applies its own allowlist and quota rules. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
 
 ## How it works
 
 ### Public website
 
-1. **Connect.** Use the hosted test app or your own public Client ID, then authorize directly with Spotify through Authorization Code with PKCE.
-2. **Choose.** Select a playlist owned by the authenticated account.
-3. **Preview.** Read the complete playlist and calculate the exact reorder plan with zero writes.
-4. **Confirm.** Start sorting only after an explicit user action.
-5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
+1. **Try.** Run the synthetic demo without an account and see the production planner preview, apply, and verify a sort locally.
+2. **Configure.** For real use, supply the public Client ID from your own Spotify Development Mode app.
+3. **Choose.** Authorize with PKCE and select a playlist owned by the authenticated account.
+4. **Preview.** Read the complete playlist and calculate the exact reorder plan with zero writes.
+5. **Confirm and verify.** Start only after an explicit action, then prove membership and final ordering are correct.
 
 The tab must remain open until verification finishes. Reloading or closing it discards the in-memory Spotify access token and ends the session.
 
@@ -130,11 +130,10 @@ npm run verify
 Run the local website:
 
 ```sh
-cp .env.example .env
 npm run dev
 ```
 
-Set `VITE_SPOTIFY_CLIENT_ID` in `.env`. A Spotify Client ID is public application configuration; never add the Client Secret.
+The demo requires no configuration. For a real Spotify session, enter your public Client ID in the browser interface. Never enter or commit the Client Secret.
 
 Register these Spotify redirect URIs exactly:
 
@@ -153,9 +152,9 @@ SPOTIFY_CLIENT_ID=your_spotify_client_id \
   npm run cli -- enroll
 ```
 
-Replace `your_spotify_client_id` with the public Client ID of an app owned by the maintainer of the fork. Do not reuse the example project's hosted app. To keep public website traffic and background automation from competing for one Spotify Development Mode quota, use apps owned by different developer accounts; a second Client ID under the same developer account still shares that account's quota.
+Replace `your_spotify_client_id` with the public Client ID of an app owned by the maintainer of the fork. A second Client ID under the same developer account still shares that account's Development Mode quota.
 
-Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. The command stores the automation app identity as the `SPOTIFY_AUTOMATION_CLIENT_ID` repository variable and never changes the separate `SPOTIFY_WEB_CLIENT_ID` used by the Pages deployment. By default, `PLAYLIST_IDS` is set to `all`: every scheduled run discovers every playlist currently owned by the authenticated account, so newly created playlists join automatically. Followed and collaborative playlists owned by someone else are excluded.
+Enrollment opens Spotify in the browser, receives the callback only on `127.0.0.1`, and sends the refresh token directly to the `SPOTIFY_REFRESH_TOKEN` Actions secret through `gh`. It never prints or writes the credential to the repository. The command stores the automation app identity as the `SPOTIFY_AUTOMATION_CLIENT_ID` repository variable. By default, `PLAYLIST_IDS` is set to `all`: every scheduled run discovers every playlist currently owned by the authenticated account, so newly created playlists join automatically. Followed and collaborative playlists owned by someone else are excluded.
 
 To maintain only a fixed subset instead, enroll with `--playlists=PLAYLIST_ID_ONE,PLAYLIST_ID_TWO` or change the `PLAYLIST_IDS` repository variable later.
 
@@ -179,11 +178,11 @@ Spotify Development Mode may invalidate an automation credential after a later w
 8. Verify production metadata, public discovery files, and compressed asset budgets.
 9. Sanitize the deployment artifact against prohibited typography.
 
-`npm run audit:web` adds real Chromium, Firefox, and WebKit passes across the application, privacy page, and 404 recovery page for landmarks, heading order, complete keyboard traversal, visible focus, 200% text resizing, accessible control names, image alternatives and dimensions, protected external links, pre-authorization storage and network activity, reduced-motion behavior, forced-colors behavior, responsive overflow, duplicate IDs, no-JavaScript fallback, and browser console failures. Axe enforces automatically detectable WCAG A and AA rules. A credential-free Spotify simulation drives the real interface through authorization, owned-playlist filtering, preview, explicit confirmation, reorder, verification, denial, cleanup, and disconnect. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
+`npm run audit:web` adds real Chromium, Firefox, and WebKit passes across the application, privacy page, and 404 recovery page for landmarks, heading order, complete keyboard traversal, visible focus, 200% text resizing, accessible control names, image alternatives and dimensions, protected external links, pre-authorization storage and network activity, reduced-motion behavior, forced-colors behavior, responsive overflow, duplicate IDs, no-JavaScript fallback, and browser console failures. Axe enforces automatically detectable WCAG A and AA rules. The audit proves that the synthetic demo sorts and verifies without external requests or storage. A credential-free Spotify simulation separately drives the real interface through personal Client ID configuration, authorization, owned-playlist filtering, preview, explicit confirmation, reorder, verification, denial, cleanup, and disconnect. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
 
 GitHub Pages also serves a branded, script-free recovery page for unknown routes. The deployment-health workflow proves that missing URLs retain the correct HTTP 404 status instead of becoming misleading successful responses.
 
-GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. The artifact publishes that full SHA in `release.json`; deployment health compares it with the triggering revision and verifies the expected Spotify web Client ID and quota-recovery controls in the live entry bundle. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
+GitHub enforces those controls through independent Verify, Repository Policy, and Contributor Attribution Policy workflows. A successful Verify run on `main` hands its exact commit SHA to the privileged Pages workflow, which rebuilds and deploys that verified revision. The artifact publishes that full SHA in `release.json`; deployment health compares it with the triggering revision and verifies the interactive demo and personal Spotify controls in the live entry bundle. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
 Scheduled Verify runs rebuild, recheck, recapture, and redeploy the site every Wednesday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs at 00:00 and 12:00 UTC once enrolled. These jobs never author commits, preserving the human-only contributor history.
 

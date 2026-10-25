@@ -16,13 +16,13 @@ const routes = [
     path: "/",
     title: "Playlist Tidy for Spotify",
     reciprocalLink: "./privacy.html",
-    requiredText: "Spotify Development Mode limits this app to five accounts",
+    requiredText: "Synthetic sample data",
   },
   {
     path: "/privacy.html",
     title: "Privacy & safe use | Playlist Tidy",
     reciprocalLink: "./",
-    requiredText: "Spotify limits it to five explicitly allowlisted users",
+    requiredText: "The public website does not provide a shared Spotify application",
   },
   {
     path: "/404.html",
@@ -166,7 +166,7 @@ try {
           if (await page.locator(`a[href="${route.reciprocalLink}"]`).count() === 0) {
             failures.push(`${contextName} is missing reciprocal home/privacy navigation.`);
           }
-          if (!(await page.locator("body").innerText()).includes(route.requiredText)) {
+          if (!(await page.locator("body").innerText()).toLowerCase().includes(route.requiredText.toLowerCase())) {
             failures.push(`${contextName} is missing its Spotify availability disclosure.`);
           }
           await context.close();
@@ -195,8 +195,9 @@ async function auditAxe(page: Page, contextName: string): Promise<void> {
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   for (const violation of results.violations) {
+    const targets = violation.nodes.flatMap((node) => node.target).slice(0, 12).join(", ");
     failures.push(
-      `${contextName} fails axe rule ${violation.id}: ${violation.help} (${String(violation.nodes.length)} ${violation.nodes.length === 1 ? "node" : "nodes"}).`,
+      `${contextName} fails axe rule ${violation.id}: ${violation.help} (${String(violation.nodes.length)} ${violation.nodes.length === 1 ? "node" : "nodes"}${targets.length > 0 ? `: ${targets}` : ""}).`,
     );
   }
 }
@@ -385,6 +386,8 @@ async function auditKeyboardNavigation(browser: import("playwright").Browser): P
         "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
       ).evaluateAll((elements) => elements.filter((element) => {
         if (!(element instanceof HTMLElement) || element.getClientRects().length === 0) return false;
+        const closedDetails = element.closest("details:not([open])");
+        if (closedDetails !== null && element !== closedDetails.querySelector(":scope > summary")) return false;
         const style = getComputedStyle(element);
         return style.display !== "none" && style.visibility !== "hidden";
       }).length);

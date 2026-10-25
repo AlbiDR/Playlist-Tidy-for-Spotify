@@ -19,9 +19,6 @@ const configFile = fileURLToPath(new URL("../config/vite.config.ts", import.meta
 const buildDirectory = await mkdtemp(join(tmpdir(), "playlist-tidy-browser-audit-"));
 const viteOverrides = {
   configFile,
-  define: {
-    "import.meta.env.VITE_SPOTIFY_CLIENT_ID": JSON.stringify(clientId),
-  },
   build: { outDir: buildDirectory, emptyOutDir: true },
   logLevel: "error" as const,
 };
@@ -40,6 +37,7 @@ try {
   for (const [browserName, browserType] of browserTypes) {
     const browser = await browserType.launch({ headless: true });
     try {
+      await auditInteractiveDemo(browser, browserName);
       await auditSuccessfulJourney(browser, browserName);
       if (browserName === "Chromium") {
         await auditDeniedAuthorization(browser);
@@ -53,6 +51,40 @@ try {
 } finally {
   await server.close();
   await rm(buildDirectory, { recursive: true, force: true });
+}
+
+async function auditInteractiveDemo(browser: Browser, browserName: string): Promise<void> {
+  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  const thirdPartyRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).origin !== origin) thirdPartyRequests.push(request.url());
+  });
+  try {
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Try the interactive demo" }).click();
+    await page.getByRole("button", { name: "Preview the sort" }).click();
+    await page.getByText("range moves planned", { exact: false }).waitFor();
+    const before = await page.locator("#demo-track-list .demo-track strong").allTextContents();
+    await page.getByRole("button", { name: "Apply sample sort" }).click();
+    await page.getByText("Sorted and verified 5 sample tracks", { exact: false }).waitFor();
+    const after = await page.locator("#demo-track-list .demo-track strong").allTextContents();
+    if (before.join("|") === after.join("|") || after[0] !== "Afterimage" || after.at(-1) !== "Northbound") {
+      failures.push(`${browserName} interactive demo did not visibly reach newest-first order.`);
+    }
+    if (new Set(before).size !== new Set(after).size || !before.every((title) => after.includes(title))) {
+      failures.push(`${browserName} interactive demo changed sample membership.`);
+    }
+    if (thirdPartyRequests.length > 0) {
+      failures.push(`${browserName} interactive demo contacted a third party.`);
+    }
+    if ((await page.evaluate(() => window.sessionStorage.length + window.localStorage.length)) !== 0) {
+      failures.push(`${browserName} interactive demo persisted browser data.`);
+    }
+    await auditAxe(page, `${browserName} verified interactive demo`);
+  } finally {
+    await context.close();
+  }
 }
 
 if (failures.length > 0) {
@@ -79,13 +111,7 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
 
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    const connect = page.getByRole("button", { name: "Connect Spotify" });
-    if (!(await connect.isEnabled())) {
-      failures.push(`${browserName} did not enable Spotify connection in the journey harness.`);
-      return;
-    }
-
-    await connect.click();
+    await beginPersonalLogin(page, clientId);
     await page.waitForURL("https://accounts.spotify.com/authorize**");
     const authorizationUrl = new URL(page.url());
     const state = authorizationUrl.searchParams.get("state");
@@ -108,8 +134,8 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
       return;
     }
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    if ((await page.evaluate(() => window.sessionStorage.length)) !== 2) {
-      failures.push(`${browserName} did not retain exactly the two transient OAuth values before callback.`);
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 3) {
+      failures.push(`${browserName} did not retain the Client ID and exactly two transient OAuth values before callback.`);
     }
 
     await page.goto(`${origin}/?code=audit-code&state=${encodeURIComponent(state)}`, { waitUntil: "networkidle" });
@@ -117,8 +143,8 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
     if (new URL(page.url()).search.length > 0) {
       failures.push(`${browserName} left OAuth callback parameters in the address bar.`);
     }
-    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
-      failures.push(`${browserName} did not clear transient OAuth storage after callback.`);
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 1) {
+      failures.push(`${browserName} did not clear transient OAuth storage while retaining the personal Client ID.`);
     }
     if (await page.getByText("Followed playlist").count() > 0) {
       failures.push(`${browserName} exposed a playlist not owned by the authenticated account.`);
@@ -171,14 +197,19 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
     await auditAxe(page, `${browserName} verified result`);
 
     await page.getByRole("button", { name: "Disconnect" }).click();
-    await page.getByRole("button", { name: "Connect Spotify" }).waitFor();
+    await page.getByRole("button", { name: "Connect my Spotify app" }).waitFor();
     const retained = await page.evaluate(() => ({
       cookies: document.cookie,
       local: window.localStorage.length,
-      session: window.sessionStorage.length,
+      sessionKeys: [...Array(window.sessionStorage.length)].map((_, index) => window.sessionStorage.key(index)),
     }));
-    if (retained.cookies.length > 0 || retained.local > 0 || retained.session > 0) {
-      failures.push(`${browserName} retained browser data after disconnect.`);
+    if (
+      retained.cookies.length > 0 ||
+      retained.local > 0 ||
+      retained.sessionKeys.length !== 1 ||
+      retained.sessionKeys[0] !== "playlist-tidy.spotify-client-id"
+    ) {
+      failures.push(`${browserName} retained data other than the documented personal Client ID after disconnect.`);
     }
     if (runtimeErrors.length > 0) {
       failures.push(`${browserName} emitted runtime errors during the authenticated journey: ${runtimeErrors.join("; ")}.`);
@@ -197,7 +228,7 @@ async function auditDeniedAuthorization(browser: Browser): Promise<void> {
   }));
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Connect Spotify" }).click();
+    await beginPersonalLogin(page, clientId);
     await page.waitForURL("https://accounts.spotify.com/authorize**");
     const state = new URL(page.url()).searchParams.get("state");
     if (state === null) {
@@ -206,7 +237,7 @@ async function auditDeniedAuthorization(browser: Browser): Promise<void> {
     }
     await page.goto(`${origin}/?error=access_denied&state=${encodeURIComponent(state)}`, { waitUntil: "networkidle" });
     await page.getByText("Spotify access was not granted.").waitFor();
-    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0 || new URL(page.url()).search.length > 0) {
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 1 || new URL(page.url()).search.length > 0) {
       failures.push("Chromium did not clean up after denied Spotify authorization.");
     }
     if (!(await page.getByRole("button", { name: "Try again" }).isEnabled())) {
@@ -231,7 +262,7 @@ async function auditBringOwnClientId(browser: Browser): Promise<void> {
 
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    await page.getByText("Use your own Spotify app", { exact: true }).click();
+    await page.getByText("Advanced: connect your Spotify app", { exact: true }).click();
     const input = page.getByLabel("Spotify Client ID");
     await input.fill("not a client secret!");
     await page.getByRole("button", { name: "Connect with my Client ID" }).click();
@@ -271,8 +302,8 @@ async function auditBringOwnClientId(browser: Browser): Promise<void> {
     if (!(await page.getByText("Using your own Spotify Client ID", { exact: false }).isVisible())) {
       failures.push("Chromium did not disclose that the connected session uses the visitor's Spotify app.");
     }
-    await page.getByRole("button", { name: "Forget my Client ID and use the hosted app" }).click();
-    await page.getByRole("button", { name: "Connect Spotify" }).waitFor();
+    await page.getByRole("button", { name: "Forget my Client ID" }).click();
+    await page.getByRole("button", { name: "Use with my Spotify app" }).waitFor();
     if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
       failures.push("Chromium retained the custom Client ID after the explicit forget action.");
     }
@@ -307,7 +338,7 @@ async function auditQuotaRecovery(browser: Browser): Promise<void> {
 
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "Connect Spotify" }).click();
+    await beginPersonalLogin(page, clientId);
     await page.waitForURL("https://accounts.spotify.com/authorize**");
     const state = new URL(page.url()).searchParams.get("state");
     if (state === null) {
@@ -323,12 +354,18 @@ async function auditQuotaRecovery(browser: Browser): Promise<void> {
     if (!(await page.getByLabel("Spotify Client ID").isVisible()) || profileRequests !== 1) {
       failures.push("Chromium did not expose quota recovery immediately or retried the exhausted quota.");
     }
-    if ((await page.evaluate(() => window.sessionStorage.length)) !== 0) {
-      failures.push("Chromium retained PKCE state after the quota-exhausted callback failed.");
+    if ((await page.evaluate(() => window.sessionStorage.length)) !== 1) {
+      failures.push("Chromium retained state other than the personal Client ID after the quota-exhausted callback failed.");
     }
   } finally {
     await context.close();
   }
+}
+
+async function beginPersonalLogin(page: Page, id: string): Promise<void> {
+  await page.getByRole("button", { name: "Use with my Spotify app" }).click();
+  await page.getByLabel("Spotify Client ID").fill(id);
+  await page.getByRole("button", { name: "Connect with my Client ID" }).click();
 }
 
 interface MockPlaylistItem {

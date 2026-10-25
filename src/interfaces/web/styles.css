@@ -355,12 +355,48 @@ h1 em {
   line-height: 1.7;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.secondary-button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1px solid #4c584f;
+  border-radius: 10px;
+  color: #c3cec5;
+  background: rgb(15 19 16 / 74%);
+  font: inherit;
+  font-weight: 740;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.secondary-button:hover { color: var(--green); border-color: var(--green); }
+.secondary-button:active { transform: translateY(1px); }
+
+.demo-intro {
+  max-width: 620px;
+  margin: 14px 0 0;
+  color: #89938b;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.demo-intro strong { color: #b8c2ba; }
+
 .connection-row {
   display: flex;
   align-items: center;
   gap: 18px;
   margin-top: 32px;
 }
+
+.connection-row[hidden] { display: none; }
+.connect-button--compact { min-width: 190px; }
 
 .connect-button,
 .preview-button,
@@ -696,6 +732,134 @@ h1 em {
   text-transform: uppercase;
   transform: rotate(10deg);
 }
+
+.interactive-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1.18fr);
+  gap: clamp(34px, 6vw, 78px);
+  align-items: center;
+  margin: 18px 0 106px;
+  padding: clamp(28px, 5vw, 58px);
+  border: 1px solid rgb(121 238 157 / 19%);
+  border-radius: 18px 58px 18px 58px;
+  background:
+    radial-gradient(circle at 87% 14%, rgb(121 238 157 / 8%), transparent 34%),
+    linear-gradient(145deg, rgb(24 30 25 / 92%), rgb(13 17 14 / 96%));
+  box-shadow: 0 34px 90px rgb(0 0 0 / 20%);
+}
+
+.interactive-demo__intro h2 {
+  margin: 16px 0 20px;
+  font-size: clamp(2.15rem, 4vw, 4rem);
+  letter-spacing: -0.065em;
+  line-height: 0.98;
+}
+
+.interactive-demo__intro > p:not(.eyebrow, .demo-status) {
+  margin: 0;
+  color: #9da79f;
+  line-height: 1.7;
+}
+
+.demo-badge {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 6px 9px;
+  border: 1px solid rgb(255 139 114 / 34%);
+  border-radius: 99px;
+  color: #ffc0b2;
+  background: rgb(255 139 114 / 7%);
+  font-size: 0.65rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.interactive-demo__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.interactive-demo__controls .custom-client-forget { margin-top: 0; }
+
+.demo-status {
+  min-height: 3.2em;
+  margin: 16px 0 0;
+  color: #b7c2b9;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.demo-playlist {
+  overflow: hidden;
+  border: 1px solid rgb(231 239 232 / 11%);
+  border-radius: 12px 34px 12px 34px;
+  background: #0b0f0c;
+  box-shadow: 0 22px 54px rgb(0 0 0 / 26%);
+}
+
+.demo-playlist__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.demo-playlist__header > div { display: grid; gap: 4px; }
+.demo-playlist__header span { color: #748078; font-size: 0.67rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.demo-playlist__header strong { font-size: 0.98rem; }
+
+.demo-phase {
+  flex: none;
+  padding: 6px 9px;
+  border: 1px solid #3c4740;
+  border-radius: 99px;
+  color: #9ca79e !important;
+  background: #121713;
+}
+
+.demo-phase--preview { color: #ffc2b5 !important; border-color: rgb(255 139 114 / 40%); }
+.demo-phase--verified { color: var(--green) !important; border-color: rgb(121 238 157 / 40%); }
+
+.demo-track-list { margin: 0; padding: 0; list-style: none; }
+
+.demo-track {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 62px;
+  padding: 10px 22px;
+  border-bottom: 1px solid rgb(231 239 232 / 7%);
+  animation: row-arrive 300ms both ease-out;
+}
+
+.demo-track__position,
+.demo-track time {
+  color: #a4aea6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+}
+
+.demo-track > div { display: grid; gap: 3px; }
+.demo-track > div strong { color: #d8dfd9; font-size: 0.86rem; }
+.demo-track > div span { color: #7f8a82; font-size: 0.74rem; }
+.demo-track time { text-transform: uppercase; }
+
+.demo-proof {
+  margin: 0;
+  padding: 15px 22px;
+  color: #778179;
+  background: rgb(121 238 157 / 3%);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.demo-proof strong { color: #a9b3ab; }
 
 .purpose {
   padding: 32px 0 96px;
@@ -1149,6 +1313,7 @@ footer {
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 64px; }
   .sort-visual-wrap { width: min(100%, 450px); }
+  .interactive-demo { grid-template-columns: 1fr; }
   .purpose__heading { grid-template-columns: 0.7fr 1.3fr; }
   .purpose__heading > p:last-child { grid-column: 2; }
   .journeys__heading, .route { grid-template-columns: 1fr; }
@@ -1162,9 +1327,16 @@ footer {
   footer { grid-template-columns: 1fr; }
   .footer-legal { grid-column: 1; }
   .hero { min-height: auto; padding: 56px 0 64px; }
+  .hero-actions { display: grid; }
+  .hero-actions > * { width: 100%; }
   h1 { font-size: clamp(2.1rem, 13.4vw, 3.6rem); }
   .sort-visual-wrap { width: calc(100% - 12px); }
   .sort-visual { transform: rotate(1deg); }
+  .interactive-demo { margin-bottom: 74px; padding: 24px 16px; border-radius: 16px 36px 16px 36px; }
+  .interactive-demo__controls { display: grid; }
+  .interactive-demo__controls > * { width: 100%; }
+  .demo-playlist__header { align-items: flex-start; flex-direction: column; }
+  .demo-track { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; padding-inline: 14px; }
   .purpose { padding: 12px 0 72px; }
   .purpose__heading { grid-template-columns: 1fr; gap: 22px; padding-inline: 8px; }
   .purpose__heading > p:last-child { grid-column: 1; max-width: 34rem; }
@@ -1211,5 +1383,5 @@ footer {
 
 @media (forced-colors: active) {
   .reading-progress, .pointer-light, .sort-visual::before { display: none; }
-  .route__number, .connect-button, .safe-open-link, .preview-button, .sort-button, .custom-client-submit, .custom-client-forget, #custom-client-id { border: 1px solid CanvasText; }
+  .route__number, .connect-button, .secondary-button, .safe-open-link, .preview-button, .sort-button, .custom-client-submit, .custom-client-forget, #custom-client-id { border: 1px solid CanvasText; }
 }
