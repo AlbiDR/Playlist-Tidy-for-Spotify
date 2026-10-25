@@ -18,7 +18,7 @@
   "scripts": {
     "build": "npm run clean && npm run build:web && npm run build:cli",
     "build:cli": "tsc -p config/tsconfig.cli.json",
-    "build:web": "vite build --config config/vite.config.ts",
+    "build:web": "vite build --config config/vite.config.ts && node scripts/sanitize-built-typography.ts",
     "capture:readme": "node scripts/capture-readme.ts",
     "cli": "npm run build:cli && node dist-cli/interfaces/cli/main.js",
     "clean": "node scripts/clean.ts",
