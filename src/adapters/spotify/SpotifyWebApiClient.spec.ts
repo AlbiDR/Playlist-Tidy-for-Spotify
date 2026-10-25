@@ -220,6 +220,32 @@ describe("SpotifyWebApiClient", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("treats an unreadable successful reorder acknowledgment as an ambiguous write", async () => {
+    const fetchMock = vi.fn(async () => new Response("not-json", { status: 200 }));
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(
+      client.reorderPlaylistRange("playlist", "snapshot-a", {
+        rangeStart: 1,
+        rangeLength: 1,
+        insertBefore: 0,
+      }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AMBIGUOUS_WRITE" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("treats a malformed successful reorder acknowledgment as an ambiguous write", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ snapshot_id: "" }));
+    const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
+    await expect(
+      client.reorderPlaylistRange("playlist", "snapshot-a", {
+        rangeStart: 1,
+        rangeLength: 1,
+        insertBefore: 0,
+      }),
+    ).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AMBIGUOUS_WRITE" });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it("classifies a stale snapshot rejection as a concurrent edit", async () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({ error: { status: 400, message: "Snapshot ID is stale" } }, 400),
@@ -242,6 +268,22 @@ describe("SpotifyWebApiClient", () => {
     await expect(client.getPlaylistMetadata("playlist")).rejects.toMatchObject<Partial<PlaylistTidyError>>({
       code: "VALIDATION_FAILED",
     });
+  });
+
+  it("rejects unreadable and impossible Spotify read responses without retrying", async () => {
+    const unreadableFetch = vi.fn(async () => new Response("not-json", { status: 200 }));
+    const unreadableClient = new SpotifyWebApiClient(tokens, { fetch: unreadableFetch });
+    await expect(unreadableClient.getCurrentUser()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "VALIDATION_FAILED",
+    });
+    expect(unreadableFetch).toHaveBeenCalledOnce();
+
+    const impossibleClient = new SpotifyWebApiClient(tokens, {
+      fetch: vi.fn(async () => jsonResponse({ items: [], next: null, total: -1 })),
+    });
+    await expect(impossibleClient.getOwnedPlaylists("owner")).rejects.toMatchObject<
+      Partial<PlaylistTidyError>
+    >({ code: "VALIDATION_FAILED" });
   });
 
   it("rejects an incomplete final page instead of planning from partial membership", async () => {

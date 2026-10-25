@@ -68,8 +68,17 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
     const verifier = createRandomBase64Url(this.cryptoImplementation);
     const state = createRandomBase64Url(this.cryptoImplementation);
     const challenge = await createCodeChallenge(this.cryptoImplementation, verifier);
-    this.storage.setItem(VERIFIER_STORAGE_KEY, verifier);
-    this.storage.setItem(STATE_STORAGE_KEY, state);
+    try {
+      this.storage.setItem(VERIFIER_STORAGE_KEY, verifier);
+      this.storage.setItem(STATE_STORAGE_KEY, state);
+    } catch (error) {
+      this.clearTransientState();
+      throw new PlaylistTidyError(
+        "AUTHENTICATION_FAILED",
+        "The browser could not retain the temporary values required for secure Spotify login.",
+        { cause: error },
+      );
+    }
 
     const url = new URL(AUTHORIZE_URL);
     url.search = new URLSearchParams({
@@ -178,11 +187,20 @@ export class SpotifyPkceAuth implements SpotifyTokenProvider {
       );
     }
 
+    if (parsed.output.refresh_token !== undefined && this.onRefreshToken !== undefined) {
+      try {
+        await this.onRefreshToken(parsed.output.refresh_token);
+      } catch (error) {
+        this.disconnect();
+        throw new PlaylistTidyError(
+          "AUTHENTICATION_FAILED",
+          "Spotify connected, but the refresh credential could not be stored safely.",
+          { cause: error },
+        );
+      }
+    }
     this.accessToken = parsed.output.access_token;
     this.expiresAt = this.now() + parsed.output.expires_in * 1000;
-    if (parsed.output.refresh_token !== undefined && this.onRefreshToken !== undefined) {
-      await this.onRefreshToken(parsed.output.refresh_token);
-    }
     return { status: "connected" };
   }
 

@@ -154,7 +154,15 @@ export class SpotifyWebApiClient
       range_length: move.rangeLength,
       snapshot_id: snapshotId,
     });
-    return this.parse(SpotifyReorderResponseSchema, payload, "reorder response").snapshot_id;
+    const parsed = v.safeParse(SpotifyReorderResponseSchema, payload);
+    if (!parsed.success) {
+      throw new PlaylistTidyError(
+        "AMBIGUOUS_WRITE",
+        "Spotify accepted the reorder, but returned an invalid acknowledgment. The live playlist must be reconciled before any further write.",
+        { cause: parsed.issues },
+      );
+    }
+    return parsed.output.snapshot_id;
   }
 
   private async readAllPlaylistItems(playlistId: string): Promise<readonly PlaylistOccurrence[]> {
@@ -227,7 +235,15 @@ export class SpotifyWebApiClient
           continue;
         }
         if (!response.ok) throw createHttpError(response.status, "Spotify read request failed");
-        return await response.json();
+        try {
+          return await response.json();
+        } catch (error) {
+          throw new PlaylistTidyError(
+            "VALIDATION_FAILED",
+            "Spotify returned an unreadable read response.",
+            { cause: error },
+          );
+        }
       } catch (error) {
         if (error instanceof PlaylistTidyError) throw error;
         transientFailures += 1;
@@ -293,7 +309,15 @@ export class SpotifyWebApiClient
           await readSafeResponseText(response),
         );
       }
-      return await response.json();
+      try {
+        return await response.json();
+      } catch (error) {
+        throw new PlaylistTidyError(
+          "AMBIGUOUS_WRITE",
+          "Spotify accepted the reorder, but its acknowledgment was unreadable. The live playlist must be reconciled before any further write.",
+          { cause: error },
+        );
+      }
     }
     throw new PlaylistTidyError("RETRY_EXHAUSTED", "Spotify reorder retry budget was exhausted before a write was accepted.");
   }

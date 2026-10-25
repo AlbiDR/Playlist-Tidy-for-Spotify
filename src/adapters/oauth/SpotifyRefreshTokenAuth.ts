@@ -10,10 +10,10 @@ const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const EXPIRY_SAFETY_MS = 30_000;
 
 const RefreshResponseSchema = v.object({
-  access_token: v.string(),
+  access_token: v.pipe(v.string(), v.minLength(1)),
   token_type: v.literal("Bearer"),
   expires_in: v.pipe(v.number(), v.integer(), v.minValue(1)),
-  refresh_token: v.optional(v.string()),
+  refresh_token: v.optional(v.pipe(v.string(), v.minLength(1))),
 });
 
 export class SpotifyRefreshTokenAuth implements SpotifyTokenProvider {
@@ -75,11 +75,20 @@ export class SpotifyRefreshTokenAuth implements SpotifyTokenProvider {
         { cause: error },
       );
     }
-    const payload: unknown = await response.json();
     if (!response.ok) {
       throw new PlaylistTidyError(
         "AUTHENTICATION_FAILED",
         `Spotify token refresh failed with HTTP ${String(response.status)}.`,
+      );
+    }
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      throw new PlaylistTidyError(
+        "VALIDATION_FAILED",
+        "Spotify returned an unreadable refresh response.",
+        { cause: error },
       );
     }
     const parsed = v.safeParse(RefreshResponseSchema, payload);

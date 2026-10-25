@@ -2,6 +2,7 @@
 // Copyright (C) 2026 AlbiDR
 
 import { describe, expect, it, vi } from "vitest";
+import type { PlaylistTidyError } from "../../core/errors.js";
 import { SpotifyRefreshTokenAuth } from "./SpotifyRefreshTokenAuth.js";
 
 describe("SpotifyRefreshTokenAuth", () => {
@@ -38,5 +39,30 @@ describe("SpotifyRefreshTokenAuth", () => {
     await auth.getAccessToken();
     await auth.getAccessToken();
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("classifies a non-JSON rejected refresh without parsing its body", async () => {
+    const auth = new SpotifyRefreshTokenAuth(
+      "client-id",
+      "refresh-token",
+      vi.fn(async () => new Response("temporarily unavailable", { status: 503 })),
+    );
+
+    await expect(auth.getAccessToken()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "AUTHENTICATION_FAILED",
+      message: "Spotify token refresh failed with HTTP 503.",
+    });
+  });
+
+  it("classifies a malformed successful refresh response", async () => {
+    const auth = new SpotifyRefreshTokenAuth(
+      "client-id",
+      "refresh-token",
+      vi.fn(async () => new Response("not-json", { status: 200 })),
+    );
+
+    await expect(auth.getAccessToken()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "VALIDATION_FAILED",
+    });
   });
 });

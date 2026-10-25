@@ -1015,7 +1015,7 @@ footer {
   footer { grid-template-columns: 1fr; }
   .footer-legal { grid-column: 1; }
   .hero { min-height: auto; padding: 56px 0 64px; }
-  h1 { font-size: clamp(2.75rem, 13.4vw, 3.6rem); }
+  h1 { font-size: clamp(2.1rem, 13.4vw, 3.6rem); }
   .sort-visual-wrap { width: calc(100% - 12px); }
   .sort-visual { transform: rotate(1deg); }
   .purpose { padding: 12px 0 72px; }

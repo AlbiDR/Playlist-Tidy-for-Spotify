@@ -29,6 +29,16 @@ class MemoryStorage implements SessionStoragePort {
   }
 }
 
+class PartiallyFailingStorage extends MemoryStorage {
+  private writes = 0;
+
+  public override setItem(key: string, value: string): void {
+    this.writes += 1;
+    if (this.writes === 2) throw new Error("storage unavailable");
+    super.setItem(key, value);
+  }
+}
+
 function createAuth(
   storage: MemoryStorage,
   fetchImplementation: typeof fetch = vi.fn(),
@@ -58,6 +68,16 @@ describe("SpotifyPkceAuth", () => {
     for (const value of storage.values.values()) {
       expect(value).toMatch(/^[A-Za-z0-9_-]{43,128}$/u);
     }
+  });
+
+  it("removes partial PKCE state when browser storage fails", async () => {
+    const storage = new PartiallyFailingStorage();
+    const auth = createAuth(storage);
+
+    await expect(auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI)).rejects.toMatchObject<
+      Partial<PlaylistTidyError>
+    >({ code: "AUTHENTICATION_FAILED" });
+    expect(storage.values.size).toBe(0);
   });
 
   it("exchanges a verified callback and keeps only the access token in memory", async () => {
@@ -121,6 +141,37 @@ describe("SpotifyPkceAuth", () => {
       REDIRECT_URI,
     );
     expect(sink).toHaveBeenCalledWith("enrollment-token");
+  });
+
+  it("does not retain an access token when the enrollment sink fails", async () => {
+    const storage = new MemoryStorage();
+    const auth = new SpotifyPkceAuth(storage, {
+      crypto: webcrypto as Crypto,
+      onRefreshToken: () => Promise.reject(new Error("secret store unavailable")),
+      fetch: vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            access_token: "access-token",
+            token_type: "Bearer",
+            expires_in: 3600,
+            refresh_token: "enrollment-token",
+            scope: SPOTIFY_SCOPES.join(" "),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    });
+    const authorizationUrl = new URL(await auth.createAuthorizationUrl(CLIENT_ID, REDIRECT_URI));
+    const state = authorizationUrl.searchParams.get("state") as string;
+
+    await expect(auth.completeAuthorizationCallback(
+      `${REDIRECT_URI}?code=authorization-code&state=${encodeURIComponent(state)}`,
+      CLIENT_ID,
+      REDIRECT_URI,
+    )).rejects.toMatchObject<Partial<PlaylistTidyError>>({ code: "AUTHENTICATION_FAILED" });
+    await expect(auth.getAccessToken()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
+      code: "AUTHENTICATION_FAILED",
+    });
   });
 
   it("rejects a mismatched state and deletes transient values before returning", async () => {

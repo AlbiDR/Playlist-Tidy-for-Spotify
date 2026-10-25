@@ -3,36 +3,39 @@
 
 import * as v from "valibot";
 
+const NonEmptyStringSchema = v.pipe(v.string(), v.minLength(1));
+const NonNegativeIntegerSchema = v.pipe(v.number(), v.integer(), v.minValue(0));
+
 export const SpotifyUserSchema = v.object({
-  id: v.string(),
+  id: NonEmptyStringSchema,
 });
 
 export const SpotifyPlaylistMetadataSchema = v.object({
-  id: v.string(),
-  owner: v.object({ id: v.string() }),
-  snapshot_id: v.string(),
+  id: NonEmptyStringSchema,
+  owner: v.object({ id: NonEmptyStringSchema }),
+  snapshot_id: NonEmptyStringSchema,
 });
 
 const SpotifyContentItemSchema = v.object({
-  uri: v.nullable(v.string()),
-  type: v.string(),
+  uri: v.nullable(NonEmptyStringSchema),
+  type: NonEmptyStringSchema,
   is_local: v.optional(v.boolean(), false),
 });
 
 export const SpotifyPlaylistItemSchema = v.object({
   added_at: v.nullable(v.pipe(v.string(), v.isoTimestamp())),
-  added_by: v.nullable(v.object({ id: v.string() })),
+  added_by: v.nullable(v.object({ id: NonEmptyStringSchema })),
   item: v.nullable(SpotifyContentItemSchema),
 });
 
 export const SpotifyPlaylistItemsPageSchema = v.object({
   items: v.array(SpotifyPlaylistItemSchema),
-  next: v.nullable(v.string()),
-  total: v.number(),
+  next: v.nullable(NonEmptyStringSchema),
+  total: NonNegativeIntegerSchema,
 });
 
 export const SpotifyReorderResponseSchema = v.object({
-  snapshot_id: v.string(),
+  snapshot_id: NonEmptyStringSchema,
 });
 
 export const SpotifyErrorResponseSchema = v.object({
@@ -42,18 +45,18 @@ export const SpotifyErrorResponseSchema = v.object({
 });
 
 const SpotifyPlaylistSummarySchema = v.object({
-  id: v.string(),
-  name: v.string(),
-  owner: v.object({ id: v.string() }),
-  snapshot_id: v.string(),
+  id: NonEmptyStringSchema,
+  name: NonEmptyStringSchema,
+  owner: v.object({ id: NonEmptyStringSchema }),
+  snapshot_id: NonEmptyStringSchema,
   public: v.nullable(v.boolean()),
-  items: v.object({ total: v.number() }),
+  items: v.object({ total: NonNegativeIntegerSchema }),
 });
 
 export const SpotifyPlaylistCatalogPageSchema = v.object({
   items: v.array(SpotifyPlaylistSummarySchema),
-  next: v.nullable(v.string()),
-  total: v.number(),
+  next: v.nullable(NonEmptyStringSchema),
+  total: NonNegativeIntegerSchema,
 });
 
 export type SpotifyPlaylistItemDto = v.InferOutput<typeof SpotifyPlaylistItemSchema>;

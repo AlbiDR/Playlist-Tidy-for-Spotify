@@ -169,6 +169,8 @@ try {
       if (browserName === "Chromium") {
         await auditNoScriptFallback(browser);
         await auditForcedColors(browser);
+        await auditTextResize(browser);
+        await auditKeyboardNavigation(browser);
         await auditInteractionField(browser);
       }
     } finally {
@@ -232,6 +234,106 @@ async function auditForcedColors(browser: import("playwright").Browser): Promise
     if (facts.progressDisplay !== "none") failures.push("Chromium forced-colors mode retains decorative progress effects.");
   } finally {
     await context.close();
+  }
+}
+
+async function auditTextResize(browser: import("playwright").Browser): Promise<void> {
+  for (const route of routes) {
+    const context = await browser.newContext({
+      colorScheme: "dark",
+      reducedMotion: "reduce",
+      viewport: { width: 320, height: 720 },
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${origin}${route.path}`, { waitUntil: "networkidle" });
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+      });
+      const facts = await page.evaluate(() => {
+        const clippedControls = [...document.querySelectorAll<HTMLElement>("a[href], button")]
+          .filter((element) => {
+            const style = getComputedStyle(element);
+            if (style.display === "none" || style.visibility === "hidden") return false;
+            const clips = style.overflowX === "hidden" || style.overflowX === "clip"
+              || style.overflowY === "hidden" || style.overflowY === "clip";
+            return clips && (element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1);
+          })
+          .map((element) => element.textContent?.trim() ?? element.tagName);
+        return {
+          clippedControls,
+          horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          overflowingElements: [...document.querySelectorAll<HTMLElement>("body *")]
+            .map((element) => {
+              const rect = element.getBoundingClientRect();
+              return {
+                description: `${element.tagName.toLowerCase()}${element.id.length > 0 ? `#${element.id}` : ""}${element.className.length > 0 && typeof element.className === "string" ? `.${element.className.trim().replaceAll(/\s+/gu, ".")}` : ""}`,
+                left: Math.round(rect.left),
+                right: Math.round(rect.right),
+              };
+            })
+            .filter(({ left, right }) => left < -1 || right > document.documentElement.clientWidth + 1)
+            .slice(0, 8),
+        };
+      });
+      const contextName = `Chromium ${route.path} at 200% text size`;
+      if (facts.horizontalOverflow > 1) {
+        const elements = facts.overflowingElements
+          .map(({ description, left, right }) => `${description} (${String(left)}..${String(right)})`)
+          .join(", ");
+        failures.push(`${contextName} overflows horizontally by ${String(facts.horizontalOverflow)}px${elements.length > 0 ? `: ${elements}` : "."}`);
+      }
+      if (facts.clippedControls.length > 0) {
+        failures.push(`${contextName} clips interactive text: ${facts.clippedControls.join(", ")}.`);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+}
+
+async function auditKeyboardNavigation(browser: import("playwright").Browser): Promise<void> {
+  for (const route of routes) {
+    const context = await browser.newContext({
+      colorScheme: "dark",
+      reducedMotion: "reduce",
+      viewport: { width: 390, height: 844 },
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${origin}${route.path}`, { waitUntil: "networkidle" });
+      const expectedCount = await page.locator(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      ).count();
+      const visited = new Set<string>();
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      for (let index = 0; index < expectedCount; index += 1) {
+        await page.keyboard.press("Tab");
+        const focused = await page.evaluate(() => {
+          const element = document.activeElement;
+          if (!(element instanceof HTMLElement)) return null;
+          const style = getComputedStyle(element);
+          return {
+            key: `${element.tagName}:${element.id}:${element.getAttribute("href") ?? ""}:${element.textContent?.trim() ?? ""}`,
+            outlineStyle: style.outlineStyle,
+            outlineWidth: Number.parseFloat(style.outlineWidth),
+          };
+        });
+        if (focused === null) {
+          failures.push(`Chromium ${route.path} lost keyboard focus after ${String(index + 1)} tabs.`);
+          break;
+        }
+        visited.add(focused.key);
+        if (focused.outlineStyle === "none" || focused.outlineWidth < 2) {
+          failures.push(`Chromium ${route.path} has an interactive element without a visible keyboard outline: ${focused.key}.`);
+        }
+      }
+      if (visited.size !== expectedCount) {
+        failures.push(`Chromium ${route.path} reached ${String(visited.size)} of ${String(expectedCount)} keyboard-focusable elements.`);
+      }
+    } finally {
+      await context.close();
+    }
   }
 }
 
