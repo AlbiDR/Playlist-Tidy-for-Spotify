@@ -59,40 +59,67 @@ button, a { -webkit-tap-highlight-color: transparent; }
   z-index: 0;
   top: 0;
   left: 0;
-  width: 290px;
-  height: 250px;
-  border-radius: 50%;
+  width: 320px;
+  height: 270px;
+  overflow: visible;
+  border-radius: 48% 52% 44% 56% / 55% 43% 57% 45%;
   background:
-    radial-gradient(circle at 42% 45%, rgb(121 238 157 / 9%) 0, transparent 52%),
-    radial-gradient(circle at 63% 58%, rgb(255 139 114 / 3%) 0, transparent 42%);
-  filter: blur(6px);
+    radial-gradient(ellipse at 43% 46%, rgb(121 238 157 / 7%) 0, rgb(121 238 157 / 3%) 36%, transparent 72%),
+    radial-gradient(ellipse at 64% 56%, rgb(255 139 114 / 2.5%) 0, transparent 62%);
+  filter: blur(10px) saturate(112%);
+  -webkit-mask-image: radial-gradient(ellipse, #000 8%, rgb(0 0 0 / 78%) 44%, transparent 79%);
+  mask-image: radial-gradient(ellipse, #000 8%, rgb(0 0 0 / 78%) 44%, transparent 79%);
   opacity: 0;
   transform: translate3d(var(--pointer-x), var(--pointer-y), 0) translate(-50%, -50%);
-  transition: width 320ms ease, height 320ms ease, opacity 320ms ease;
+  transition: width 420ms ease, height 420ms ease, opacity 380ms ease;
+  animation: pointer-shell 10.5s ease-in-out infinite alternate;
   pointer-events: none;
   will-change: transform;
 }
 
+.pointer-light::before,
 .pointer-light::after {
   position: absolute;
-  inset: 22%;
-  border-radius: 44% 56% 51% 49%;
-  background: radial-gradient(circle at 35% 35%, rgb(179 248 199 / 8%), transparent 68%);
   content: "";
-  animation: pointer-drift 5.8s ease-in-out infinite alternate;
+  filter: blur(8px);
 }
 
-.pointer-light--visible { opacity: 0.34; }
+.pointer-light::before {
+  inset: 15% 18% 22% 12%;
+  border-radius: 58% 42% 61% 39% / 44% 58% 42% 56%;
+  background: radial-gradient(ellipse at 38% 42%, rgb(179 248 199 / 8%), transparent 67%);
+  animation: pointer-bloom-green 7.6s ease-in-out infinite alternate;
+}
+
+.pointer-light::after {
+  inset: 30% 17% 12% 34%;
+  border-radius: 41% 59% 38% 62% / 61% 37% 63% 39%;
+  background: radial-gradient(ellipse at 57% 55%, rgb(255 139 114 / 4.5%), transparent 66%);
+  animation: pointer-bloom-coral 9.2s ease-in-out -2.4s infinite alternate;
+}
+
+.pointer-light--visible { opacity: 0.27; }
 
 .pointer-light--engaged {
-  width: 225px;
-  height: 195px;
-  opacity: 0.46;
+  width: 248px;
+  height: 212px;
+  opacity: 0.36;
 }
 
-@keyframes pointer-drift {
-  from { transform: translate3d(-8%, 3%, 0) rotate(-8deg) scale(0.88); }
-  to { transform: translate3d(9%, -5%, 0) rotate(13deg) scale(1.12); }
+@keyframes pointer-shell {
+  0% { border-radius: 48% 52% 44% 56% / 55% 43% 57% 45%; }
+  50% { border-radius: 57% 43% 52% 48% / 43% 56% 44% 57%; }
+  100% { border-radius: 42% 58% 55% 45% / 59% 46% 54% 41%; }
+}
+
+@keyframes pointer-bloom-green {
+  from { border-radius: 58% 42% 61% 39% / 44% 58% 42% 56%; transform: translate3d(-9%, 4%, 0) rotate(-10deg) scale(0.86); }
+  to { border-radius: 39% 61% 45% 55% / 62% 41% 59% 38%; transform: translate3d(11%, -7%, 0) rotate(15deg) scale(1.14); }
+}
+
+@keyframes pointer-bloom-coral {
+  from { border-radius: 41% 59% 38% 62% / 61% 37% 63% 39%; transform: translate3d(8%, -10%, 0) rotate(12deg) scale(1.08); }
+  to { border-radius: 63% 37% 56% 44% / 39% 64% 36% 61%; transform: translate3d(-12%, 8%, 0) rotate(-16deg) scale(0.82); }
 }
 
 .reading-progress {
