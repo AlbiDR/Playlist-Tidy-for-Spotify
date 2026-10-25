@@ -168,7 +168,7 @@ Spotify Development Mode may invalidate an automation credential after a later w
 
 GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
-Scheduled maintenance rebuilds, verifies, recaptures, and redeploys the site every Monday. A separate deployment-health workflow checks the live HTML and stable production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
+Scheduled maintenance rebuilds, verifies, recaptures, and redeploys the site every Monday. A separate deployment-health workflow checks the live HTML and content-fingerprinted production assets after every Pages deployment and again every Tuesday. Scheduled playlist sorting runs every six hours once enrolled. These jobs never author commits, preserving the human-only contributor history.
 
 ## Repository map
 

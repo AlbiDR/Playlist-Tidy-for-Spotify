@@ -2,15 +2,21 @@
 // Copyright (C) 2026 AlbiDR
 
 const deploymentUrl = new URL("https://albidr.github.io/PlaylistTidy/");
-const requiredAssets = ["assets/app.js", "assets/index.css", "assets/favicon.svg"] as const;
 const failures: string[] = [];
 
 const documentResponse = await request(new URL(`?health=${String(Date.now())}`, deploymentUrl));
 const documentSource = documentResponse === undefined ? "" : await documentResponse.text();
-for (const asset of requiredAssets) {
-  if (!documentSource.includes(`./${asset}`)) {
-    failures.push(`index.html does not reference ${asset}.`);
-    continue;
+const assetReferences = [...documentSource.matchAll(/(?:href|src)="\.\/(assets\/[^"?#]+)"/gu)]
+  .map((match) => match[1])
+  .filter((asset): asset is string => asset !== undefined);
+for (const extension of [".js", ".css", ".svg"] as const) {
+  if (!assetReferences.some((asset) => asset.endsWith(extension))) {
+    failures.push(`index.html does not reference a production ${extension} asset.`);
+  }
+}
+for (const asset of new Set(assetReferences)) {
+  if (!/-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/u.test(asset)) {
+    failures.push(`${asset} is not content fingerprinted.`);
   }
   await request(new URL(asset, deploymentUrl));
 }
@@ -22,7 +28,7 @@ if (failures.length > 0) {
   process.stderr.write(`Deployment health failed:\n${failures.map((failure) => `- ${failure}`).join("\n")}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write("Live deployment and stable assets are reachable.\n");
+  process.stdout.write("Live deployment and fingerprinted assets are reachable.\n");
 }
 
 async function request(url: URL): Promise<Response | undefined> {
