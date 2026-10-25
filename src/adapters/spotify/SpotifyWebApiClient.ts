@@ -366,7 +366,12 @@ function createHttpError(status: number, context: string, detail = ""): Playlist
   }
   if (status === 401) return new PlaylistTidyError("AUTHENTICATION_FAILED", `${context}: authentication failed.`);
   if (status === 429) return new PlaylistTidyError("RATE_LIMITED", `${context}: rate limited.`);
-  if (status === 403) return new PlaylistTidyError("AUTHORIZATION_FAILED", `${context}: access was forbidden.`);
+  if (status === 403) {
+    return new PlaylistTidyError(
+      "AUTHORIZATION_FAILED",
+      `${context}: Spotify denied access. Check the granted permissions; in Development Mode, the account must be on the app's user allowlist and the app owner's Premium subscription must be active.`,
+    );
+  }
   if (status === 404) return new PlaylistTidyError("RESOURCE_NOT_FOUND", `${context}: resource was not found.`);
   if (status >= 400 && status < 500) {
     return new PlaylistTidyError("REQUEST_REJECTED", `${context}: Spotify rejected the request with HTTP ${String(status)}.`);

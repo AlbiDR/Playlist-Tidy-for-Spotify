@@ -413,6 +413,18 @@ h1 em {
 
 .session-note strong { color: var(--ink); }
 
+.availability-note {
+  max-width: 680px;
+  margin: 12px 0 0;
+  padding-left: 13px;
+  border-left: 2px solid rgb(121 238 157 / 55%);
+  color: #9ca69e;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.availability-note strong { color: var(--ink); }
+
 .sort-visual-wrap {
   width: min(100%, 470px);
   margin-inline: auto;

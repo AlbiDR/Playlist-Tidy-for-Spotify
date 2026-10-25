@@ -262,6 +262,7 @@ describe("SpotifyWebApiClient", () => {
     const client = new SpotifyWebApiClient(tokens, { fetch: fetchMock });
     await expect(client.getCurrentUser()).rejects.toMatchObject<Partial<PlaylistTidyError>>({
       code: "AUTHORIZATION_FAILED",
+      message: "Spotify read request failed: Spotify denied access. Check the granted permissions; in Development Mode, the account must be on the app's user allowlist and the app owner's Premium subscription must be active.",
     });
     expect(fetchMock).toHaveBeenCalledOnce();
   });

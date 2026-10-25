@@ -43,13 +43,13 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 
 | | Public website | Self-hosted automation |
 | --- | --- | --- |
-| Best for | Sorting playlists now | Keeping playlists sorted without returning to the website |
-| Starts with | Connect Spotify in the browser | Clone the repository and enroll once locally |
+| Best for | Sorting playlists now with an allowlisted test account | Keeping playlists sorted without returning to the website |
+| Starts with | Join the app allowlist, then connect Spotify in the browser | Clone the repository and enroll once locally |
 | Control | You preview and confirm each sorting operation | GitHub Actions discovers and maintains owned playlists every six hours |
 | Credential lifetime | Access token lives in memory and disappears on reload | Refresh token lives in your repository's encrypted Actions secrets |
 | Background activity | None | Runs only in your own repository |
 
-Opening the public website does **not** enroll an account in recurring sorting. Every public visitor connects only for the current browser session and manually chooses what to preview and sort. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
+Opening the public website does **not** enroll an account in recurring sorting. The hosted Spotify application is in Development Mode: Spotify permits at most five explicitly allowlisted users, and the app owner's Premium subscription must remain active. An allowlisted visitor connects only for the current browser session and manually chooses what to preview and sort. A visitor who is not on the allowlist can still inspect or self-host the project, but Spotify will reject the hosted app's API requests. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
 
 ## How it works
 
@@ -62,6 +62,8 @@ Opening the public website does **not** enroll an account in recurring sorting. 
 5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
 
 The tab must remain open until verification finishes. Reloading or closing it discards the in-memory Spotify access token and ends the session.
+
+Spotify controls this availability boundary. Development Mode is intended for personal projects and small-scale testing; it is not unrestricted public access. A fork or clone must use its maintainer's own Spotify application and allowlist. See Spotify's [current quota-mode documentation](https://developer.spotify.com/documentation/web-api/concepts/quota-modes).
 
 ## Behavioral contract
 

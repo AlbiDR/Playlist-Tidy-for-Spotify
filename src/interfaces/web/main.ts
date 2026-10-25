@@ -82,6 +82,7 @@ function render(state: ViewState): void {
           </div>
           <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
+          <p class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Everyone can inspect or self-host the open-source project, but an unlisted account cannot use this hosted connection.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
@@ -129,9 +130,9 @@ function render(state: ViewState): void {
           <p class="journey__index" aria-hidden="true">01</p>
           <div>
             <h3>Visiting the public website</h3>
-            <p>Anyone can connect Spotify, choose owned playlists, preview the work, and approve a sort. Each visit is manual. Your access token disappears when the page reloads.</p>
+            <p>An allowlisted test account can connect Spotify, choose owned playlists, preview the work, and approve a sort. Each visit is manual. Your access token disappears when the page reloads.</p>
           </div>
-          <p class="journey__outcome">Manual · works immediately</p>
+          <p class="journey__outcome">Manual · allowlisted access</p>
         </div>
         <div class="journey reveal reveal--delay-1">
           <p class="journey__index" aria-hidden="true">02</p>

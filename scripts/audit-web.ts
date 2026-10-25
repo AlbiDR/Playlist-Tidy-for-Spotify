@@ -12,8 +12,18 @@ const port = 4174;
 const origin = `http://${host}:${String(port)}`;
 const failures: string[] = [];
 const routes = [
-  { path: "/", title: "Playlist Tidy for Spotify", reciprocalLink: "./privacy.html" },
-  { path: "/privacy.html", title: "Privacy & safe use | Playlist Tidy", reciprocalLink: "./" },
+  {
+    path: "/",
+    title: "Playlist Tidy for Spotify",
+    reciprocalLink: "./privacy.html",
+    requiredText: "Spotify Development Mode limits this app to five accounts",
+  },
+  {
+    path: "/privacy.html",
+    title: "Privacy & safe use | Playlist Tidy",
+    reciprocalLink: "./",
+    requiredText: "Spotify limits it to five explicitly allowlisted users",
+  },
 ] as const;
 const viewports = [
   { width: 320, height: 720 },
@@ -148,6 +158,9 @@ try {
           }
           if (await page.locator(`a[href="${route.reciprocalLink}"]`).count() === 0) {
             failures.push(`${contextName} is missing reciprocal home/privacy navigation.`);
+          }
+          if (!(await page.locator("body").innerText()).includes(route.requiredText)) {
+            failures.push(`${contextName} is missing its Spotify availability disclosure.`);
           }
           await context.close();
         }
