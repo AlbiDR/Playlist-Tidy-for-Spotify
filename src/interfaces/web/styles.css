@@ -233,6 +233,30 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .fatal-error > p:not(.eyebrow) { max-width: 580px; color: var(--muted); line-height: 1.7; }
 .fatal-error .connect-button { margin-top: 24px; }
 
+.safe-open-link {
+  display: inline-grid;
+  place-items: center;
+  min-height: 48px;
+  margin-top: 24px;
+  padding: 0 24px;
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  color: #081009;
+  background: var(--green);
+  font-size: 0.9rem;
+  font-weight: 760;
+  text-decoration: none;
+  box-shadow: 0 12px 30px rgb(71 178 104 / 14%);
+}
+
+.safe-open-link:hover { color: #081009; background: #a0f6ba; }
+
+.frame-refusal__note {
+  margin-top: 20px !important;
+  color: #78837a !important;
+  font-size: 0.78rem;
+}
+
 .app-header {
   position: sticky;
   z-index: 10;
@@ -1062,5 +1086,5 @@ footer {
 
 @media (forced-colors: active) {
   .reading-progress, .pointer-light, .sort-visual::before { display: none; }
-  .route__number, .connect-button, .preview-button, .sort-button { border: 1px solid CanvasText; }
+  .route__number, .connect-button, .safe-open-link, .preview-button, .sort-button { border: 1px solid CanvasText; }
 }

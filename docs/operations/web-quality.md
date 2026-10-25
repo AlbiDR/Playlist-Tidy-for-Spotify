@@ -34,6 +34,8 @@ The document applies a restrictive Content Security Policy, a no-referrer policy
 
 GitHub Pages does not provide repository-controlled response headers. Consequently, protections that require HTTP headers, including `frame-ancestors`, HSTS, cross-origin isolation, and a server-level Permissions Policy, cannot be represented honestly by this deployment. Local Vite serving applies the headers it can. Moving to a configurable host is required before claiming those response-header protections in production.
 
+As defense in depth for the sensitive browser interface, the application also refuses to initialize whenever it detects that it is running inside a frame. The framed view performs no Spotify authorization or playlist operation and offers only a protected link that opens the application directly. The three-engine browser audit embeds the production application in an untrusted parent and verifies that this fail-closed behavior occurs without network or browser-storage side effects. This runtime control reduces the practical clickjacking surface but is not described as equivalent to an HTTP `frame-ancestors` policy.
+
 No service worker is registered. Playlist sorting cannot work offline, and caching an OAuth application shell would add stale-release and callback complexity without an offline user benefit.
 
 The public privacy page is intentionally static and script-free. It documents the exact Spotify data path, ephemeral browser storage, GitHub Pages infrastructure boundary, lack of first-party tracking, and the separate ownership model for self-hosted automation.

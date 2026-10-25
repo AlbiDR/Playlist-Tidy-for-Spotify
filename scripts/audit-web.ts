@@ -173,6 +173,8 @@ try {
         }
       }
 
+      await auditFramedApplication(browser, browserName);
+
       if (browserName === "Chromium") {
         await auditNoScriptFallback(browser);
         await auditForcedColors(browser);
@@ -205,6 +207,66 @@ async function mapProductionRootToPreview(page: Page): Promise<void> {
     target.pathname = target.pathname.replace(/^\/PlaylistTidy/u, "");
     await route.continue({ url: target.href });
   });
+}
+
+async function auditFramedApplication(
+  browser: import("playwright").Browser,
+  browserName: string,
+): Promise<void> {
+  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 900, height: 700 } });
+  try {
+    const page = await context.newPage();
+    const spotifyRequests: string[] = [];
+    const runtimeErrors: string[] = [];
+    page.on("request", (request) => {
+      if (/^https:\/\/(?:accounts|api)\.spotify\.com\//u.test(request.url())) spotifyRequests.push(request.url());
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+    });
+    page.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
+    await page.setContent(
+      `<iframe title="Untrusted embedding page" src="${origin}/" width="800" height="600"></iframe>`,
+    );
+    const frame = page.frameLocator("iframe");
+    await frame.locator(".frame-refusal").waitFor();
+    const facts = await frame.locator("html").evaluate(() => ({
+      activeElementId: document.activeElement?.id ?? "",
+      connectButtons: document.querySelectorAll("#connection-action").length,
+      firstFocusableIsSkipLink: document.querySelector(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+      )?.classList.contains("skip-link") === true,
+      localStorageCount: window.localStorage.length,
+      sessionStorageCount: window.sessionStorage.length,
+      text: document.body.innerText,
+    }));
+    const directLink = frame.getByRole("link", { name: "Open Playlist Tidy in a new tab" });
+    const contextName = `${browserName} framed application`;
+    if (!facts.text.includes("will not connect to Spotify")) {
+      failures.push(`${contextName} does not explain why direct access is required.`);
+    }
+    if (facts.activeElementId === "main-content" || !facts.firstFocusableIsSkipLink) {
+      failures.push(`${contextName} does not preserve the skip link as its first intentional focus target.`);
+    }
+    if (facts.connectButtons !== 0 || spotifyRequests.length > 0) {
+      failures.push(`${contextName} initialized Spotify access instead of failing closed.`);
+    }
+    if (facts.localStorageCount !== 0 || facts.sessionStorageCount !== 0) {
+      failures.push(`${contextName} wrote browser storage before refusing the frame.`);
+    }
+    if (
+      await directLink.getAttribute("target") !== "_blank" ||
+      (await directLink.getAttribute("rel"))?.split(/\s+/u).includes("noopener") !== true ||
+      (await directLink.getAttribute("rel"))?.split(/\s+/u).includes("noreferrer") !== true
+    ) {
+      failures.push(`${contextName} does not provide a protected direct-open link.`);
+    }
+    if (runtimeErrors.length > 0) {
+      failures.push(`${contextName} emitted runtime errors: ${runtimeErrors.join("; ")}.`);
+    }
+  } finally {
+    await context.close();
+  }
 }
 
 if (failures.length > 0) {
