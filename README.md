@@ -87,6 +87,7 @@ These are executable invariants, not interface promises. Their authoritative def
 - The one-time PKCE verifier and OAuth state use `sessionStorage` only during the redirect round trip and are deleted afterward.
 - Refresh tokens returned to the website are discarded.
 - The public website has no analytics, advertising, cookies, session replay, application server, or user database.
+- The Spotify interface refuses to initialize inside another website's frame and performs no authorization or playlist operation there.
 - Spotify access is limited to the scopes needed to read private playlists and reorder owned playlists.
 - Playlist identifiers, OAuth artifacts, tokens, and private playlist contents must never enter Git history or public issues.
 

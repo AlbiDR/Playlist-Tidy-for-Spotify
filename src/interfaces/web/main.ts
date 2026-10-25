@@ -222,6 +222,19 @@ function render(state: ViewState): void {
   initializeInteractions();
 }
 
+function renderEmbeddedRefusal(): void {
+  app.innerHTML = `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content" class="fatal-error frame-refusal" tabindex="-1">
+      <p class="eyebrow">Direct access required</p>
+      <h1>Open Playlist Tidy directly.</h1>
+      <p>For your protection, Playlist Tidy will not connect to Spotify or access playlist data while it is embedded inside another website.</p>
+      <a class="safe-open-link" href="./" target="_blank" rel="noopener noreferrer">Open Playlist Tidy in a new tab</a>
+      <p class="frame-refusal__note">No authorization request or playlist operation was started.</p>
+    </main>
+  `;
+}
+
 async function beginLogin(): Promise<void> {
   connectionEpoch += 1;
   render({ kind: "connecting" });
@@ -934,5 +947,6 @@ window.addEventListener("beforeunload", (event) => {
   event.preventDefault();
 });
 
-void initialize().catch(() => showRuntimeFailure());
+if (window.self !== window.top) renderEmbeddedRefusal();
+else void initialize().catch(() => showRuntimeFailure());
 
