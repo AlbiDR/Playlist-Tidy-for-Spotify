@@ -23,7 +23,7 @@ concurrency:
 jobs:
   sort:
     if: github.event_name == 'workflow_dispatch' || vars.PLAYLIST_IDS != ''
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out repository
