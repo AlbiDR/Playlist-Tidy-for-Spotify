@@ -15,16 +15,6 @@ import { parsePlaylistIds, resolvePlaylistIds } from "./playlistSelection.js";
 const LOOPBACK_REDIRECT_URI = "http://127.0.0.1:8888/callback";
 const DEFAULT_REPOSITORY = "AlbiDR/PlaylistTidy";
 
-const command = process.argv[2];
-try {
-  if (command === "run") await runScheduledSorting();
-  else if (command === "enroll") await enrollAutomation();
-  else throw new PlaylistTidyError("VALIDATION_FAILED", "Usage: playlist-tidy <run|enroll> [options]");
-} catch (error) {
-  process.stderr.write(`${getSafeErrorMessage(error)}\n`);
-  process.exitCode = 1;
-}
-
 async function runScheduledSorting(): Promise<void> {
   const clientId = requireEnvironment("SPOTIFY_CLIENT_ID");
   const refreshToken = requireEnvironment("SPOTIFY_REFRESH_TOKEN");
@@ -184,7 +174,11 @@ async function runWithConcurrency<T>(
 }
 
 function getSafeErrorMessage(error: unknown): string {
-  return error instanceof PlaylistTidyError ? error.message : "An unexpected automation error occurred.";
+  if (error instanceof PlaylistTidyError) return error.message;
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return `Automation failed: ${error.message}`;
+  }
+  return "An unexpected automation error occurred.";
 }
 
 class MemoryStorage implements SessionStoragePort {
@@ -201,4 +195,14 @@ class MemoryStorage implements SessionStoragePort {
   public removeItem(key: string): void {
     this.values.delete(key);
   }
+}
+
+const command = process.argv[2];
+try {
+  if (command === "run") await runScheduledSorting();
+  else if (command === "enroll") await enrollAutomation();
+  else throw new PlaylistTidyError("VALIDATION_FAILED", "Usage: playlist-tidy <run|enroll> [options]");
+} catch (error) {
+  process.stderr.write(`${getSafeErrorMessage(error)}\n`);
+  process.exitCode = 1;
 }
