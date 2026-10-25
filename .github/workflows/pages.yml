@@ -23,7 +23,7 @@ jobs:
   build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -58,23 +58,35 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
+      - name: Install Chromium system dependencies
+        if: github.event_name == 'workflow_run'
+        timeout-minutes: 10
+        run: npx playwright install-deps chromium
+
       - name: Install Chromium capture runtime
         if: github.event_name == 'workflow_run'
+        timeout-minutes: 10
         run: |
           for attempt in 1 2 3; do
             echo "Playwright Chromium installation attempt $attempt of 3"
-            if timeout --signal=TERM --kill-after=15s 180s npx playwright install --with-deps chromium; then
+            if timeout --signal=TERM --kill-after=15s 180s npx playwright install chromium; then
               exit 0
             fi
           done
           exit 1
 
+      - name: Install manual browser system dependencies
+        if: github.event_name == 'workflow_dispatch'
+        timeout-minutes: 10
+        run: npx playwright install-deps chromium firefox webkit
+
       - name: Install manual browser audit runtimes
         if: github.event_name == 'workflow_dispatch'
+        timeout-minutes: 10
         run: |
           for attempt in 1 2 3; do
             echo "Playwright browser installation attempt $attempt of 3"
-            if timeout --signal=TERM --kill-after=15s 180s npx playwright install --with-deps chromium firefox webkit; then
+            if timeout --signal=TERM --kill-after=15s 180s npx playwright install chromium firefox webkit; then
               exit 0
             fi
           done
