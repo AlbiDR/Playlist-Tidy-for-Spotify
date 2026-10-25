@@ -51,14 +51,15 @@ function render(state: ViewState): void {
           <p class="eyebrow">Order for your listening life</p>
           <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
           <p class="summary">
-            Reorder playlists you own by date added—without replacing, removing,
-            or duplicating a single item.
+            Connect for this browser session, choose the playlists you own, and decide
+            exactly when to sort. Nothing runs in the background from this website.
           </p>
           <div class="connection-row">
             <button id="connection-action" class="connect-button" type="button"></button>
             <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
           </div>
           <p id="connection-error" class="error-message" role="alert"></p>
+          <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
         <div class="sort-visual" aria-hidden="true">
@@ -73,15 +74,38 @@ function render(state: ViewState): void {
           <div class="sort-visual__stamp">stable sort<br>verified</div>
         </div>
       </section>
+      <section class="journeys" aria-labelledby="journeys-heading">
+        <header class="journeys__heading">
+          <p class="eyebrow">Two ways to use it</p>
+          <h2 id="journeys-heading">Use the website now.<br>Automate your own copy.</h2>
+        </header>
+        <div class="journey">
+          <p class="journey__index" aria-hidden="true">01</p>
+          <div>
+            <h3>Visiting the public website</h3>
+            <p>Connect, preview, and confirm each sort yourself. Your access token stays in memory and disappears when the page reloads. There is no recurring job attached to your account.</p>
+          </div>
+          <p class="journey__outcome">Manual · works immediately</p>
+        </div>
+        <div class="journey">
+          <p class="journey__index" aria-hidden="true">02</p>
+          <div>
+            <h3>Running scheduled maintenance</h3>
+            <p>Clone the repository and complete one local enrollment. Your own GitHub Actions secret can then sort playlists every six hours without leaving this page open.</p>
+            <a href="https://github.com/AlbiDR/PlaylistTidy#scheduled-sorting">Read the self-hosting setup →</a>
+          </div>
+          <p class="journey__outcome">Automatic · self-hosted</p>
+        </div>
+      </section>
       <section class="route" aria-labelledby="route-heading">
         <div class="route__intro">
-          <p class="eyebrow">The route</p>
-          <h2 id="route-heading">Three deliberate steps.<br>No hidden magic.</h2>
+          <p class="eyebrow">Inside this browser session</p>
+          <h2 id="route-heading">You stay in control<br>of every write.</h2>
         </div>
         <ol class="route__steps">
           <li class="route__step${state.kind === "connected" ? "" : " route__step--current"}">
             <span class="route__number">1</span>
-            <div><h3>Connect</h3><p>Spotify authorization through PKCE. No client secret in the browser.</p></div>
+            <div><h3>Connect for now</h3><p>Authorize through Spotify. The website keeps no reusable login for later.</p></div>
           </li>
           <li class="route__step${state.kind === "connected" ? " route__step--current" : ""}">
             <span class="route__number">2</span>
@@ -89,7 +113,7 @@ function render(state: ViewState): void {
           </li>
           <li class="route__step">
             <span class="route__number">3</span>
-            <div><h3>Sort + verify</h3><p>Apply range moves, then prove membership and order are intact.</p></div>
+            <div><h3>Confirm, sort, verify</h3><p>You approve the write. Playlist Tidy applies range moves, then proves membership and order are intact.</p></div>
           </li>
         </ol>
       </section>

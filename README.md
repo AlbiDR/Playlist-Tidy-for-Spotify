@@ -12,7 +12,7 @@
 
 <p align="center">
   <strong>Put every playlist back in order.</strong><br>
-  Preview first. Sort safely.
+  Sort on demand in the browser, or automate your own installation.
 </p>
 
 <p align="center">
@@ -38,13 +38,29 @@ Playlist Tidy is a focused Spotify utility for playlists owned by the authentica
 
 > Playlist Tidy is an independent project and is not affiliated with or endorsed by Spotify. It is currently an early build: preview first and begin with a playlist you can restore.
 
+## Choose your path
+
+| | Public website | Self-hosted automation |
+| --- | --- | --- |
+| Best for | Sorting playlists now | Keeping playlists sorted without returning to the website |
+| Starts with | Connect Spotify in the browser | Clone the repository and enroll once locally |
+| Control | You preview and confirm each sorting operation | GitHub Actions discovers and maintains owned playlists every six hours |
+| Credential lifetime | Access token lives in memory and disappears on reload | Refresh token lives in your repository's encrypted Actions secrets |
+| Background activity | None | Runs only in your own repository |
+
+Opening the public website does **not** enroll an account in recurring sorting. Every public visitor connects only for the current browser session and manually chooses what to preview and sort. The repository owner's scheduled workflow is private to that repository and cannot access another visitor's account.
+
 ## How it works
+
+### Public website
 
 1. **Connect.** Authorize directly with Spotify through Authorization Code with PKCE.
 2. **Choose.** Select a playlist owned by the authenticated account.
 3. **Preview.** Read the complete playlist and calculate the exact reorder plan with zero writes.
 4. **Confirm.** Start sorting only after an explicit user action.
 5. **Verify.** Reconcile every write, then prove that membership and final ordering are correct.
+
+The tab must remain open until verification finishes. Reloading or closing it discards the in-memory Spotify access token and ends the session.
 
 ## Behavioral contract
 
@@ -120,7 +136,9 @@ Register these Spotify redirect URIs exactly:
 
 ### Scheduled sorting
 
-The browser can preview and sort multiple selected playlists in one bounded queue. For unattended sorting, enroll the repository once from a trusted local machine with GitHub CLI already authenticated:
+The browser can preview and sort multiple selected playlists in one bounded queue. It never schedules future work for a visitor.
+
+Scheduled sorting is a **self-hosted repository feature**, not a service silently enabled by the public website. To maintain your own Spotify account without returning to the browser, fork or clone the repository and enroll that repository once from a trusted local machine with GitHub CLI already authenticated:
 
 ```sh
 SPOTIFY_CLIENT_ID=cc92650c2f3a452ca396fb3fc6e372cb \
@@ -133,7 +151,7 @@ To maintain only a fixed subset instead, enroll with `--playlists=PLAYLIST_ID_ON
 
 For fully autonomous refresh-token rotation, add a fine-grained token with repository Secrets write access as the `PLAYLIST_TIDY_SECRET_ADMIN_TOKEN` Actions secret. The scheduled workflow writes a replacement only when Spotify actually rotates the credential, then deletes its temporary mode-`0600` file. Without that secret, ordinary scheduled runs work, but a future rotation deliberately fails rather than losing the new credential.
 
-`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with `all` or a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification; the queue runs at most two playlists concurrently.
+`Scheduled Playlist Sort` runs every six hours and can also be dispatched manually with `all` or a temporary playlist list. Each playlist retains its own ownership, snapshot, membership, and final-order verification. The scheduled queue is deliberately sequential and pauses between playlists to reduce Spotify API pressure. If Spotify closes its quota window, the circuit breaker defers unfinished work to the next scheduled run rather than repeatedly failing every playlist.
 
 Spotify Development Mode may invalidate an automation credential after a later website login. The workflow fails closed if that happens; rerun the enrollment command to replace the secret. No playlist write is attempted with an unauthenticated session.
 

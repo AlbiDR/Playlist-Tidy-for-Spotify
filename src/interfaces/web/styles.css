@@ -216,11 +216,20 @@ h1 em {
 .error-message:empty { display: none; }
 
 .trust-note {
-  margin: 25px 0 0;
+  margin: 10px 0 0;
   color: #737e75;
   font-size: 0.72rem;
   letter-spacing: 0.025em;
 }
+
+.session-note {
+  margin: 24px 0 0;
+  color: #9ca69e;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.session-note strong { color: var(--ink); }
 
 .sort-visual {
   position: relative;
@@ -312,6 +321,41 @@ h1 em {
   text-transform: uppercase;
   transform: rotate(10deg);
 }
+
+.journeys {
+  padding: 8px 0 82px;
+}
+
+.journeys__heading {
+  display: grid;
+  grid-template-columns: 0.72fr 1.28fr;
+  gap: clamp(36px, 8vw, 100px);
+  padding: 0 clamp(24px, 5vw, 62px) 42px;
+}
+
+.journeys__heading h2 {
+  margin: -8px 0 0;
+  font-size: clamp(2rem, 3.8vw, 3.6rem);
+  letter-spacing: -0.06em;
+  line-height: 1.02;
+}
+
+.journey {
+  display: grid;
+  grid-template-columns: minmax(48px, 0.18fr) minmax(0, 1fr) minmax(150px, auto);
+  gap: clamp(18px, 4vw, 52px);
+  align-items: start;
+  padding: 30px clamp(24px, 5vw, 62px);
+  border-top: 1px solid var(--line);
+}
+
+.journey:last-child { border-bottom: 1px solid var(--line); }
+.journey p { margin: 0; }
+.journey__index { color: #657067; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; }
+.journey h3 { margin: -5px 0 9px; font-size: 1.08rem; }
+.journey div > p { max-width: 680px; color: #939e96; font-size: 0.9rem; line-height: 1.65; }
+.journey a { display: inline-block; margin-top: 13px; color: var(--green); font-size: 0.82rem; text-underline-offset: 4px; }
+.journey__outcome { color: #89948b; font-size: 0.76rem; text-align: right; }
 
 .route {
   display: grid;
@@ -522,7 +566,8 @@ footer {
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 64px; }
   .sort-visual { width: min(100%, 430px); }
-  .route { grid-template-columns: 1fr; }
+  .journeys__heading, .route { grid-template-columns: 1fr; }
+  .journeys__heading h2 { margin-top: 0; }
 }
 
 @media (max-width: 620px) {
@@ -531,6 +576,10 @@ footer {
   .hero { min-height: auto; padding: 56px 0 64px; }
   h1 { font-size: clamp(2.75rem, 13.4vw, 3.6rem); }
   .sort-visual { width: calc(100% - 12px); transform: rotate(1deg); }
+  .journeys { padding-bottom: 56px; }
+  .journeys__heading { padding-inline: 8px; }
+  .journey { grid-template-columns: 38px minmax(0, 1fr); padding-inline: 8px; }
+  .journey__outcome { grid-column: 2; text-align: left; }
   .route { padding: 42px 24px; border-radius: 32px 12px 32px 12px; }
   .playlist-catalog { padding: 22px 16px; border-radius: 16px 34px 16px 34px; }
   .batch-toolbar { grid-template-columns: 1fr; }
