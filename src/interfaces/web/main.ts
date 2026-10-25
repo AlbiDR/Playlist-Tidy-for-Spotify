@@ -345,7 +345,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
   updateBatchControls();
 
   async function runBatchPreview(): Promise<void> {
-    setRouteProgress(2);
+    setRoutePhase("preview");
     const ids = [...selected];
     batchBusy = true;
     updateBatchControls();
@@ -367,13 +367,16 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     batchStatusElement.textContent = failed === 0
       ? `${String(ids.length)} playlists previewed. Review the plans, then confirm the batch.`
       : `${String(ids.length - failed)} playlists previewed; ${String(failed)} need attention below.`;
+    if (failed === 0) {
+      setRoutePhase(ids.some((id) => (previews.get(id)?.moves.length ?? 0) > 0) ? "confirm" : "verified");
+    }
     updateBatchControls();
   }
 
   async function runBatchSort(): Promise<void> {
     const ids = [...selected].filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
     batchBusy = true;
-    setRouteProgress(3);
+    setRoutePhase("sorting");
     updateBatchControls();
     let completed = 0;
     let failed = 0;
@@ -392,7 +395,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     batchStatusElement.textContent = failed === 0
       ? `${String(ids.length)} playlists sorted and verified.`
       : `${String(ids.length - failed)} playlists sorted; ${String(failed)} need attention below.`;
-    setRouteProgress(3, failed === 0);
+    setRoutePhase(failed === 0 ? "verified" : "confirm");
     updateBatchControls();
   }
 }
@@ -426,64 +429,29 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
-  const visual = document.querySelector<HTMLElement>(".sort-visual");
-  if (
-    visual === null ||
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-    window.matchMedia("(pointer: coarse)").matches
-  ) return;
-
-  let frame = 0;
-  let latestEvent: PointerEvent | undefined;
-  let visualAnimation: Animation | undefined;
-  const animateTo = (transform: string, duration: number): void => {
-    visualAnimation?.cancel();
-    visualAnimation = visual.animate(
-      { transform },
-      { duration, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)", fill: "forwards" },
-    );
-  };
-  visual.addEventListener("pointermove", (event) => {
-    latestEvent = event;
-    if (frame !== 0) return;
-    frame = window.requestAnimationFrame(() => {
-      frame = 0;
-      if (latestEvent === undefined) return;
-      const bounds = visual.getBoundingClientRect();
-      const horizontal = (latestEvent.clientX - bounds.left) / bounds.width - 0.5;
-      const vertical = (latestEvent.clientY - bounds.top) / bounds.height - 0.5;
-      animateTo(
-        `perspective(900px) rotateX(${String(-vertical * 4)}deg) rotateY(${String(horizontal * 5)}deg) rotateZ(${String(2 + horizontal * 1.5)}deg) translate3d(${String(horizontal * 5)}px, ${String(vertical * 5)}px, 0)`,
-        280,
-      );
-    });
-  });
-  visual.addEventListener("pointerleave", () => {
-    latestEvent = undefined;
-    if (frame !== 0) window.cancelAnimationFrame(frame);
-    frame = 0;
-    animateTo("perspective(900px) rotateX(0deg) rotateY(0deg) rotateZ(2deg) translate3d(0, 0, 0)", 650);
-  });
 }
 
 function initializeScrollProgress(): void {
-  const update = (): void => {
-    const progress = document.querySelector<HTMLElement>(".reading-progress");
-    if (progress === null) return;
-    const available = document.documentElement.scrollHeight - window.innerHeight;
-    const ratio = available <= 0 ? 0 : Math.min(1, Math.max(0, window.scrollY / available));
-    progressAnimation?.cancel();
-    progressAnimation = progress.animate(
-      { transform: `scaleX(${String(ratio)})` },
-      { duration: 120, easing: "ease-out", fill: "forwards" },
-    );
-  };
+  const progress = document.querySelector<HTMLElement>(".reading-progress");
+  progressAnimation?.cancel();
+  progressAnimation = progress?.animate(
+    [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+    { duration: 1_000, fill: "both" },
+  );
+  progressAnimation?.pause();
   if (!progressListenersInitialized) {
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
+    window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    window.addEventListener("resize", updateScrollProgress, { passive: true });
     progressListenersInitialized = true;
   }
-  update();
+  updateScrollProgress();
+}
+
+function updateScrollProgress(): void {
+  if (progressAnimation === undefined) return;
+  const available = document.documentElement.scrollHeight - window.innerHeight;
+  const ratio = available <= 0 ? 0 : Math.min(1, Math.max(0, window.scrollY / available));
+  progressAnimation.currentTime = ratio * 1_000;
 }
 
 async function previewPlaylist(
@@ -493,7 +461,7 @@ async function previewPlaylist(
   onSorted?: () => void,
 ): Promise<PlaylistSortPreview | undefined> {
   const { previewButton, result, resultMessage, resultActions } = controls;
-  setRouteProgress(2);
+  setRoutePhase("preview");
   previewButton.disabled = true;
   previewButton.textContent = "Checking…";
   result.hidden = false;
@@ -505,6 +473,7 @@ async function previewPlaylist(
     const preview = await previewPlaylistSort(spotify, playlistId);
     if (preview.moves.length === 0) {
       resultMessage.textContent = `Already newest-first. ${String(preview.occurrenceCount)} items checked; no writes needed.`;
+      setRoutePhase("verified");
     } else {
       resultMessage.textContent = `${String(preview.moves.length)} range ${preview.moves.length === 1 ? "move" : "moves"} planned for ${String(preview.occurrenceCount)} items. Nothing has changed yet.`;
       const sortButton = document.createElement("button");
@@ -518,12 +487,14 @@ async function previewPlaylist(
         });
       });
       resultActions.append(sortButton);
+      setRoutePhase("confirm");
     }
     return preview;
   } catch (error) {
     result.className = "preview-result preview-result--error";
     result.setAttribute("role", "alert");
     resultMessage.textContent = getSafeErrorMessage(error);
+    setRoutePhase("preview");
     return undefined;
   } finally {
     previewButton.disabled = false;
@@ -542,7 +513,7 @@ async function applyPlaylistSort(
   previewButton.disabled = true;
   sortButton.disabled = true;
   sortButton.textContent = "Sorting…";
-  if (trackRoute) setRouteProgress(3);
+  if (trackRoute) setRoutePhase("sorting");
   result.className = "preview-result preview-result--working";
   result.setAttribute("role", "status");
   resultMessage.textContent = "Applying snapshot-guarded moves, then verifying the final order. Keep this page open until verification finishes.";
@@ -556,7 +527,7 @@ async function applyPlaylistSort(
         ? `No changes needed. ${String(outcome.occurrenceCount)} items were already newest-first.`
         : `Sorted and verified ${String(outcome.occurrenceCount)} items with ${String(outcome.writeCalls)} ${outcome.writeCalls === 1 ? "write" : "writes"}. Membership is unchanged.`;
     resultActions.replaceChildren();
-    if (trackRoute) setRouteProgress(3, true);
+    if (trackRoute) setRoutePhase("verified");
     return true;
   } catch (error) {
     result.className = "preview-result preview-result--error";
@@ -564,14 +535,18 @@ async function applyPlaylistSort(
     resultMessage.textContent = getSafeErrorMessage(error);
     sortButton.disabled = false;
     sortButton.textContent = "Try sort again";
-    if (trackRoute) setRouteProgress(3);
+    if (trackRoute) setRoutePhase("confirm");
     return false;
   } finally {
     previewButton.disabled = false;
   }
 }
 
-function setRouteProgress(activeStep: 1 | 2 | 3, completed = false): void {
+type RoutePhase = "preview" | "confirm" | "sorting" | "verified";
+
+function setRoutePhase(phase: RoutePhase): void {
+  const activeStep = phase === "preview" ? 2 : 3;
+  const completed = phase === "verified";
   for (const element of document.querySelectorAll<HTMLElement>("[data-route-step]")) {
     const step = Number(element.dataset.routeStep);
     const isCurrent = step === activeStep && !completed;
@@ -583,9 +558,13 @@ function setRouteProgress(activeStep: 1 | 2 | 3, completed = false): void {
   }
   const stepLabel = document.querySelector<HTMLElement>(".step-label");
   if (stepLabel !== null) {
-    stepLabel.textContent = activeStep === 3
-      ? completed ? "Step 3 of 3 · Verified" : "Step 3 of 3 · Sorting and verification"
-      : "Step 2 of 3 · Preview and confirm";
+    stepLabel.textContent = phase === "preview"
+      ? "Step 2 of 3 · Preview"
+      : phase === "confirm"
+        ? "Step 3 of 3 · Confirm the sort"
+        : phase === "sorting"
+          ? "Step 3 of 3 · Sorting and verification"
+          : "Step 3 of 3 · Verified";
   }
 }
 
