@@ -18,8 +18,10 @@
   "scripts": {
     "build": "npm run clean && npm run build:web && npm run build:cli",
     "build:cli": "tsc -p config/tsconfig.cli.json",
-    "build:web": "vite build --config config/vite.config.ts && node scripts/sanitize-built-typography.ts",
+    "build:web": "vite build --config config/vite.config.ts && node scripts/sanitize-built-typography.ts && node scripts/verify-web-quality.ts",
     "capture:readme": "node scripts/capture-readme.ts",
+    "audit:web": "node scripts/audit-web.ts",
+    "audit:dependencies": "npm audit --audit-level=high",
     "cli": "npm run build:cli && node dist-cli/interfaces/cli/main.js",
     "clean": "node scripts/clean.ts",
     "dev": "vite --config config/vite.config.ts --host 127.0.0.1",

@@ -165,6 +165,10 @@ Spotify Development Mode may invalidate an automation credential after a later w
 4. Enforce architectural and code-quality lint rules.
 5. Run the complete automated test suite.
 6. Produce clean web and CLI-library builds.
+7. Verify production metadata, public discovery files, and compressed asset budgets.
+8. Sanitize the deployment artifact against prohibited typography.
+
+`npm run audit:web` adds real Chromium, Firefox, and WebKit passes for landmarks, keyboard skip navigation, accessible control names, protected external links, reduced-motion behavior, responsive overflow, duplicate IDs, and browser console failures. Read the [web quality contract](docs/operations/web-quality.md) for the enforced budgets, manual review boundary, privacy posture, and GitHub Pages header limitations.
 
 GitHub repeats those controls across independent Verify, Repository Policy, Contributor Attribution Policy, and Pages workflows. Actions use least-privilege permissions, immutable revisions, bounded runtimes, non-persistent checkout credentials, and concurrency cancellation.
 
@@ -176,7 +180,7 @@ Scheduled maintenance rebuilds, verifies, recaptures, and redeploys the site eve
 .
 ├── .github/   Governance, ownership, issue forms, and workflows
 ├── config/    TypeScript, ESLint, Vitest, and Vite configuration
-├── docs/      Architecture, README assets, and project documentation
+├── docs/      Architecture, operational contracts, README assets, and project documentation
 ├── scripts/   Typed cleanup and repository-policy checks
 └── src/       Product code, interfaces, colocated tests, and test support
 ```

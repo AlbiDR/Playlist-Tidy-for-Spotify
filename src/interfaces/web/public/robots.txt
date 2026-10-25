@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 AlbiDR
+
+User-agent: *
+Allow: /
+
+Sitemap: https://albidr.github.io/PlaylistTidy/sitemap.xml

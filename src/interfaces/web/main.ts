@@ -44,19 +44,21 @@ let pointerY = 0;
 let pointerRenderedX = 0;
 let pointerRenderedY = 0;
 let pointerHasPosition = false;
+let runtimeFailureShown = false;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
   app.innerHTML = `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div class="reading-progress" aria-hidden="true"></div>
     <header class="app-header">
       <a class="wordmark" href="./" aria-label="Playlist Tidy home">
         <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
-      <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noreferrer">Source &amp; automation ↗</a>
+      <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Source &amp; automation ↗</a>
     </header>
-    <main>
+    <main id="main-content" tabindex="-1">
       <section class="hero" aria-labelledby="connection-title">
         <div class="hero__copy reveal">
           <p class="eyebrow">Order for your listening life</p>
@@ -67,10 +69,10 @@ function render(state: ViewState): void {
             or rearrange the playlists in your library.
           </p>
           <div class="connection-row">
-            <button id="connection-action" class="connect-button" type="button"></button>
+            <button id="connection-action" class="connect-button" type="button" aria-describedby="connection-status connection-error"></button>
             <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
           </div>
-          <p id="connection-error" class="error-message" role="alert"></p>
+          <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
@@ -175,11 +177,11 @@ function render(state: ViewState): void {
     <footer class="reveal">
       <div class="footer-credit">
         <strong>Open source</strong>
-        <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noreferrer">Playlist Tidy repository</a>.</p>
+        <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noopener noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Playlist Tidy repository</a>.</p>
       </div>
       <div class="footer-credit">
         <strong>Where automatic sorting lives</strong>
-        <p>Recurring sorting is powered by this repository’s <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/scheduled-sort.yml" target="_blank" rel="noreferrer">Scheduled Playlist Sort workflow</a>, running inside each self-hosted copy, not this browser tab.</p>
+        <p>Recurring sorting is powered by this repository’s <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/scheduled-sort.yml" target="_blank" rel="noopener noreferrer">Scheduled Playlist Sort workflow</a>, running inside each self-hosted copy, not this browser tab.</p>
       </div>
       <p class="footer-legal">Independent project · Not affiliated with or endorsed by Spotify.</p>
     </footer>
@@ -263,6 +265,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     throw new Error("Playlist catalog controls are missing.");
   }
   catalog.hidden = false;
+  catalog.setAttribute("aria-busy", state.libraryStatus === "loading" ? "true" : "false");
   if (state.libraryStatus === "loading") {
     count.textContent = "Loading…";
     const loading = document.createElement("p");
@@ -729,5 +732,37 @@ function getSessionStorage(): SessionStoragePort {
   }
 }
 
-void initialize();
+function showRuntimeFailure(): void {
+  if (runtimeFailureShown) return;
+  runtimeFailureShown = true;
+  const existingError = document.querySelector<HTMLElement>("#connection-error");
+  if (existingError !== null) {
+    existingError.textContent = "Playlist Tidy stopped unexpectedly. Reload the page to start a fresh browser session.";
+    existingError.focus({ preventScroll: false });
+    return;
+  }
+  app.innerHTML = `
+    <main class="fatal-error" tabindex="-1">
+      <p class="eyebrow">The session stopped safely</p>
+      <h1>Playlist Tidy could not continue.</h1>
+      <p>No further playlist work was attempted. Reload the page to start a fresh browser session.</p>
+      <button class="connect-button" type="button" data-reload>Reload Playlist Tidy</button>
+    </main>
+  `;
+  const fatalError = document.querySelector<HTMLElement>(".fatal-error");
+  fatalError?.focus();
+  document.querySelector<HTMLButtonElement>("[data-reload]")?.addEventListener("click", () => {
+    window.location.reload();
+  });
+}
+
+window.addEventListener("error", (event) => {
+  if (event instanceof ErrorEvent && event.error !== undefined) showRuntimeFailure();
+});
+window.addEventListener("unhandledrejection", (event) => {
+  event.preventDefault();
+  showRuntimeFailure();
+});
+
+void initialize().catch(() => showRuntimeFailure());
 

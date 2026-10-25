@@ -42,6 +42,29 @@ body::before {
 
 button, a { -webkit-tap-highlight-color: transparent; }
 
+:where(a, button, input):focus-visible {
+  outline: 3px solid #d6ffe4;
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 10px;
+  left: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #071009;
+  background: var(--green);
+  font-size: 0.82rem;
+  font-weight: 760;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 16px));
+  transition: transform 140ms ease;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
 ::selection { color: #071009; background: var(--green); }
 
 #app {
@@ -152,6 +175,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
   margin-top: 18px;
   font-size: clamp(2rem, 6vw, 4rem);
 }
+
+.fatal-error {
+  max-width: 720px;
+  min-height: 100vh;
+  padding: 18vh 0 72px;
+}
+
+.fatal-error h1 { margin-bottom: 24px; }
+.fatal-error > p:not(.eyebrow) { max-width: 580px; color: var(--muted); line-height: 1.7; }
+.fatal-error .connect-button { margin-top: 24px; }
 
 .app-header {
   position: sticky;
@@ -284,7 +317,6 @@ h1 em {
 }
 
 .connect-button:hover:not(:disabled) { background: #a0f6ba; }
-.connect-button:focus-visible, .preview-button:focus-visible, .sort-button:focus-visible { outline: 3px solid #d6ffe4; outline-offset: 4px; }
 .connect-button:disabled {
   border-color: #3a443d;
   color: #7b877e;
@@ -889,4 +921,9 @@ footer {
 
 @media (any-pointer: coarse) {
   .pointer-light { display: none; }
+}
+
+@media (forced-colors: active) {
+  .reading-progress, .pointer-light, .sort-visual::before { display: none; }
+  .route__number, .connect-button, .preview-button, .sort-button { border: 1px solid CanvasText; }
 }

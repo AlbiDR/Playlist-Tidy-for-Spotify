@@ -43,8 +43,11 @@ jobs:
         env:
           VITE_SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID }}
 
-      - name: Install screenshot browser
-        run: npx playwright install --with-deps chromium
+      - name: Install browser audit runtimes
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Audit built website
+        run: npm run audit:web
 
       - name: Capture current README views
         run: npm run capture:readme

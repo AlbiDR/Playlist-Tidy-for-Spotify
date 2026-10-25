@@ -5,28 +5,44 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="application-name" content="Playlist Tidy for Spotify" />
+    <meta name="author" content="AlbiDR" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0c0f0c" />
     <link rel="preconnect" href="https://accounts.spotify.com" crossorigin />
     <link rel="preconnect" href="https://api.spotify.com" crossorigin />
+    <link rel="canonical" href="https://albidr.github.io/PlaylistTidy/" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./site.webmanifest" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://accounts.spotify.com https://api.spotify.com; base-uri 'none'; form-action 'self' https://accounts.spotify.com; frame-ancestors 'none'; object-src 'none'"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://accounts.spotify.com https://api.spotify.com; base-uri 'none'; form-action 'self' https://accounts.spotify.com; object-src 'none'"
     />
     <meta
       name="description"
       content="Manually preview and sort owned Spotify playlists in the browser, or self-host recurring maintenance."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Playlist Tidy for Spotify" />
+    <meta property="og:title" content="Playlist Tidy for Spotify" />
+    <meta property="og:description" content="Put the newest tracks at the top of Spotify playlists you own, with preview and verification before completion." />
+    <meta property="og:url" content="https://albidr.github.io/PlaylistTidy/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Playlist Tidy for Spotify" />
+    <meta name="twitter:description" content="Preview, reorder, and verify owned Spotify playlists by date added." />
     <title>Playlist Tidy for Spotify</title>
   </head>
   <body>
-    <main id="app">
-      <section class="boot-status" aria-live="polite">
+    <div id="app">
+      <main class="boot-status" aria-live="polite">
         <p>Playlist Tidy for Spotify</p>
         <h1>Loading the application…</h1>
         <noscript>JavaScript is required to connect to Spotify and sort a playlist.</noscript>
-      </section>
-    </main>
+      </main>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

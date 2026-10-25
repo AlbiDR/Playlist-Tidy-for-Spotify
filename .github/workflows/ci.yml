@@ -7,6 +7,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "11 5 * * 3"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,3 +39,12 @@ jobs:
 
       - name: Verify project
         run: npm run verify
+
+      - name: Install browser audit runtimes
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Audit built website
+        run: npm run audit:web
+
+      - name: Audit dependencies
+        run: npm run audit:dependencies

@@ -1,0 +1,22 @@
+{
+  "name": "Playlist Tidy for Spotify",
+  "short_name": "Playlist Tidy",
+  "description": "Preview, reorder, and verify owned Spotify playlists by date added.",
+  "id": "/PlaylistTidy/",
+  "start_url": "/PlaylistTidy/",
+  "scope": "/PlaylistTidy/",
+  "display": "standalone",
+  "background_color": "#0c0f0c",
+  "theme_color": "#0c0f0c",
+  "categories": ["music", "utilities"],
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "license": "GPL-3.0-only",
+  "copyright": "Copyright (C) 2026 AlbiDR"
+}

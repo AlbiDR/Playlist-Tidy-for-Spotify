@@ -12,11 +12,28 @@ export default defineConfig({
   envDir: repositoryRoot,
   root: webRoot,
   build: {
+    target: "baseline-widely-available",
     outDir: fileURLToPath(new URL("../dist/web", import.meta.url)),
     emptyOutDir: true,
+    minify: "esbuild",
+    sourcemap: false,
+  },
+  preview: {
+    headers: getLocalSecurityHeaders(),
+  },
+  server: {
+    headers: getLocalSecurityHeaders(),
   },
   test: {
     exclude: [...configDefaults.exclude, "dist/**", "dist-cli/**"],
     root: repositoryRoot,
   },
 });
+
+function getLocalSecurityHeaders(): Record<string, string> {
+  return {
+    "Permissions-Policy": "camera=(), geolocation=(), microphone=()",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+  };
+}

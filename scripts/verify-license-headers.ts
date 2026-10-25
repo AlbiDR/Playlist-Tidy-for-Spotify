@@ -15,7 +15,12 @@ const ignoredDirectories = new Set([".git", "coverage", "dist", "dist-cli", "nod
 const licenseNoticeExemptFiles = new Set([
   "LICENSE",
 ]);
-const strictJsonFiles = new Set(["package.json", "package-lock.json", ".github/allowed-contributors.json"]);
+const strictJsonFiles = new Set([
+  "package.json",
+  "package-lock.json",
+  ".github/allowed-contributors.json",
+  "src/interfaces/web/public/site.webmanifest",
+]);
 const requiredFiles = [
   ".editorconfig",
   ".gitattributes",
@@ -35,11 +40,14 @@ const requiredFiles = [
   "config/tsconfig.json",
   "config/vite.config.ts",
   "docs/architecture/cleanstack.md",
+  "docs/operations/web-quality.md",
   "docs/assets/readme/mark-dark.svg",
   "docs/assets/readme/mark.svg",
   "LICENSE",
   "README.md",
   "scripts/verify-deployment.ts",
+  "scripts/audit-web.ts",
+  "scripts/verify-web-quality.ts",
   "src/interfaces/web/index.html",
   "src/interfaces/cli/main.ts",
 ];
@@ -60,7 +68,9 @@ const commentStyles = new Map<string, CommentStyle>([
   [".md", { prefix: "<!-- ", suffix: " -->" }],
   [".mjs", { prefix: "// ", suffix: "" }],
   [".svg", { prefix: "<!-- ", suffix: " -->" }],
+  [".txt", { prefix: "# ", suffix: "" }],
   [".ts", { prefix: "// ", suffix: "" }],
+  [".xml", { prefix: "<!-- ", suffix: " -->" }],
   [".yml", { prefix: "# ", suffix: "" }],
   [".yaml", { prefix: "# ", suffix: "" }],
 ]);

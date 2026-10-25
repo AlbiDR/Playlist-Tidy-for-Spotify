@@ -23,6 +23,17 @@ for (const asset of new Set(assetReferences)) {
 if (!documentSource.includes("Loading the application…")) {
   failures.push("index.html is missing its pre-JavaScript loading fallback.");
 }
+for (const requiredMarkup of [
+  'rel="canonical" href="https://albidr.github.io/PlaylistTidy/"',
+  'rel="manifest" href="./site.webmanifest"',
+  'http-equiv="Content-Security-Policy"',
+  'name="referrer" content="no-referrer"',
+]) {
+  if (!documentSource.includes(requiredMarkup)) failures.push(`index.html is missing ${requiredMarkup}.`);
+}
+for (const publicAsset of ["app-icon.svg", "robots.txt", "site.webmanifest", "sitemap.xml"]) {
+  await request(new URL(publicAsset, deploymentUrl));
+}
 
 if (failures.length > 0) {
   process.stderr.write(`Deployment health failed:\n${failures.map((failure) => `- ${failure}`).join("\n")}\n`);
