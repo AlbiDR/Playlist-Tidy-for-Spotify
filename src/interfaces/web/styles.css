@@ -45,9 +45,37 @@ button, a { -webkit-tap-highlight-color: transparent; }
 ::selection { color: #071009; background: var(--green); }
 
 #app {
+  position: relative;
+  z-index: 1;
   width: min(1160px, calc(100% - 48px));
   margin: 0 auto;
   padding: 0 0 44px;
+}
+
+.pointer-light {
+  --pointer-x: -300px;
+  --pointer-y: -300px;
+  position: fixed;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(121 238 157 / 13%) 0, rgb(121 238 157 / 5%) 34%, transparent 70%);
+  opacity: 0;
+  transform: translate3d(var(--pointer-x), var(--pointer-y), 0) translate(-50%, -50%);
+  transition: width 220ms ease, height 220ms ease, opacity 240ms ease, background 220ms ease;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.pointer-light--visible { opacity: 0.72; }
+
+.pointer-light--engaged {
+  width: 170px;
+  height: 170px;
+  background: radial-gradient(circle, rgb(121 238 157 / 18%) 0, rgb(121 238 157 / 6%) 38%, transparent 72%);
 }
 
 .reading-progress {
@@ -737,10 +765,16 @@ footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pointer-light { display: none; }
+
   *, *::before, *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+@media (any-pointer: coarse) {
+  .pointer-light { display: none; }
 }

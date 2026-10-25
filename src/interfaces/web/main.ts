@@ -37,6 +37,10 @@ let revealObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
 let progressListenersInitialized = false;
 let progressAnimation: Animation | undefined;
+let pointerLightInitialized = false;
+let pointerFrame: number | undefined;
+let pointerX = 0;
+let pointerY = 0;
 
 function render(state: ViewState): void {
   const connection = getConnectionPresentation(state);
@@ -429,6 +433,46 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
+  initializePointerLight();
+}
+
+function initializePointerLight(): void {
+  if (
+    pointerLightInitialized ||
+    !window.matchMedia("(any-pointer: fine)").matches ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) return;
+
+  pointerLightInitialized = true;
+  const light = document.createElement("div");
+  light.className = "pointer-light";
+  light.setAttribute("aria-hidden", "true");
+  document.body.append(light);
+
+  window.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "touch") return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    const target = event.target instanceof Element ? event.target : undefined;
+    light.classList.toggle(
+      "pointer-light--engaged",
+      target?.closest("a, button, label, input") !== null && target !== undefined,
+    );
+    light.classList.add("pointer-light--visible");
+    if (pointerFrame !== undefined) return;
+    pointerFrame = window.requestAnimationFrame(() => {
+      light.style.setProperty("--pointer-x", `${String(pointerX)}px`);
+      light.style.setProperty("--pointer-y", `${String(pointerY)}px`);
+      pointerFrame = undefined;
+    });
+  }, { passive: true });
+
+  document.documentElement.addEventListener("pointerleave", () => {
+    light.classList.remove("pointer-light--visible", "pointer-light--engaged");
+  });
+  window.addEventListener("blur", () => {
+    light.classList.remove("pointer-light--visible", "pointer-light--engaged");
+  });
 }
 
 function initializeScrollProgress(): void {
