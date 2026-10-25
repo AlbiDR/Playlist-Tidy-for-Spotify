@@ -77,12 +77,12 @@ function render(state: ViewState): void {
             or rearrange the playlists in your library.
           </p>
           <div class="connection-row">
-            <button id="connection-action" class="connect-button" type="button" aria-describedby="connection-status connection-error"></button>
+            <button id="connection-action" class="connect-button" type="button" aria-describedby="connection-status connection-error hosted-access-note"></button>
             <p id="connection-status" class="connection-status" role="status" aria-live="polite"></p>
           </div>
           <p id="connection-error" class="error-message" role="alert" tabindex="-1"></p>
           <p class="session-note"><strong>Manual by design.</strong> Reloading or closing this page ends the session.</p>
-          <p class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Everyone can inspect or self-host the open-source project, but an unlisted account cannot use this hosted connection.</p>
+          <p id="hosted-access-note" class="availability-note"><strong>Hosted access:</strong> Spotify Development Mode limits this app to five accounts added by the app owner, whose Premium subscription must remain active. Everyone can inspect or self-host the open-source project, but an unlisted account cannot use this hosted connection.</p>
           <p class="trust-note">PKCE login / memory-only token / reorder-only writes</p>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">

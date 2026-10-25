@@ -20,10 +20,10 @@
 html { color-scheme: dark; }
 
 body {
-  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  overflow-wrap: anywhere;
   background:
     radial-gradient(circle at 82% 12%, rgb(121 238 157 / 8%), transparent 28rem),
     radial-gradient(circle at 4% 44%, rgb(255 139 114 / 6%), transparent 24rem),

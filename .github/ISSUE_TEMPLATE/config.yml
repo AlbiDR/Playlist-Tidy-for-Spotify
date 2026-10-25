@@ -3,6 +3,9 @@
 
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and ideas
+    url: https://github.com/AlbiDR/PlaylistTidy/discussions
+    about: Ask for help or discuss an idea before opening an issue.
   - name: Security report
     url: https://github.com/AlbiDR/PlaylistTidy/security/advisories/new
     about: Report vulnerabilities privately. Never include tokens or private playlist data in an issue.

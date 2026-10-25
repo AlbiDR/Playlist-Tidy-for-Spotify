@@ -91,6 +91,7 @@ These are executable invariants, not interface promises. Their authoritative def
 - Playlist identifiers, OAuth artifacts, tokens, and private playlist contents must never enter Git history or public issues.
 
 Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/AlbiDR/PlaylistTidy/security/advisories/new).
+Use [GitHub Discussions](https://github.com/AlbiDR/PlaylistTidy/discussions) for questions, setup help, and ideas that are not yet actionable issues.
 The public [privacy and safe-use notice](https://albidr.github.io/PlaylistTidy/privacy.html) documents the browser data path, infrastructure boundary, user controls, and known limitations in plain language.
 
 ## Architecture
