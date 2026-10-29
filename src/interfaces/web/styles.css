@@ -89,7 +89,7 @@ a { -webkit-tap-highlight-color: transparent; }
   --morph-d: 231 185 109;
   --morph-e: 243 240 231;
   position: fixed;
-  z-index: 9;
+  z-index: 0;
   top: 0;
   left: 0;
   width: 350px;
@@ -284,6 +284,14 @@ a { -webkit-tap-highlight-color: transparent; }
   background: rgb(16 18 15 / 92%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: padding 320ms cubic-bezier(0.2, 0.75, 0.2, 1), background 240ms ease, box-shadow 240ms ease;
+}
+
+.app-header--condensed {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: rgb(16 18 15 / 97%);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 24%);
 }
 
 .header-actions,
@@ -303,10 +311,26 @@ a { -webkit-tap-highlight-color: transparent; }
   font-size: 0.74rem;
   font-weight: 650;
   text-decoration: none;
-  transition: color 160ms ease;
+  transition: color 180ms ease;
 }
 
-.site-nav a:hover { color: var(--ink); }
+.site-nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--green);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 260ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.site-nav a:hover,
+.site-nav__link--active { color: var(--ink) !important; }
+.site-nav__link--active::after { transform: scaleX(1); transform-origin: left; }
 
 .site-nav a::after {
   position: absolute;
@@ -744,7 +768,7 @@ h1 em,
   z-index: 5;
   right: 2%;
   bottom: 1%;
-  color: #20291f;
+  color: #111710;
   font: italic 1rem/1.1 Georgia, "Times New Roman", serif;
   text-align: right;
   transform: rotate(-5deg);
@@ -1714,19 +1738,223 @@ footer {
 }
 
 .motion-ready .reveal {
-  opacity: 0;
   transform: translateY(14px);
-  transition: opacity 480ms ease, transform 520ms cubic-bezier(0.2, 0.75, 0.2, 1);
+  transition: transform 520ms cubic-bezier(0.2, 0.75, 0.2, 1);
 }
 
 .motion-ready .reveal--delay-1 { transition-delay: 90ms; }
 .motion-ready .reveal--delay-2 { transition-delay: 150ms; }
-.motion-ready .reveal--visible { opacity: 1; transform: translateY(0); }
+.motion-ready .reveal--visible { transform: translateY(0); }
 .motion-ready .origin-note.reveal--visible .origin-note__sleeve { animation: sleeve-arrive 680ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
 .motion-ready .origin-note.reveal--visible .origin-note__sleeve--after { animation-delay: 70ms; }
 .motion-ready .origin-note.reveal--visible .origin-note__sleeve--water { animation-delay: 120ms; }
 .motion-ready .origin-note.reveal--visible .origin-note__sleeve--signal { animation-delay: 170ms; }
 .motion-ready .origin-note.reveal--visible .origin-note__sleeve--bus { animation-delay: 220ms; }
+
+/* Macro motion: page chapters arrive as composed scenes, independently of element-level feedback. */
+.macro-motion-ready .macro-scene {
+  clip-path: inset(0 0 12% 0 round 14px);
+  filter: saturate(0.78) brightness(0.82);
+  transition:
+    clip-path 820ms cubic-bezier(0.16, 0.8, 0.2, 1),
+    filter 700ms ease;
+}
+
+.macro-motion-ready .macro-scene > * {
+  opacity: 0.35;
+  translate: 0 38px;
+  scale: 0.985;
+  transition:
+    opacity 600ms ease,
+    translate 820ms cubic-bezier(0.16, 0.8, 0.2, 1),
+    scale 820ms cubic-bezier(0.16, 0.8, 0.2, 1);
+}
+
+.macro-motion-ready .macro-scene > :nth-child(2) { transition-delay: 90ms; }
+.macro-motion-ready .macro-scene > :nth-child(3) { transition-delay: 150ms; }
+
+.macro-motion-ready .macro-scene--entered {
+  clip-path: inset(0 0 0 0 round 0);
+  filter: saturate(1) brightness(1);
+}
+
+.macro-motion-ready .macro-scene--entered > * {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+}
+
+.macro-motion-ready .hero.macro-scene > :first-child,
+.macro-motion-ready .scope.macro-scene > :first-child,
+.macro-motion-ready .engineering.macro-scene > :first-child,
+.macro-motion-ready .route.macro-scene > :first-child { translate: -34px 22px; }
+
+.macro-motion-ready .hero.macro-scene > :last-child,
+.macro-motion-ready .scope.macro-scene > :last-child,
+.macro-motion-ready .engineering.macro-scene > :last-child,
+.macro-motion-ready .route.macro-scene > :last-child { translate: 34px 22px; }
+
+.macro-motion-ready .hero.macro-scene--entered > *,
+.macro-motion-ready .scope.macro-scene--entered > *,
+.macro-motion-ready .engineering.macro-scene--entered > *,
+.macro-motion-ready .route.macro-scene--entered > * { translate: 0 0; }
+
+/* Macro 01: alternating chapters travel in from opposite sides. */
+.macro-motion-ready .macro-scene[data-macro-direction="forward"] { transform: perspective(1200px) rotateY(-1.4deg); }
+.macro-motion-ready .macro-scene[data-macro-direction="reverse"] { transform: perspective(1200px) rotateY(1.4deg); }
+.macro-motion-ready .macro-scene--entered { transform: perspective(1200px) rotateY(0); }
+
+/* Macro 02: the current chapter settles forward while neighboring chapters recede. */
+.macro-motion-ready .macro-scene--entered:not(.macro-scene--active) { scale: 0.992; }
+.macro-motion-ready .macro-scene--active { scale: 1; transition: scale 520ms ease; }
+
+/* Macro 03: the page canvas changes tone with the active chapter. */
+body { transition: background-color 680ms ease; }
+:root[data-active-macro-scene="origin-note"] body,
+:root[data-active-macro-scene="chapter-1"] body { background: #15140f; }
+:root[data-active-macro-scene="interactive-demo"] body { background: #121610; }
+:root[data-active-macro-scene="engineering"] body { background: #0d1211; }
+:root[data-active-macro-scene="personal-spotify"] body { background: #11140f; }
+
+/* Macro 04: the global header retreats and returns with reading direction. */
+.app-header--retreating { transform: translateY(calc(-100% - 2px)); }
+.app-header { transition: padding 320ms cubic-bezier(0.2, 0.75, 0.2, 1), background 240ms ease, box-shadow 240ms ease, transform 360ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 05: the chapter rail enters as a page-level navigation system. */
+.chapter-rail {
+  position: fixed;
+  z-index: 18;
+  top: 50%;
+  right: max(10px, calc((100vw - 1240px) / 2));
+  display: grid;
+  gap: 7px;
+  padding: 10px 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: rgb(16 18 15 / 78%);
+  backdrop-filter: blur(10px);
+  transform: translate(24px, -50%);
+  animation: chapter-rail-arrive 620ms 380ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+.chapter-rail button { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; color: #777d74; background: transparent; font: 0.52rem ui-monospace, monospace; cursor: pointer; }
+
+/* Macro 06: the rail advances with the active chapter. */
+.chapter-rail__chapter--active { color: #10140e !important; background: var(--green) !important; transform: scale(1.14); transition: color 240ms ease, background 240ms ease, transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 07: destination chapters acknowledge page-level jumps. */
+.macro-scene--destination { animation: macro-destination 760ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 08: navigation temporarily softens the page into a transition veil. */
+.macro-is-navigating main > section:not(.macro-scene--destination) { filter: brightness(0.72) saturate(0.72); transition: filter 280ms ease; }
+
+/* Macro 09: the origin artwork fans open as its chapter becomes current. */
+.origin-note .origin-note__sleeves { transition: transform 720ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.origin-note.macro-scene--active .origin-note__sleeves { transform: rotate(-1deg) scale(1.035); }
+
+/* Macro 10: the demo enters as two opposing stage wings. */
+.macro-motion-ready .interactive-demo > :first-child { translate: -52px 0; }
+.macro-motion-ready .interactive-demo > :last-child { translate: 52px 0; }
+.macro-motion-ready .interactive-demo.macro-scene--entered > * { translate: 0 0; }
+
+/* Macro 11: demo workflow phases restage the full playlist panel. */
+.demo-playlist[data-macro-phase="preview"] { transform: rotate(-0.6deg) scale(0.985); box-shadow: 16px 18px 0 rgb(27 29 25 / 12%); }
+.demo-playlist[data-macro-phase="verified"] { transform: rotate(0) scale(1.02); box-shadow: 0 20px 44px rgb(73 111 52 / 20%); }
+.demo-playlist { transition: transform 520ms cubic-bezier(0.2, 0.75, 0.2, 1), box-shadow 520ms ease; }
+
+/* Macro 12: the scope chapter opens as a full-panel aperture. */
+.macro-motion-ready .scope { clip-path: inset(0 48% round 12px); }
+.macro-motion-ready .scope.macro-scene--entered { clip-path: inset(0 0 round 12px); }
+
+/* Macro 13: the how-it-works timeline sweeps across the page. */
+.purpose__steps { clip-path: inset(0 100% 0 0); transition: clip-path 900ms 180ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.purpose.macro-scene--entered .purpose__steps { clip-path: inset(0); }
+
+/* Macro 14: engineering principles cascade as a coordinated panel. */
+.engineering__principles article { translate: 44px 0; opacity: 0.35; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1), opacity 480ms ease; }
+.engineering.macro-scene--entered .engineering__principles article { translate: 0; opacity: 1; }
+.engineering.macro-scene--entered .engineering__principles article:nth-child(2) { transition-delay: 110ms; }
+.engineering.macro-scene--entered .engineering__principles article:nth-child(3) { transition-delay: 220ms; }
+
+/* Macro 15: the account workflow and its loaded catalog expand as one journey. */
+.route[data-macro-phase] .route__steps { transform: translateX(8px); transition: transform 420ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.route[data-macro-phase="verified"] .route__steps { transform: translateX(0) scale(1.015); }
+.playlist-catalog { transform-origin: top; }
+.playlist-catalog.macro-catalog--visible { animation: macro-catalog-arrive 640ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+
+/* Macro 16: the hero opens like a curtain, then hands the page to the next chapter. */
+.macro-motion-ready .hero::before,
+.macro-motion-ready .hero::after {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  bottom: 0;
+  width: 51vw;
+  background: #10120f;
+  content: "";
+  transition: translate 900ms cubic-bezier(0.16, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.macro-motion-ready .hero { position: relative; isolation: isolate; }
+.macro-motion-ready .hero::before { right: 50%; }
+.macro-motion-ready .hero::after { left: 50%; }
+.macro-motion-ready .hero.macro-scene--entered::before { translate: -100% 0; }
+.macro-motion-ready .hero.macro-scene--entered::after { translate: 100% 0; }
+
+/* Macro 17: the safeguards rail unfolds as one panoramic strip. */
+.motion-ready .proof-rail { clip-path: inset(0 50% round 8px); transition: clip-path 760ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.motion-ready .proof-rail.reveal--visible { clip-path: inset(0 round 8px); }
+.motion-ready .proof-rail article { translate: 0 24px; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.motion-ready .proof-rail.reveal--visible article { translate: 0 0; }
+.motion-ready .proof-rail.reveal--visible article:nth-child(2) { transition-delay: 90ms; }
+.motion-ready .proof-rail.reveal--visible article:nth-child(3) { transition-delay: 180ms; }
+
+/* Macro 18: opening Spotify setup expands and re-centers the full route chapter. */
+.route { transition: transform 560ms cubic-bezier(0.2, 0.75, 0.2, 1), box-shadow 560ms ease; }
+.route:has(.custom-app-setup[open]) { transform: scale(1.012); box-shadow: 0 30px 70px rgb(0 0 0 / 18%); }
+.custom-app-setup__body { transform-origin: top; }
+.custom-app-setup[open] .custom-app-setup__body { animation: macro-setup-expand 520ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+
+/* Macro 19: the batch command deck docks above the loaded playlist workspace. */
+.batch-toolbar:not([hidden]) { animation: macro-command-deck 580ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+.playlist-catalog:has(.batch-toolbar:not([hidden])) .playlist-list { animation: macro-workspace-make-room 580ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+
+/* Macro 20: the closing statement converges before the footer rises like end credits. */
+.macro-motion-ready .closing-note > :first-child { translate: -64px 0; }
+.macro-motion-ready .closing-note > :last-child { translate: 64px 0; }
+.macro-motion-ready .closing-note.macro-scene--entered > * { translate: 0 0; }
+.motion-ready footer { clip-path: inset(100% 0 0); translate: 0 44px; transition: clip-path 760ms cubic-bezier(0.16, 0.8, 0.2, 1), translate 760ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.motion-ready footer.reveal--visible { clip-path: inset(0); translate: 0 0; }
+
+@keyframes chapter-rail-arrive {
+  from { opacity: 0; transform: translate(42px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+
+@keyframes macro-destination {
+  0% { filter: brightness(0.78); scale: 0.985; }
+  55% { filter: brightness(1.12); scale: 1.012; }
+  100% { filter: brightness(1); scale: 1; }
+}
+
+@keyframes macro-catalog-arrive {
+  from { opacity: 0; transform: translateY(42px) scaleY(0.94); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+@keyframes macro-setup-expand {
+  from { opacity: 0; transform: scaleY(0.82) translateY(-12px); }
+  to { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+
+@keyframes macro-command-deck {
+  from { opacity: 0; transform: translateY(-30px) scaleX(0.94); }
+  to { opacity: 1; transform: translateY(0) scaleX(1); }
+}
+
+@keyframes macro-workspace-make-room {
+  from { opacity: 0.45; transform: translateY(-18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 66px; }
@@ -1739,6 +1967,7 @@ footer {
   .purpose__heading { grid-template-columns: 0.7fr 1.3fr; }
   .purpose__heading > p:last-child { grid-column: 2; }
   .origin-note__sleeves { width: min(100%, 560px); min-height: 330px; }
+  .chapter-rail { display: none; }
 }
 
 @media (max-width: 620px) {
@@ -1823,6 +2052,17 @@ footer {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+
+  .macro-scene,
+  .macro-scene > * {
+    clip-path: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+    scale: 1 !important;
+  }
+
+  .chapter-rail { display: none; }
 }
 
 @media (any-pointer: coarse) {
