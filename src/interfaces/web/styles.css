@@ -1611,6 +1611,50 @@ body { transition: background-color 680ms ease; }
 .playlist-catalog { transform-origin: top; }
 .playlist-catalog.macro-catalog--visible { animation: macro-catalog-arrive 640ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
 
+/* Macro 16: the hero opens like a curtain, then hands the page to the next chapter. */
+.macro-motion-ready .hero::before,
+.macro-motion-ready .hero::after {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  bottom: 0;
+  width: 51vw;
+  background: #10120f;
+  content: "";
+  transition: translate 900ms cubic-bezier(0.16, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.macro-motion-ready .hero { position: relative; isolation: isolate; }
+.macro-motion-ready .hero::before { right: 50%; }
+.macro-motion-ready .hero::after { left: 50%; }
+.macro-motion-ready .hero.macro-scene--entered::before { translate: -100% 0; }
+.macro-motion-ready .hero.macro-scene--entered::after { translate: 100% 0; }
+
+/* Macro 17: the safeguards rail unfolds as one panoramic strip. */
+.motion-ready .proof-rail { clip-path: inset(0 50% round 8px); transition: clip-path 760ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.motion-ready .proof-rail.reveal--visible { clip-path: inset(0 round 8px); }
+.motion-ready .proof-rail article { translate: 0 24px; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.motion-ready .proof-rail.reveal--visible article { translate: 0 0; }
+.motion-ready .proof-rail.reveal--visible article:nth-child(2) { transition-delay: 90ms; }
+.motion-ready .proof-rail.reveal--visible article:nth-child(3) { transition-delay: 180ms; }
+
+/* Macro 18: opening Spotify setup expands and re-centers the full route chapter. */
+.route { transition: transform 560ms cubic-bezier(0.2, 0.75, 0.2, 1), box-shadow 560ms ease; }
+.route:has(.custom-app-setup[open]) { transform: scale(1.012); box-shadow: 0 30px 70px rgb(0 0 0 / 18%); }
+.custom-app-setup__body { transform-origin: top; }
+.custom-app-setup[open] .custom-app-setup__body { animation: macro-setup-expand 520ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+
+/* Macro 19: the batch command deck docks above the loaded playlist workspace. */
+.batch-toolbar:not([hidden]) { animation: macro-command-deck 580ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+.playlist-catalog:has(.batch-toolbar:not([hidden])) .playlist-list { animation: macro-workspace-make-room 580ms cubic-bezier(0.16, 0.8, 0.2, 1) both; }
+
+/* Macro 20: the closing statement converges before the footer rises like end credits. */
+.macro-motion-ready .closing-note > :first-child { translate: -64px 0; }
+.macro-motion-ready .closing-note > :last-child { translate: 64px 0; }
+.macro-motion-ready .closing-note.macro-scene--entered > * { translate: 0 0; }
+.motion-ready footer { clip-path: inset(100% 0 0); translate: 0 44px; transition: clip-path 760ms cubic-bezier(0.16, 0.8, 0.2, 1), translate 760ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.motion-ready footer.reveal--visible { clip-path: inset(0); translate: 0 0; }
+
 @keyframes chapter-rail-arrive {
   from { opacity: 0; transform: translate(42px, -50%); }
   to { opacity: 1; transform: translate(0, -50%); }
@@ -1625,6 +1669,21 @@ body { transition: background-color 680ms ease; }
 @keyframes macro-catalog-arrive {
   from { opacity: 0; transform: translateY(42px) scaleY(0.94); }
   to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+@keyframes macro-setup-expand {
+  from { opacity: 0; transform: scaleY(0.82) translateY(-12px); }
+  to { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+
+@keyframes macro-command-deck {
+  from { opacity: 0; transform: translateY(-30px) scaleX(0.94); }
+  to { opacity: 1; transform: translateY(0) scaleX(1); }
+}
+
+@keyframes macro-workspace-make-room {
+  from { opacity: 0.45; transform: translateY(-18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 900px) {
