@@ -1,0 +1,17 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs>
+    <filter id="texture" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence baseFrequency=".65" numOctaves="2" seed="4" type="fractalNoise"/>
+      <feComposite in="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+  <rect width="96" height="96" fill="#D8C9B8"/>
+  <circle cx="39" cy="37" r="27" fill="#D77651"/>
+  <circle cx="53" cy="46" r="27" fill="#463C4B" opacity=".82"/>
+  <path d="M0 76 96 51v45H0Z" fill="#EEE2D2"/>
+  <path d="m0 78 96-25" stroke="#1E2621" stroke-width="3"/>
+  <rect width="96" height="96" opacity=".08" filter="url(#texture)"/>
+</svg>

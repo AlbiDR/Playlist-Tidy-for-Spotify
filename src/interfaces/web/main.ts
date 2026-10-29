@@ -12,6 +12,11 @@ import { PlaylistTidyError } from "../../core/errors.js";
 import { applyMovePlan, getTargetOrder, haveEqualMembership, isNewestFirst, planPlaylistSort } from "../../core/playlist/index.js";
 import type { PlaylistOccurrence, PlaylistView } from "../../core/playlist/types.js";
 import markUrl from "./favicon.svg";
+import afterimageArtworkUrl from "./sample-artwork/afterimage.svg";
+import nightBusArtworkUrl from "./sample-artwork/night-bus.svg";
+import northboundArtworkUrl from "./sample-artwork/northbound.svg";
+import openWaterArtworkUrl from "./sample-artwork/open-water.svg";
+import softSignalArtworkUrl from "./sample-artwork/soft-signal.svg";
 import "./styles.css";
 
 type ViewState =
@@ -29,11 +34,11 @@ type ViewState =
 const CLIENT_ID_STORAGE_KEY = "playlist-tidy.spotify-client-id";
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9_-]{16,128}$/u;
 const DEMO_TRACKS = [
-  { title: "Northbound", artist: "Paper Satellites", addedAt: "2026-09-29T18:10:00.000Z" },
-  { title: "Afterimage", artist: "Glass Hours", addedAt: "2026-10-24T21:45:00.000Z" },
-  { title: "Open Water", artist: "Mira Vale", addedAt: "2026-10-02T07:30:00.000Z" },
-  { title: "Soft Signal", artist: "Low Season", addedAt: "2026-10-21T16:05:00.000Z" },
-  { title: "Night Bus", artist: "Neon Static", addedAt: "2026-10-18T23:20:00.000Z" },
+  { title: "Northbound", artist: "Paper Satellites", addedAt: "2026-09-29T18:10:00.000Z", artworkUrl: northboundArtworkUrl },
+  { title: "Afterimage", artist: "Glass Hours", addedAt: "2026-10-24T21:45:00.000Z", artworkUrl: afterimageArtworkUrl },
+  { title: "Open Water", artist: "Mira Vale", addedAt: "2026-10-02T07:30:00.000Z", artworkUrl: openWaterArtworkUrl },
+  { title: "Soft Signal", artist: "Low Season", addedAt: "2026-10-21T16:05:00.000Z", artworkUrl: softSignalArtworkUrl },
+  { title: "Night Bus", artist: "Neon Static", addedAt: "2026-10-18T23:20:00.000Z", artworkUrl: nightBusArtworkUrl },
 ] as const;
 const DEMO_OCCURRENCES: readonly PlaylistOccurrence[] = DEMO_TRACKS.map((track, originalPosition) => ({
   originalPosition,
@@ -57,20 +62,6 @@ let revealObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
 let progressListenersInitialized = false;
 let progressAnimation: Animation | undefined;
-let pointerLightInitialized = false;
-let pointerFrame: number | undefined;
-let pointerX = 0;
-let pointerY = 0;
-let pointerRenderedX = 0;
-let pointerRenderedY = 0;
-let pointerHasPosition = false;
-let pointerInside = false;
-let pointerVelocityX = 0;
-let pointerVelocityY = 0;
-let interactionEnergy = 0;
-let scrollEnergy = 0;
-let scrollDirection = 0;
-let previousScrollY = window.scrollY;
 let runtimeFailureShown = false;
 let writeOperationActive = false;
 
@@ -90,8 +81,8 @@ function render(state: ViewState): void {
       <div class="header-actions">
         <nav class="site-nav" aria-label="Primary navigation">
           <a href="#interactive-demo">Demo</a>
-          <a href="#how-it-works">Method</a>
-          <a href="#engineering">Engineering</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#personal-spotify">Use it</a>
         </nav>
         <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer"><span>View source</span><span aria-hidden="true">↗</span></a>
       </div>
@@ -100,61 +91,48 @@ function render(state: ViewState): void {
       <section class="hero" aria-labelledby="connection-title">
         <div class="hero__copy reveal">
           <div class="hero__kicker">
-            <p class="eyebrow">Order for your listening life</p>
-            <span class="hero__availability"><i aria-hidden="true"></i> Open-source utility</span>
+            <p class="eyebrow">A focused Spotify playlist tool</p>
+            <span class="hero__availability">Open source</span>
           </div>
-          <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
+          <h1 id="connection-title">Sort a Spotify playlist you own <em>by date added.</em></h1>
           <p class="summary">
-            Playlist Tidy sorts the tracks inside playlists you own by the date each track
-            was added, with the newest at the top. It does not delete tracks, edit music,
-            or rearrange the playlists in your library.
+            Playlist Tidy puts the newest-added tracks first. It previews the move, changes
+            only the order, and checks that every song is still there when it is done.
           </p>
           <div class="hero-actions">
             <button id="demo-action" class="connect-button" type="button">Try the interactive demo</button>
             <button id="spotify-setup-action" class="secondary-button" type="button">Set up personal Spotify</button>
           </div>
-          <p class="demo-intro"><strong>Start with the demo.</strong> It uses the real sorting engine with fictional tracks, no login, no storage, and no Spotify connection.</p>
+          <p class="demo-intro"><strong>Not ready to connect Spotify?</strong> The demo uses the real sorting engine with fictional tracks. No login and no network request.</p>
           <ul class="hero-proof" aria-label="Playlist Tidy guarantees">
-            <li><strong>0</strong><span>tracks removed</span></li>
-            <li><strong>Preview</strong><span>before every write</span></li>
-            <li><strong>Verify</strong><span>after every sort</span></li>
+            <li><strong>One playlist</strong><span>you choose</span></li>
+            <li><strong>Preview first</strong><span>before anything moves</span></li>
+            <li><strong>Same tracks</strong><span>only the order changes</span></li>
           </ul>
         </div>
-        <div class="sort-visual-wrap reveal reveal--delay-1">
-          <div class="sort-visual" aria-hidden="true">
-            <div class="sort-visual__disc"><i></i></div>
-            <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
-            <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
-            <div class="sort-visual__topline"><span>live ordering model</span><i></i><span>05 tracks</span></div>
-            <div class="sort-visual__label">sort.key = added_at ↓</div>
-            <div class="track-stack">
-              <div class="track-strip track-strip--one"><span>01</span><div><strong>Afterimage</strong><small>Glass Hours</small></div><i></i><time>24 OCT</time></div>
-              <div class="track-strip track-strip--two"><span>02</span><div><strong>Soft Signal</strong><small>Low Season</small></div><i></i><time>21 OCT</time></div>
-              <div class="track-strip track-strip--three"><span>03</span><div><strong>Night Bus</strong><small>Neon Static</small></div><i></i><time>18 OCT</time></div>
+        <div class="playlist-example reveal reveal--delay-1" aria-label="Example playlist sorted with newest additions first">
+          <div class="playlist-example__header">
+            <span class="playlist-example__cover" aria-hidden="true"><i></i></span>
+            <div>
+              <span>Example playlist</span>
+              <strong>Late-night discoveries</strong>
+              <small>Sorted by Playlist Tidy</small>
             </div>
-            <div class="sort-visual__playhead"></div>
-            <div class="sort-visual__spectrum">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-            </div>
-            <div class="sort-visual__verification"><span>membership</span><strong>5 / 5 intact</strong></div>
-            <div class="sort-visual__stamp">stable sort<br>verified</div>
           </div>
-          <p class="sort-visual-wrap__caption"><span>Signal 01</span> The same five tracks. A clearer sequence.</p>
+          <ol class="playlist-example__tracks">
+            <li><img class="track-art" src="${afterimageArtworkUrl}" alt="" width="38" height="38" /><span><strong>Afterimage</strong><small>Glass Hours</small></span><time datetime="2026-10-24">24 Oct</time></li>
+            <li><img class="track-art" src="${softSignalArtworkUrl}" alt="" width="38" height="38" /><span><strong>Soft Signal</strong><small>Low Season</small></span><time datetime="2026-10-21">21 Oct</time></li>
+            <li><img class="track-art" src="${nightBusArtworkUrl}" alt="" width="38" height="38" /><span><strong>Night Bus</strong><small>Neon Static</small></span><time datetime="2026-10-18">18 Oct</time></li>
+            <li><img class="track-art" src="${openWaterArtworkUrl}" alt="" width="38" height="38" /><span><strong>Open Water</strong><small>Mira Vale</small></span><time datetime="2026-10-02">02 Oct</time></li>
+          </ol>
+          <p class="playlist-example__note"><span aria-hidden="true">✓</span> Same tracks, newest additions first</p>
         </div>
       </section>
       <section class="proof-rail reveal" aria-label="Product safeguards">
-        <article><span>01</span><div><strong>Read-only preview</strong><small>The plan lands before the write.</small></div></article>
-        <article><span>02</span><div><strong>Snapshot guarded</strong><small>Stale state stops the operation.</small></div></article>
-        <article><span>03</span><div><strong>Stable ordering</strong><small>Equal dates keep their order.</small></div></article>
-        <article><span>04</span><div><strong>Membership proof</strong><small>Every occurrence stays present.</small></div></article>
+        <article><span>01</span><div><strong>It sorts tracks, not playlists</strong><small>Your library layout stays exactly as it is.</small></div></article>
+        <article><span>02</span><div><strong>It works on playlists you own</strong><small>You choose one and approve the change.</small></div></article>
+        <article><span>03</span><div><strong>It never adds or removes songs</strong><small>After sorting, it reads the playlist back and checks.</small></div></article>
       </section>
-      <div class="signal-ticker reveal">
-        <span class="visually-hidden">Preview, plan, guard, sort, and prove</span>
-        <div aria-hidden="true">
-          <span>Preview</span><i></i><span>Plan</span><i></i><span>Guard</span><i></i><span>Sort</span><i></i><span>Prove</span><i></i>
-          <span>Preview</span><i></i><span>Plan</span><i></i><span>Guard</span><i></i><span>Sort</span><i></i><span>Prove</span><i></i>
-        </div>
-      </div>
       <section id="interactive-demo" class="interactive-demo reveal" aria-labelledby="demo-heading">
         <div class="interactive-demo__intro">
           <p class="eyebrow">Interactive product demo</p>
@@ -184,46 +162,28 @@ function render(state: ViewState): void {
           <p class="demo-proof"><strong>Boundary:</strong> the order may change; titles, artists, dates, and membership never do.</p>
         </div>
       </section>
-      <section class="anatomy reveal" aria-labelledby="anatomy-heading">
-        <header class="anatomy__intro">
-          <p class="eyebrow">Playlist anatomy</p>
-          <h2 id="anatomy-heading">Not a new playlist.<br><em>A better signal.</em></h2>
-          <p>Every occurrence travels to its newest-first position. Identity, metadata, and membership stay locked while only the sequence changes.</p>
+      <section class="scope reveal" aria-labelledby="scope-heading">
+        <header class="scope__intro">
+          <p class="eyebrow">The scope is deliberately small</p>
+          <h2 id="scope-heading">It changes one thing:<br><em>track order.</em></h2>
+          <p>Playlist Tidy is not a recommendation engine, a library manager, or a playlist generator. It takes an existing playlist and puts its newest additions at the top.</p>
         </header>
-        <div class="anatomy__board" aria-hidden="true">
-          <div class="anatomy__chrome"><span>ORDER MAP / 05</span><i></i><strong>membership locked</strong></div>
-          <div class="anatomy__column anatomy__column--before">
-            <div class="anatomy__column-label"><span>Input</span><strong>Added out of order</strong></div>
-            <div class="anatomy-track anatomy-track--a"><span>01</span><i></i><div><strong>Northbound</strong><small>29 SEP</small></div></div>
-            <div class="anatomy-track anatomy-track--b"><span>02</span><i></i><div><strong>Afterimage</strong><small>24 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--c"><span>03</span><i></i><div><strong>Open Water</strong><small>02 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--d"><span>04</span><i></i><div><strong>Soft Signal</strong><small>21 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--e"><span>05</span><i></i><div><strong>Night Bus</strong><small>18 OCT</small></div></div>
-          </div>
-          <svg class="anatomy__routes" viewBox="0 0 260 400" preserveAspectRatio="none">
-            <path class="route-line route-line--a" d="M0 42 C115 42 145 358 260 358" />
-            <path class="route-line route-line--b" d="M0 121 C110 121 150 42 260 42" />
-            <path class="route-line route-line--c" d="M0 200 C120 200 140 279 260 279" />
-            <path class="route-line route-line--d" d="M0 279 C110 279 150 121 260 121" />
-            <path class="route-line route-line--e" d="M0 358 C120 358 140 200 260 200" />
-          </svg>
-          <div class="anatomy__core"><span>2</span><small>range<br>moves</small></div>
-          <div class="anatomy__column anatomy__column--after">
-            <div class="anatomy__column-label"><span>Output</span><strong>Newest first</strong></div>
-            <div class="anatomy-track anatomy-track--b"><span>01</span><i></i><div><strong>Afterimage</strong><small>24 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--d"><span>02</span><i></i><div><strong>Soft Signal</strong><small>21 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--e"><span>03</span><i></i><div><strong>Night Bus</strong><small>18 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--c"><span>04</span><i></i><div><strong>Open Water</strong><small>02 OCT</small></div></div>
-            <div class="anatomy-track anatomy-track--a"><span>05</span><i></i><div><strong>Northbound</strong><small>29 SEP</small></div></div>
-          </div>
-          <div class="anatomy__seal"><i></i><span>05 in</span><strong>05 out</strong></div>
+        <div class="scope__facts">
+          <article>
+            <span class="scope__mark scope__mark--yes" aria-hidden="true">✓</span>
+            <div><h3>What changes</h3><p>The position of tracks inside the playlist you selected.</p></div>
+          </article>
+          <article>
+            <span class="scope__mark" aria-hidden="true">·</span>
+            <div><h3>What stays put</h3><p>The songs, their metadata, playlist membership, and every other playlist in your library.</p></div>
+          </article>
         </div>
       </section>
       <section id="how-it-works" class="purpose" aria-labelledby="purpose-heading">
         <header class="purpose__heading reveal">
-          <p class="eyebrow">What Playlist Tidy does</p>
-          <h2 id="purpose-heading">One useful job.<br>Handled carefully.</h2>
-          <p>Spotify records when every track joined a playlist. Playlist Tidy uses that date to restore a clear newest-first order.</p>
+          <p class="eyebrow">How it works</p>
+          <h2 id="purpose-heading">Read, preview,<br>then reorder.</h2>
+          <p>Spotify stores the date each track was added to a playlist. Playlist Tidy uses that existing date, with nothing invented, to work out the newest-first order.</p>
         </header>
         <ol class="purpose__steps">
           <li class="purpose__step reveal" data-step="01">
@@ -243,51 +203,37 @@ function render(state: ViewState): void {
       </section>
       <section id="engineering" class="engineering reveal" aria-labelledby="engineering-heading">
         <div class="engineering__intro">
-          <p class="eyebrow">The engineering is the feature</p>
-          <h2 id="engineering-heading">Small surface.<br><em>Serious safeguards.</em></h2>
-          <p>Playlist Tidy treats a simple reorder like production work: deterministic planning, explicit consent, snapshot-aware writes, and a full read-back before success.</p>
+          <p class="eyebrow">Careful by design</p>
+          <h2 id="engineering-heading">You see the plan before it touches your playlist.</h2>
+          <p>The job is simple. The write still deserves care. Playlist Tidy calculates the required moves without changing anything, waits for approval, and then checks the result against the original tracks.</p>
           <div class="engineering__links">
-            <a href="https://github.com/AlbiDR/PlaylistTidy/blob/main/docs/architecture/cleanstack.md" target="_blank" rel="noopener noreferrer">Read the architecture ↗</a>
-            <a href="https://github.com/AlbiDR/PlaylistTidy/tree/main/src" target="_blank" rel="noopener noreferrer">Explore the source ↗</a>
+            <a href="https://github.com/AlbiDR/PlaylistTidy/blob/main/docs/architecture/cleanstack.md" target="_blank" rel="noopener noreferrer">How it is built ↗</a>
+            <a href="https://github.com/AlbiDR/PlaylistTidy/tree/main/src" target="_blank" rel="noopener noreferrer">Read the source ↗</a>
           </div>
-        </div>
-        <div class="engineering__console" aria-label="A visual summary of the verified sorting pipeline">
-          <div class="engineering__console-bar">
-            <span><i></i><i></i><i></i></span>
-            <strong>sort.pipeline</strong>
-            <small>guarded</small>
-          </div>
-          <ol class="pipeline">
-            <li><span>01</span><div><small>READ</small><strong>Complete playlist view</strong></div><b>coherent</b></li>
-            <li><span>02</span><div><small>PLAN</small><strong>Stable newest-first order</strong></div><b>deterministic</b></li>
-            <li><span>03</span><div><small>WRITE</small><strong>Snapshot-chained range moves</strong></div><b>explicit</b></li>
-            <li><span>04</span><div><small>PROVE</small><strong>Membership + final order</strong></div><b>verified</b></li>
-          </ol>
-          <div class="engineering__console-foot"><span>result</span><strong><i aria-hidden="true"></i> success is earned, never assumed</strong></div>
         </div>
         <div class="engineering__principles">
           <article>
-            <span>Fail closed</span>
-            <h3>Uncertainty stops writes.</h3>
-            <p>Ownership, snapshots, authentication, and ambiguous responses all have explicit safe exits.</p>
+            <span>Before</span>
+            <h3>Preview without writing.</h3>
+            <p>See how many moves are needed before you approve anything.</p>
           </article>
           <article>
-            <span>Occurrence-safe</span>
-            <h3>Duplicates stay distinct.</h3>
-            <p>Every playlist position is handled as its own occurrence, so repeated tracks are never collapsed.</p>
+            <span>During</span>
+            <h3>Stop if the playlist changed.</h3>
+            <p>Stale or uncertain state ends the operation instead of guessing.</p>
           </article>
           <article>
-            <span>Inspectable</span>
-            <h3>The proof is open.</h3>
-            <p>The planner, Spotify adapter, browser flow, audits, and architecture decisions are public.</p>
+            <span>After</span>
+            <h3>Read it back and check.</h3>
+            <p>Every original track must still be present and in the expected order.</p>
           </article>
         </div>
       </section>
       <section id="personal-spotify" class="route reveal" aria-labelledby="route-heading">
         <div class="route__intro">
-          <p class="eyebrow">Optional personal Spotify mode</p>
-          <h2 id="route-heading">Bring your own app.<br>Keep every write explicit.</h2>
-          <p class="route__summary">Spotify limits Development Mode apps to their owners and allowlisted users. To sort your real playlists here, use the public Client ID from an app you control. Never enter a Client Secret.</p>
+          <p class="eyebrow">Use it with your Spotify account</p>
+          <h2 id="route-heading">To sort a real playlist, connect your own Spotify app.</h2>
+          <p class="route__summary">This public website does not ship with a shared Spotify login. Spotify limits Development Mode apps to their owners and allowlisted users, so you need the public Client ID from an app you control. Never enter a Client Secret.</p>
           <details id="custom-app-setup" class="custom-app-setup"${showCustomApp ? " open" : ""}>
             <summary>${customClientId === undefined ? "Set up my Spotify app" : "My Spotify connection"}</summary>
             <div class="custom-app-setup__body">
@@ -353,11 +299,11 @@ function render(state: ViewState): void {
       <section class="closing-note reveal" aria-labelledby="closing-heading">
         <div>
           <p class="eyebrow">Built in public</p>
-          <h2 id="closing-heading">A tiny tool with<br><em>nothing to hide.</em></h2>
+          <h2 id="closing-heading">Small, open,<br><em>and useful.</em></h2>
         </div>
         <div class="closing-note__copy">
-          <p>Try the engine with sample data, inspect every design decision, or self-host the scheduled automation. The product stays useful because its boundary stays clear.</p>
-          <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Audit Playlist Tidy on GitHub <span aria-hidden="true">↗</span></a>
+          <p>Try the sort with sample data, inspect the source, or self-host the scheduled automation. Playlist Tidy does one modest job and makes the safety checks visible.</p>
+          <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">View Playlist Tidy on GitHub <span aria-hidden="true">↗</span></a>
         </div>
       </section>
     </main>
@@ -442,9 +388,12 @@ function initializeDemo(): void {
       const position = document.createElement("span");
       position.className = "demo-track__position";
       position.textContent = String(index + 1).padStart(2, "0");
-      const artwork = document.createElement("span");
+      const artwork = document.createElement("img");
       artwork.className = "demo-track__art";
-      artwork.setAttribute("aria-hidden", "true");
+      artwork.src = track.artworkUrl;
+      artwork.alt = "";
+      artwork.width = 38;
+      artwork.height = 38;
       const identity = document.createElement("div");
       const title = document.createElement("strong");
       title.textContent = track.title;
@@ -847,164 +796,6 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
-  initializePointerLight();
-}
-
-function initializePointerLight(): void {
-  if (
-    pointerLightInitialized ||
-    !window.matchMedia("(any-pointer: fine)").matches ||
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  ) return;
-
-  pointerLightInitialized = true;
-  const light = document.createElement("div");
-  light.className = "pointer-light";
-  light.setAttribute("aria-hidden", "true");
-  for (const name of ["green", "coral", "mist"]) {
-    const bloom = document.createElement("span");
-    bloom.className = `pointer-light__bloom pointer-light__bloom--${name}`;
-    light.append(bloom);
-  }
-  document.body.append(light);
-
-  window.addEventListener("pointermove", (event) => {
-    if (event.pointerType === "touch") return;
-    if (pointerHasPosition) {
-      pointerVelocityX += event.clientX - pointerX;
-      pointerVelocityY += event.clientY - pointerY;
-    }
-    pointerX = event.clientX;
-    pointerY = event.clientY;
-    pointerInside = true;
-    if (!pointerHasPosition) {
-      pointerRenderedX = pointerX;
-      pointerRenderedY = pointerY;
-      pointerHasPosition = true;
-    }
-    const target = event.target instanceof Element ? event.target : undefined;
-    light.classList.toggle(
-      "pointer-light--engaged",
-      target?.closest("a, button, label, input") !== null && target !== undefined,
-    );
-    interactionEnergy = Math.max(
-      interactionEnergy,
-      Math.min(0.82, 0.18 + Math.hypot(pointerVelocityX, pointerVelocityY) / 90),
-    );
-    light.classList.add("pointer-light--visible");
-    schedulePointerLight(light);
-  }, { passive: true });
-
-  window.addEventListener("scroll", () => {
-    const delta = window.scrollY - previousScrollY;
-    previousScrollY = window.scrollY;
-    if (Math.abs(delta) < 0.5) return;
-    ensurePointerLightPosition();
-    scrollDirection = Math.sign(delta);
-    scrollEnergy = Math.max(scrollEnergy, Math.min(1, Math.abs(delta) / 90));
-    interactionEnergy = Math.max(interactionEnergy, 0.42 + scrollEnergy * 0.32);
-    light.classList.add("pointer-light--visible");
-    schedulePointerLight(light);
-  }, { passive: true });
-
-  document.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "touch") return;
-    interactionEnergy = 1;
-    light.classList.add("pointer-light--visible", "pointer-light--pressed");
-    window.setTimeout(() => light.classList.remove("pointer-light--pressed"), 420);
-    schedulePointerLight(light);
-  }, { passive: true });
-
-  document.addEventListener("focusin", (event) => {
-    if (!(event.target instanceof HTMLElement)) return;
-    if (event.target.closest("a, button, label, input") === null) return;
-    const bounds = event.target.getBoundingClientRect();
-    pointerX = bounds.left + bounds.width / 2;
-    pointerY = bounds.top + bounds.height / 2;
-    if (!pointerHasPosition) {
-      pointerRenderedX = pointerX;
-      pointerRenderedY = pointerY;
-      pointerHasPosition = true;
-    }
-    interactionEnergy = Math.max(interactionEnergy, 0.68);
-    light.classList.add("pointer-light--visible", "pointer-light--engaged");
-    schedulePointerLight(light);
-  });
-
-  document.addEventListener("focusout", () => {
-    light.classList.remove("pointer-light--engaged");
-  });
-
-  document.addEventListener("keydown", () => {
-    ensurePointerLightPosition();
-    interactionEnergy = Math.max(interactionEnergy, 0.5);
-    light.classList.add("pointer-light--visible");
-    schedulePointerLight(light);
-  });
-
-  document.documentElement.addEventListener("pointerleave", () => {
-    pointerInside = false;
-    light.classList.remove("pointer-light--engaged");
-    schedulePointerLight(light);
-  });
-  window.addEventListener("blur", () => {
-    light.classList.remove("pointer-light--visible", "pointer-light--engaged");
-    pointerInside = false;
-    pointerHasPosition = false;
-  });
-}
-
-function ensurePointerLightPosition(): void {
-  if (pointerHasPosition) return;
-  pointerX = window.innerWidth * 0.62;
-  pointerY = window.innerHeight * 0.42;
-  pointerRenderedX = pointerX;
-  pointerRenderedY = pointerY;
-  pointerHasPosition = true;
-}
-
-function schedulePointerLight(light: HTMLElement): void {
-  if (pointerFrame !== undefined) return;
-  pointerFrame = window.requestAnimationFrame(() => renderPointerLight(light));
-}
-
-function renderPointerLight(light: HTMLElement): void {
-  pointerRenderedX += (pointerX - pointerRenderedX) * 0.12;
-  pointerRenderedY += (pointerY - pointerRenderedY) * 0.12;
-  light.style.setProperty("--pointer-x", `${pointerRenderedX.toFixed(2)}px`);
-  light.style.setProperty("--pointer-y", `${pointerRenderedY.toFixed(2)}px`);
-  light.style.setProperty("--pointer-activity", interactionEnergy.toFixed(3));
-  const engagement = light.classList.contains("pointer-light--engaged") ? 0.035 : 0;
-  light.style.setProperty(
-    "--pointer-opacity",
-    Math.min(0.3, 0.1 + interactionEnergy * 0.13 + engagement).toFixed(3),
-  );
-
-  const velocity = Math.min(1, Math.hypot(pointerVelocityX, pointerVelocityY) / 42);
-  const rotation = Math.max(-8, Math.min(8, pointerVelocityX * 0.08 + scrollDirection * scrollEnergy * 5));
-  light.style.setProperty("--pointer-rotation", `${rotation.toFixed(2)}deg`);
-  light.style.setProperty("--pointer-scale-x", (1 + velocity * 0.1 - scrollEnergy * 0.025).toFixed(3));
-  light.style.setProperty("--pointer-scale-y", (1 - velocity * 0.025 + scrollEnergy * 0.18).toFixed(3));
-
-  pointerVelocityX *= 0.82;
-  pointerVelocityY *= 0.82;
-  interactionEnergy *= 0.955;
-  scrollEnergy *= 0.88;
-
-  const stillMoving =
-    Math.abs(pointerX - pointerRenderedX) > 0.2 ||
-    Math.abs(pointerY - pointerRenderedY) > 0.2 ||
-    Math.abs(pointerVelocityX) > 0.1 ||
-    Math.abs(pointerVelocityY) > 0.1 ||
-    interactionEnergy > 0.01 ||
-    scrollEnergy > 0.01;
-  if (!stillMoving && !pointerInside && !light.classList.contains("pointer-light--engaged")) {
-    light.classList.remove("pointer-light--visible");
-    pointerHasPosition = false;
-  }
-  pointerFrame = stillMoving
-    ? window.requestAnimationFrame(() => renderPointerLight(light))
-    : undefined;
 }
 
 function initializeScrollProgress(): void {
