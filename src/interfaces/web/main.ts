@@ -63,6 +63,8 @@ let sceneObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
 let progressListenersInitialized = false;
 let macroListenersInitialized = false;
+let macroKeyboardInitialized = false;
+let previousMacroScrollY = window.scrollY;
 let progressAnimation: Animation | undefined;
 let pointerFieldInitialized = false;
 let pointerFrame: number | undefined;
@@ -461,6 +463,7 @@ function initializeDemo(): void {
     reset.hidden = true;
     phase.textContent = "Unsorted";
     phase.className = "demo-phase";
+    demoPanel.dataset.macroPhase = "initial";
     status.textContent = "The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.";
     renderTracks();
     if (animate) animateDemoPanel(demoPanel, "reset");
@@ -473,6 +476,7 @@ function initializeDemo(): void {
       reset.hidden = false;
       phase.textContent = "Preview ready";
       phase.className = "demo-phase demo-phase--preview";
+      demoPanel.dataset.macroPhase = "preview";
       status.textContent = `${String(plan.length)} range ${plan.length === 1 ? "move" : "moves"} planned for ${String(order.length)} sample tracks. The displayed order has not changed.`;
       renderTracks();
       animateDemoPanel(demoPanel, "preview");
@@ -492,6 +496,7 @@ function initializeDemo(): void {
     primary.disabled = true;
     phase.textContent = "Verified newest-first";
     phase.className = "demo-phase demo-phase--verified";
+    demoPanel.dataset.macroPhase = "verified";
     status.textContent = `Sorted and verified ${String(order.length)} sample tracks with ${String(plan.length)} ${plan.length === 1 ? "move" : "moves"}. Membership and track details are unchanged.`;
     renderTracks();
     animateDemoPanel(demoPanel, "verified");
@@ -618,6 +623,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     throw new Error("Playlist catalog controls are missing.");
   }
   catalog.hidden = false;
+  catalog.classList.add("macro-catalog--visible");
   catalog.setAttribute("aria-busy", state.libraryStatus === "loading" ? "true" : "false");
   if (state.libraryStatus === "loading") {
     count.textContent = "Loading…";
@@ -861,7 +867,13 @@ function initializeMacroScenes(): void {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   document.documentElement.classList.toggle("macro-motion-ready", !reducedMotion);
-  for (const scene of scenes) scene.classList.add("macro-scene");
+  for (const [index, scene] of scenes.entries()) {
+    scene.classList.add("macro-scene");
+    scene.dataset.macroIndex = String(index);
+    scene.dataset.macroDirection = index % 2 === 0 ? "forward" : "reverse";
+  }
+  initializeChapterRail(scenes);
+  initializeMacroNavigation(scenes);
   if (reducedMotion || !("IntersectionObserver" in window)) {
     for (const scene of scenes) scene.classList.add("macro-scene--entered");
     return;
@@ -874,6 +886,13 @@ function initializeMacroScenes(): void {
         if (entry.isIntersecting) scene.classList.add("macro-scene--entered");
         if (entry.intersectionRatio < 0.32) continue;
         for (const candidate of scenes) candidate.classList.toggle("macro-scene--active", candidate === scene);
+        for (const [index, control] of [...document.querySelectorAll<HTMLButtonElement>(".chapter-rail button")].entries()) {
+          const active = String(index) === scene.dataset.macroIndex;
+          control.classList.toggle("chapter-rail__chapter--active", active);
+          if (active) control.setAttribute("aria-current", "location");
+          else control.removeAttribute("aria-current");
+        }
+        document.documentElement.dataset.activeMacroScene = scene.id || `chapter-${scene.dataset.macroIndex ?? "0"}`;
         const sceneId = scene.id;
         for (const link of navLinks) {
           const active = sceneId !== "" && link.hash === `#${sceneId}`;
@@ -895,7 +914,66 @@ function initializeMacroScenes(): void {
 }
 
 function updateMacroHeader(): void {
-  document.querySelector<HTMLElement>(".app-header")?.classList.toggle("app-header--condensed", window.scrollY > 72);
+  const header = document.querySelector<HTMLElement>(".app-header");
+  const delta = window.scrollY - previousMacroScrollY;
+  header?.classList.toggle("app-header--condensed", window.scrollY > 72);
+  if (Math.abs(delta) > 8) {
+    header?.classList.toggle("app-header--retreating", delta > 0 && window.scrollY > 180);
+    document.documentElement.dataset.macroScrollDirection = delta > 0 ? "forward" : "backward";
+    previousMacroScrollY = window.scrollY;
+  }
+}
+
+function initializeChapterRail(scenes: readonly HTMLElement[]): void {
+  document.querySelector(".chapter-rail")?.remove();
+  const rail = document.createElement("nav");
+  rail.className = "chapter-rail";
+  rail.setAttribute("aria-label", "Page chapters");
+  for (const [index, scene] of scenes.entries()) {
+    const control = document.createElement("button");
+    control.type = "button";
+    control.textContent = String(index + 1).padStart(2, "0");
+    control.setAttribute("aria-label", `Go to chapter ${String(index + 1)}`);
+    control.addEventListener("click", () => navigateToMacroScene(scene));
+    rail.append(control);
+  }
+  document.body.append(rail);
+}
+
+function initializeMacroNavigation(scenes: readonly HTMLElement[]): void {
+  for (const link of document.querySelectorAll<HTMLAnchorElement>("a[href^='#']")) {
+    link.addEventListener("click", (event) => {
+      const target = document.querySelector<HTMLElement>(link.hash);
+      if (target === null || !scenes.includes(target)) return;
+      event.preventDefault();
+      navigateToMacroScene(target);
+    });
+  }
+  if (macroKeyboardInitialized) return;
+  macroKeyboardInitialized = true;
+  window.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+    if (event.key !== "PageDown" && event.key !== "PageUp") return;
+    const currentScenes = [...document.querySelectorAll<HTMLElement>(".macro-scene")];
+    const current = currentScenes.findIndex((scene) => scene.classList.contains("macro-scene--active"));
+    const offset = event.key === "PageDown" ? 1 : -1;
+    const target = currentScenes[Math.min(currentScenes.length - 1, Math.max(0, current + offset))];
+    if (target === undefined) return;
+    event.preventDefault();
+    navigateToMacroScene(target);
+  });
+}
+
+function navigateToMacroScene(scene: HTMLElement): void {
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.documentElement.classList.add("macro-is-navigating");
+  scene.classList.add("macro-scene--destination");
+  scene.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+  window.setTimeout(() => {
+    document.documentElement.classList.remove("macro-is-navigating");
+    scene.classList.remove("macro-scene--destination");
+  }, reducedMotion ? 0 : 760);
 }
 
 function initializePointerField(): void {
@@ -1197,6 +1275,7 @@ async function applyPlaylistSort(
 type RoutePhase = "preview" | "confirm" | "sorting" | "verified";
 
 function setRoutePhase(phase: RoutePhase): void {
+  document.querySelector<HTMLElement>("#personal-spotify")?.setAttribute("data-macro-phase", phase);
   const activeStep = phase === "preview" ? 2 : 3;
   const completed = phase === "verified";
   for (const element of document.querySelectorAll<HTMLElement>("[data-route-step]")) {

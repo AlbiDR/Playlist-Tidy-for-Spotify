@@ -1529,6 +1529,104 @@ footer {
 .macro-motion-ready .engineering.macro-scene--entered > *,
 .macro-motion-ready .route.macro-scene--entered > * { translate: 0 0; }
 
+/* Macro 01: alternating chapters travel in from opposite sides. */
+.macro-motion-ready .macro-scene[data-macro-direction="forward"] { transform: perspective(1200px) rotateY(-1.4deg); }
+.macro-motion-ready .macro-scene[data-macro-direction="reverse"] { transform: perspective(1200px) rotateY(1.4deg); }
+.macro-motion-ready .macro-scene--entered { transform: perspective(1200px) rotateY(0); }
+
+/* Macro 02: the current chapter settles forward while neighboring chapters recede. */
+.macro-motion-ready .macro-scene--entered:not(.macro-scene--active) { scale: 0.992; }
+.macro-motion-ready .macro-scene--active { scale: 1; transition: scale 520ms ease; }
+
+/* Macro 03: the page canvas changes tone with the active chapter. */
+body { transition: background-color 680ms ease; }
+:root[data-active-macro-scene="origin-note"] body,
+:root[data-active-macro-scene="chapter-1"] body { background: #15140f; }
+:root[data-active-macro-scene="interactive-demo"] body { background: #121610; }
+:root[data-active-macro-scene="engineering"] body { background: #0d1211; }
+:root[data-active-macro-scene="personal-spotify"] body { background: #11140f; }
+
+/* Macro 04: the global header retreats and returns with reading direction. */
+.app-header--retreating { transform: translateY(calc(-100% - 2px)); }
+.app-header { transition: padding 320ms cubic-bezier(0.2, 0.75, 0.2, 1), background 240ms ease, box-shadow 240ms ease, transform 360ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 05: the chapter rail enters as a page-level navigation system. */
+.chapter-rail {
+  position: fixed;
+  z-index: 18;
+  top: 50%;
+  right: max(10px, calc((100vw - 1240px) / 2));
+  display: grid;
+  gap: 7px;
+  padding: 10px 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: rgb(16 18 15 / 78%);
+  backdrop-filter: blur(10px);
+  transform: translate(24px, -50%);
+  animation: chapter-rail-arrive 620ms 380ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+.chapter-rail button { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; color: #777d74; background: transparent; font: 0.52rem ui-monospace, monospace; cursor: pointer; }
+
+/* Macro 06: the rail advances with the active chapter. */
+.chapter-rail__chapter--active { color: #10140e !important; background: var(--green) !important; transform: scale(1.14); transition: color 240ms ease, background 240ms ease, transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 07: destination chapters acknowledge page-level jumps. */
+.macro-scene--destination { animation: macro-destination 760ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+/* Macro 08: navigation temporarily softens the page into a transition veil. */
+.macro-is-navigating main > section:not(.macro-scene--destination) { filter: brightness(0.72) saturate(0.72); transition: filter 280ms ease; }
+
+/* Macro 09: the origin artwork fans open as its chapter becomes current. */
+.origin-note .origin-note__sleeves { transition: transform 720ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.origin-note.macro-scene--active .origin-note__sleeves { transform: rotate(-1deg) scale(1.035); }
+
+/* Macro 10: the demo enters as two opposing stage wings. */
+.macro-motion-ready .interactive-demo > :first-child { translate: -52px 0; }
+.macro-motion-ready .interactive-demo > :last-child { translate: 52px 0; }
+.macro-motion-ready .interactive-demo.macro-scene--entered > * { translate: 0 0; }
+
+/* Macro 11: demo workflow phases restage the full playlist panel. */
+.demo-playlist[data-macro-phase="preview"] { transform: rotate(-0.6deg) scale(0.985); box-shadow: 16px 18px 0 rgb(27 29 25 / 12%); }
+.demo-playlist[data-macro-phase="verified"] { transform: rotate(0) scale(1.02); box-shadow: 0 20px 44px rgb(73 111 52 / 20%); }
+.demo-playlist { transition: transform 520ms cubic-bezier(0.2, 0.75, 0.2, 1), box-shadow 520ms ease; }
+
+/* Macro 12: the scope chapter opens as a full-panel aperture. */
+.macro-motion-ready .scope { clip-path: inset(0 48% round 12px); }
+.macro-motion-ready .scope.macro-scene--entered { clip-path: inset(0 0 round 12px); }
+
+/* Macro 13: the how-it-works timeline sweeps across the page. */
+.purpose__steps { clip-path: inset(0 100% 0 0); transition: clip-path 900ms 180ms cubic-bezier(0.16, 0.8, 0.2, 1); }
+.purpose.macro-scene--entered .purpose__steps { clip-path: inset(0); }
+
+/* Macro 14: engineering principles cascade as a coordinated panel. */
+.engineering__principles article { translate: 44px 0; opacity: 0.35; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1), opacity 480ms ease; }
+.engineering.macro-scene--entered .engineering__principles article { translate: 0; opacity: 1; }
+.engineering.macro-scene--entered .engineering__principles article:nth-child(2) { transition-delay: 110ms; }
+.engineering.macro-scene--entered .engineering__principles article:nth-child(3) { transition-delay: 220ms; }
+
+/* Macro 15: the account workflow and its loaded catalog expand as one journey. */
+.route[data-macro-phase] .route__steps { transform: translateX(8px); transition: transform 420ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.route[data-macro-phase="verified"] .route__steps { transform: translateX(0) scale(1.015); }
+.playlist-catalog { transform-origin: top; }
+.playlist-catalog.macro-catalog--visible { animation: macro-catalog-arrive 640ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+
+@keyframes chapter-rail-arrive {
+  from { opacity: 0; transform: translate(42px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+
+@keyframes macro-destination {
+  0% { filter: brightness(0.78); scale: 0.985; }
+  55% { filter: brightness(1.12); scale: 1.012; }
+  100% { filter: brightness(1); scale: 1; }
+}
+
+@keyframes macro-catalog-arrive {
+  from { opacity: 0; transform: translateY(42px) scaleY(0.94); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 66px; }
   .playlist-example { width: min(100%, 510px); justify-self: start; }
@@ -1540,6 +1638,7 @@ footer {
   .purpose__heading { grid-template-columns: 0.7fr 1.3fr; }
   .purpose__heading > p:last-child { grid-column: 2; }
   .origin-note__sleeves { width: min(100%, 560px); min-height: 330px; }
+  .chapter-rail { display: none; }
 }
 
 @media (max-width: 620px) {
@@ -1633,6 +1732,8 @@ footer {
     translate: none !important;
     scale: 1 !important;
   }
+
+  .chapter-rail { display: none; }
 }
 
 @media (any-pointer: coarse) {
