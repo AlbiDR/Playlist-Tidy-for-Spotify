@@ -122,6 +122,7 @@ function render(state: ViewState): void {
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
           <div class="sort-visual" aria-hidden="true">
+            <div class="sort-visual__disc"><i></i></div>
             <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
             <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
             <div class="sort-visual__topline"><span>live ordering model</span><i></i><span>05 tracks</span></div>
@@ -131,9 +132,14 @@ function render(state: ViewState): void {
               <div class="track-strip track-strip--two"><span>02</span><div><strong>Soft Signal</strong><small>Low Season</small></div><i></i><time>21 OCT</time></div>
               <div class="track-strip track-strip--three"><span>03</span><div><strong>Night Bus</strong><small>Neon Static</small></div><i></i><time>18 OCT</time></div>
             </div>
+            <div class="sort-visual__playhead"></div>
+            <div class="sort-visual__spectrum">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
             <div class="sort-visual__verification"><span>membership</span><strong>5 / 5 intact</strong></div>
             <div class="sort-visual__stamp">stable sort<br>verified</div>
           </div>
+          <p class="sort-visual-wrap__caption"><span>Signal 01</span> The same five tracks. A clearer sequence.</p>
         </div>
       </section>
       <section class="proof-rail reveal" aria-label="Product safeguards">
@@ -142,6 +148,13 @@ function render(state: ViewState): void {
         <article><span>03</span><div><strong>Stable ordering</strong><small>Equal dates keep their order.</small></div></article>
         <article><span>04</span><div><strong>Membership proof</strong><small>Every occurrence stays present.</small></div></article>
       </section>
+      <div class="signal-ticker reveal">
+        <span class="visually-hidden">Preview, plan, guard, sort, and prove</span>
+        <div aria-hidden="true">
+          <span>Preview</span><i></i><span>Plan</span><i></i><span>Guard</span><i></i><span>Sort</span><i></i><span>Prove</span><i></i>
+          <span>Preview</span><i></i><span>Plan</span><i></i><span>Guard</span><i></i><span>Sort</span><i></i><span>Prove</span><i></i>
+        </div>
+      </div>
       <section id="interactive-demo" class="interactive-demo reveal" aria-labelledby="demo-heading">
         <div class="interactive-demo__intro">
           <p class="eyebrow">Interactive product demo</p>
@@ -171,6 +184,41 @@ function render(state: ViewState): void {
           <p class="demo-proof"><strong>Boundary:</strong> the order may change; titles, artists, dates, and membership never do.</p>
         </div>
       </section>
+      <section class="anatomy reveal" aria-labelledby="anatomy-heading">
+        <header class="anatomy__intro">
+          <p class="eyebrow">Playlist anatomy</p>
+          <h2 id="anatomy-heading">Not a new playlist.<br><em>A better signal.</em></h2>
+          <p>Every occurrence travels to its newest-first position. Identity, metadata, and membership stay locked while only the sequence changes.</p>
+        </header>
+        <div class="anatomy__board" aria-hidden="true">
+          <div class="anatomy__chrome"><span>ORDER MAP / 05</span><i></i><strong>membership locked</strong></div>
+          <div class="anatomy__column anatomy__column--before">
+            <div class="anatomy__column-label"><span>Input</span><strong>Added out of order</strong></div>
+            <div class="anatomy-track anatomy-track--a"><span>01</span><i></i><div><strong>Northbound</strong><small>29 SEP</small></div></div>
+            <div class="anatomy-track anatomy-track--b"><span>02</span><i></i><div><strong>Afterimage</strong><small>24 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--c"><span>03</span><i></i><div><strong>Open Water</strong><small>02 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--d"><span>04</span><i></i><div><strong>Soft Signal</strong><small>21 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--e"><span>05</span><i></i><div><strong>Night Bus</strong><small>18 OCT</small></div></div>
+          </div>
+          <svg class="anatomy__routes" viewBox="0 0 260 400" preserveAspectRatio="none">
+            <path class="route-line route-line--a" d="M0 42 C115 42 145 358 260 358" />
+            <path class="route-line route-line--b" d="M0 121 C110 121 150 42 260 42" />
+            <path class="route-line route-line--c" d="M0 200 C120 200 140 279 260 279" />
+            <path class="route-line route-line--d" d="M0 279 C110 279 150 121 260 121" />
+            <path class="route-line route-line--e" d="M0 358 C120 358 140 200 260 200" />
+          </svg>
+          <div class="anatomy__core"><span>2</span><small>range<br>moves</small></div>
+          <div class="anatomy__column anatomy__column--after">
+            <div class="anatomy__column-label"><span>Output</span><strong>Newest first</strong></div>
+            <div class="anatomy-track anatomy-track--b"><span>01</span><i></i><div><strong>Afterimage</strong><small>24 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--d"><span>02</span><i></i><div><strong>Soft Signal</strong><small>21 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--e"><span>03</span><i></i><div><strong>Night Bus</strong><small>18 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--c"><span>04</span><i></i><div><strong>Open Water</strong><small>02 OCT</small></div></div>
+            <div class="anatomy-track anatomy-track--a"><span>05</span><i></i><div><strong>Northbound</strong><small>29 SEP</small></div></div>
+          </div>
+          <div class="anatomy__seal"><i></i><span>05 in</span><strong>05 out</strong></div>
+        </div>
+      </section>
       <section id="how-it-works" class="purpose" aria-labelledby="purpose-heading">
         <header class="purpose__heading reveal">
           <p class="eyebrow">What Playlist Tidy does</p>
@@ -178,15 +226,15 @@ function render(state: ViewState): void {
           <p>Spotify records when every track joined a playlist. Playlist Tidy uses that date to restore a clear newest-first order.</p>
         </header>
         <ol class="purpose__steps">
-          <li class="purpose__step reveal">
+          <li class="purpose__step reveal" data-step="01">
             <span>01</span>
             <div><h3>Reads the full playlist</h3><p>It loads every track and its Spotify <code>added_at</code> value. Nothing changes during this step.</p></div>
           </li>
-          <li class="purpose__step reveal reveal--delay-1">
+          <li class="purpose__step reveal reveal--delay-1" data-step="02">
             <span>02</span>
             <div><h3>Shows the required moves</h3><p>You see how many reorder operations are needed before deciding whether to continue.</p></div>
           </li>
-          <li class="purpose__step reveal reveal--delay-2">
+          <li class="purpose__step reveal reveal--delay-2" data-step="03">
             <span>03</span>
             <div><h3>Reorders and verifies</h3><p>After approval, it moves tracks into newest-first order and confirms that every original track remains.</p></div>
           </li>
