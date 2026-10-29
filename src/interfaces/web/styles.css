@@ -298,13 +298,34 @@ a { -webkit-tap-highlight-color: transparent; }
 .site-nav { gap: 24px; }
 
 .site-nav a {
+  position: relative;
   color: #adafa6;
   font-size: 0.74rem;
   font-weight: 650;
   text-decoration: none;
+  transition: color 160ms ease;
 }
 
 .site-nav a:hover { color: var(--ink); }
+
+.site-nav a::after {
+  position: absolute;
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  height: 1px;
+  background: var(--green);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 180ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.site-nav a:hover::after,
+.site-nav a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
 
 .repository-link {
   gap: 7px;
@@ -324,6 +345,10 @@ a { -webkit-tap-highlight-color: transparent; }
   background: rgb(165 232 121 / 6%);
 }
 
+.repository-link span:last-child { transition: transform 160ms ease; }
+.repository-link:hover span:last-child,
+.repository-link:focus-visible span:last-child { transform: translate(2px, -2px); }
+
 .wordmark {
   gap: 11px;
   color: var(--ink);
@@ -339,7 +364,15 @@ a { -webkit-tap-highlight-color: transparent; }
   letter-spacing: 0;
 }
 
-.wordmark__symbol { flex: none; width: 32px; height: 32px; }
+.wordmark__symbol {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  transition: transform 240ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.wordmark:hover .wordmark__symbol,
+.wordmark:focus-visible .wordmark__symbol { transform: rotate(-7deg) scale(1.06); }
 
 .hero {
   display: grid;
@@ -412,6 +445,8 @@ h1 em,
 .sort-button,
 .custom-client-submit,
 .custom-client-forget {
+  position: relative;
+  overflow: hidden;
   min-height: 46px;
   padding: 0 20px;
   border-radius: 8px;
@@ -419,8 +454,27 @@ h1 em,
   font-size: 0.84rem;
   font-weight: 760;
   cursor: pointer;
-  transition: transform 100ms ease, color 140ms ease, border-color 140ms ease, background 140ms ease;
+  transition: transform 100ms ease, color 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 180ms ease;
 }
+
+.connect-button::after,
+.sort-button::after,
+.custom-client-submit::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 25%, rgb(255 255 255 / 28%) 48%, transparent 72%);
+  content: "";
+  transform: translateX(-125%);
+  transition: transform 420ms ease;
+  pointer-events: none;
+}
+
+.connect-button:hover:not(:disabled)::after,
+.connect-button:focus-visible:not(:disabled)::after,
+.sort-button:hover:not(:disabled)::after,
+.sort-button:focus-visible:not(:disabled)::after,
+.custom-client-submit:hover:not(:disabled)::after,
+.custom-client-submit:focus-visible:not(:disabled)::after { transform: translateX(125%); }
 
 .connect-button,
 .sort-button,
@@ -1058,6 +1112,10 @@ h1 em,
 }
 
 .custom-app-setup summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 15px 17px;
   color: #d1d1c9;
   font-size: 0.81rem;
@@ -1065,9 +1123,21 @@ h1 em,
   cursor: pointer;
 }
 
-.custom-app-setup summary::marker { color: var(--green); }
+.custom-app-setup summary::marker { content: ""; }
+.custom-app-setup summary::-webkit-details-marker { display: none; }
+.custom-app-setup summary::after {
+  color: var(--green);
+  content: "+";
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+.custom-app-setup[open] summary::after { transform: rotate(45deg); }
 .custom-app-setup[open] summary { border-bottom: 1px solid var(--line); }
-.custom-app-setup__body { padding: 18px; }
+.custom-app-setup__body {
+  padding: 18px;
+  animation: disclosure-enter 220ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
 .custom-app-setup__body > p { margin: 0; color: #9b9f96; font-size: 0.79rem; line-height: 1.65; }
 .custom-app-setup__body a { color: #cbd0c7; text-underline-offset: 3px; }
 .custom-app-setup__body a:hover { color: var(--green); }
@@ -1247,10 +1317,10 @@ h1 em,
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #1a1d19;
-  transition: border-color 140ms ease, background 140ms ease;
+  transition: border-color 140ms ease, background 140ms ease, transform 160ms ease;
 }
 
-.playlist-row:hover { border-color: rgb(165 232 121 / 34%); background: #1d211c; }
+.playlist-row:hover { border-color: rgb(165 232 121 / 34%); background: #1d211c; transform: translateX(2px); }
 .playlist-row--selected { border-color: rgb(165 232 121 / 48%); }
 .playlist-row h3 { overflow: hidden; margin: 0 0 5px; font-size: 0.96rem; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-row .playlist-details > p { margin: 0; color: #838980; font-size: 0.77rem; }
@@ -1265,8 +1335,20 @@ h1 em,
 }
 
 .playlist-selector input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.playlist-selector span { width: 17px; height: 17px; border: 1px solid #656c62; border-radius: 3px; background: #11130f; }
-.playlist-selector input:checked + span { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 4px #11130f; }
+.playlist-selector span {
+  width: 17px;
+  height: 17px;
+  border: 1px solid #656c62;
+  border-radius: 3px;
+  background: #11130f;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 180ms ease, transform 140ms ease;
+}
+.playlist-selector input:checked + span {
+  border-color: var(--green);
+  background: var(--green);
+  box-shadow: inset 0 0 0 4px #11130f, 0 0 0 3px rgb(165 232 121 / 12%);
+  transform: scale(1.08);
+}
 .playlist-selector input:focus-visible + span { outline: 3px solid #d9ffc1; outline-offset: 3px; }
 .playlist-selector input:disabled + span { cursor: wait; opacity: 0.52; }
 
@@ -1287,6 +1369,7 @@ h1 em,
   line-height: 1.5;
   white-space: pre-wrap;
   user-select: text;
+  animation: result-enter 220ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
 
 .preview-result > p { margin: 0; }
@@ -1438,6 +1521,16 @@ footer {
 @keyframes current-step-breathe {
   0%, 100% { box-shadow: 0 0 0 0 rgb(165 232 121 / 0%); }
   50% { box-shadow: 0 0 0 7px rgb(165 232 121 / 10%); }
+}
+
+@keyframes disclosure-enter {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes result-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .motion-ready .reveal {
