@@ -62,6 +62,20 @@ let revealObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
 let progressListenersInitialized = false;
 let progressAnimation: Animation | undefined;
+let pointerFieldInitialized = false;
+let pointerFrame: number | undefined;
+let pointerX = 0;
+let pointerY = 0;
+let pointerRenderedX = 0;
+let pointerRenderedY = 0;
+let pointerHasPosition = false;
+let pointerInside = false;
+let pointerVelocityX = 0;
+let pointerVelocityY = 0;
+let interactionEnergy = 0;
+let scrollEnergy = 0;
+let scrollDirection = 0;
+let previousScrollY = window.scrollY;
 let runtimeFailureShown = false;
 let writeOperationActive = false;
 
@@ -91,13 +105,14 @@ function render(state: ViewState): void {
       <section class="hero" aria-labelledby="connection-title">
         <div class="hero__copy reveal">
           <div class="hero__kicker">
-            <p class="eyebrow">A focused Spotify playlist tool</p>
-            <span class="hero__availability">Open source</span>
+            <p class="eyebrow">For playlists that keep growing</p>
+            <span class="hero__availability">Open source, intentionally small</span>
           </div>
           <h1 id="connection-title">Sort a Spotify playlist you own <em>by date added.</em></h1>
           <p class="summary">
-            Playlist Tidy puts the newest-added tracks first. It previews the move, changes
-            only the order, and checks that every song is still there when it is done.
+            Your latest find should not disappear at the bottom. Playlist Tidy puts
+            newest-added tracks first, previews every move, and checks that every song
+            is still there when it is done.
           </p>
           <div class="hero-actions">
             <button id="demo-action" class="connect-button" type="button">Try the interactive demo</button>
@@ -111,6 +126,7 @@ function render(state: ViewState): void {
           </ul>
         </div>
         <div class="playlist-example reveal reveal--delay-1" aria-label="Example playlist sorted with newest additions first">
+          <p class="playlist-example__tape" aria-hidden="true">New finds · Side A</p>
           <div class="playlist-example__header">
             <span class="playlist-example__cover" aria-hidden="true"><i></i></span>
             <div>
@@ -132,6 +148,22 @@ function render(state: ViewState): void {
         <article><span>01</span><div><strong>It sorts tracks, not playlists</strong><small>Your library layout stays exactly as it is.</small></div></article>
         <article><span>02</span><div><strong>It works on playlists you own</strong><small>You choose one and approve the change.</small></div></article>
         <article><span>03</span><div><strong>It never adds or removes songs</strong><small>After sorting, it reads the playlist back and checks.</small></div></article>
+      </section>
+      <section class="origin-note reveal" aria-labelledby="origin-heading">
+        <div class="origin-note__sleeves" aria-hidden="true">
+          <img class="origin-note__sleeve origin-note__sleeve--north" src="${northboundArtworkUrl}" alt="" width="150" height="150" />
+          <img class="origin-note__sleeve origin-note__sleeve--after" src="${afterimageArtworkUrl}" alt="" width="150" height="150" />
+          <img class="origin-note__sleeve origin-note__sleeve--water" src="${openWaterArtworkUrl}" alt="" width="150" height="150" />
+          <img class="origin-note__sleeve origin-note__sleeve--signal" src="${softSignalArtworkUrl}" alt="" width="150" height="150" />
+          <img class="origin-note__sleeve origin-note__sleeve--bus" src="${nightBusArtworkUrl}" alt="" width="150" height="150" />
+          <span class="origin-note__scribble">latest finds,<br>right up front</span>
+        </div>
+        <div class="origin-note__copy">
+          <p class="eyebrow">The very specific itch</p>
+          <h2 id="origin-heading">New music should feel <em>new.</em></h2>
+          <p>Add a track today, open the playlist tomorrow, and it should be where your eyes and thumb expect it: right at the top. Playlist Tidy fixes that one detail and then gets out of the way.</p>
+          <p class="origin-note__aside">No recommendations. No playlist generator. Just the music you already chose.</p>
+        </div>
       </section>
       <section id="interactive-demo" class="interactive-demo reveal" aria-labelledby="demo-heading">
         <div class="interactive-demo__intro">
@@ -298,11 +330,11 @@ function render(state: ViewState): void {
       </section>
       <section class="closing-note reveal" aria-labelledby="closing-heading">
         <div>
-          <p class="eyebrow">Built in public</p>
-          <h2 id="closing-heading">Small, open,<br><em>and useful.</em></h2>
+          <p class="eyebrow">A small tool, on purpose</p>
+          <h2 id="closing-heading">Your playlist.<br><em>Your order.</em></h2>
         </div>
         <div class="closing-note__copy">
-          <p>Try the sort with sample data, inspect the source, or self-host the scheduled automation. Playlist Tidy does one modest job and makes the safety checks visible.</p>
+          <p>A music utility can be opinionated, careful, and still disappear when the job is done. Try it with sample data, inspect every line, or self-host the scheduled automation.</p>
           <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">View Playlist Tidy on GitHub <span aria-hidden="true">↗</span></a>
         </div>
       </section>
@@ -796,6 +828,178 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
+  initializePointerField();
+}
+
+function initializePointerField(): void {
+  if (
+    pointerFieldInitialized ||
+    !window.matchMedia("(any-pointer: fine)").matches ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) return;
+
+  pointerFieldInitialized = true;
+  const field = document.createElement("div");
+  field.className = "pointer-light";
+  field.dataset.tone = "dark";
+  field.setAttribute("aria-hidden", "true");
+
+  for (const name of ["leaf", "peach", "blue", "gold", "mist"]) {
+    const bloom = document.createElement("span");
+    bloom.className = `pointer-light__bloom pointer-light__bloom--${name}`;
+    field.append(bloom);
+  }
+  const core = document.createElement("span");
+  core.className = "pointer-light__core";
+  field.append(core);
+  document.body.append(field);
+
+  window.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "touch") return;
+    if (pointerHasPosition) {
+      pointerVelocityX += event.clientX - pointerX;
+      pointerVelocityY += event.clientY - pointerY;
+    }
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    pointerInside = true;
+    if (!pointerHasPosition) {
+      pointerRenderedX = pointerX;
+      pointerRenderedY = pointerY;
+      pointerHasPosition = true;
+    }
+
+    const target = event.target instanceof Element ? event.target : undefined;
+    updatePointerTone(field, target);
+    field.classList.toggle(
+      "pointer-light--engaged",
+      target?.closest("a, button, summary, label, input") !== null && target !== undefined,
+    );
+    interactionEnergy = Math.max(
+      interactionEnergy,
+      Math.min(1, 0.22 + Math.hypot(pointerVelocityX, pointerVelocityY) / 72),
+    );
+    field.classList.add("pointer-light--visible");
+    schedulePointerField(field);
+  }, { passive: true });
+
+  window.addEventListener("scroll", () => {
+    const delta = window.scrollY - previousScrollY;
+    previousScrollY = window.scrollY;
+    if (Math.abs(delta) < 0.5) return;
+    ensurePointerFieldPosition();
+    scrollDirection = Math.sign(delta);
+    scrollEnergy = Math.max(scrollEnergy, Math.min(1, Math.abs(delta) / 78));
+    interactionEnergy = Math.max(interactionEnergy, 0.48 + scrollEnergy * 0.38);
+    updatePointerTone(field, document.elementFromPoint(pointerX, pointerY) ?? undefined);
+    field.classList.add("pointer-light--visible", "pointer-light--scrolling");
+    window.setTimeout(() => field.classList.remove("pointer-light--scrolling"), 260);
+    schedulePointerField(field);
+  }, { passive: true });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") return;
+    interactionEnergy = 1;
+    field.classList.add("pointer-light--visible", "pointer-light--pressed");
+    window.setTimeout(() => field.classList.remove("pointer-light--pressed"), 520);
+    schedulePointerField(field);
+  }, { passive: true });
+
+  document.addEventListener("focusin", (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    if (event.target.closest("a, button, summary, label, input") === null) return;
+    const bounds = event.target.getBoundingClientRect();
+    pointerX = bounds.left + bounds.width / 2;
+    pointerY = bounds.top + bounds.height / 2;
+    if (!pointerHasPosition) {
+      pointerRenderedX = pointerX;
+      pointerRenderedY = pointerY;
+      pointerHasPosition = true;
+    }
+    updatePointerTone(field, event.target);
+    interactionEnergy = Math.max(interactionEnergy, 0.74);
+    field.classList.add("pointer-light--visible", "pointer-light--engaged");
+    schedulePointerField(field);
+  });
+
+  document.addEventListener("focusout", () => {
+    field.classList.remove("pointer-light--engaged");
+  });
+
+  document.documentElement.addEventListener("pointerleave", () => {
+    pointerInside = false;
+    field.classList.remove("pointer-light--engaged");
+    schedulePointerField(field);
+  });
+
+  window.addEventListener("blur", () => {
+    field.classList.remove("pointer-light--visible", "pointer-light--engaged");
+    pointerInside = false;
+    pointerHasPosition = false;
+  });
+}
+
+function updatePointerTone(field: HTMLElement, target: Element | undefined): void {
+  field.dataset.tone = target?.closest(".origin-note") !== null && target !== undefined
+    ? "warm"
+    : target?.closest(".interactive-demo") !== null && target !== undefined
+      ? "paper"
+      : "dark";
+}
+
+function ensurePointerFieldPosition(): void {
+  if (pointerHasPosition) return;
+  pointerX = window.innerWidth * 0.62;
+  pointerY = window.innerHeight * 0.42;
+  pointerRenderedX = pointerX;
+  pointerRenderedY = pointerY;
+  pointerHasPosition = true;
+}
+
+function schedulePointerField(field: HTMLElement): void {
+  if (pointerFrame !== undefined) return;
+  pointerFrame = window.requestAnimationFrame(() => renderPointerField(field));
+}
+
+function renderPointerField(field: HTMLElement): void {
+  const velocity = Math.min(1, Math.hypot(pointerVelocityX, pointerVelocityY) / 44);
+  const follow = 0.13 + interactionEnergy * 0.08;
+  pointerRenderedX += (pointerX - pointerRenderedX) * follow;
+  pointerRenderedY += (pointerY - pointerRenderedY) * follow;
+
+  const rotation = Math.max(-18, Math.min(18, pointerVelocityX * 0.11 + scrollDirection * scrollEnergy * 8));
+  const skew = Math.max(-7, Math.min(7, pointerVelocityY * 0.055));
+  field.style.setProperty("--pointer-x", `${pointerRenderedX.toFixed(2)}px`);
+  field.style.setProperty("--pointer-y", `${pointerRenderedY.toFixed(2)}px`);
+  field.style.setProperty("--pointer-energy", interactionEnergy.toFixed(3));
+  field.style.setProperty("--pointer-rotation", `${rotation.toFixed(2)}deg`);
+  field.style.setProperty("--pointer-skew", `${skew.toFixed(2)}deg`);
+  field.style.setProperty("--pointer-scale-x", (1 + velocity * 0.3 - scrollEnergy * 0.04).toFixed(3));
+  field.style.setProperty("--pointer-scale-y", (1 - velocity * 0.08 + scrollEnergy * 0.26).toFixed(3));
+  field.style.setProperty(
+    "--pointer-opacity",
+    Math.min(0.76, 0.34 + interactionEnergy * 0.34 + (field.classList.contains("pointer-light--engaged") ? 0.08 : 0)).toFixed(3),
+  );
+
+  pointerVelocityX *= 0.78;
+  pointerVelocityY *= 0.78;
+  interactionEnergy *= 0.948;
+  scrollEnergy *= 0.86;
+
+  const stillMoving =
+    Math.abs(pointerX - pointerRenderedX) > 0.18 ||
+    Math.abs(pointerY - pointerRenderedY) > 0.18 ||
+    Math.abs(pointerVelocityX) > 0.08 ||
+    Math.abs(pointerVelocityY) > 0.08 ||
+    interactionEnergy > 0.008 ||
+    scrollEnergy > 0.008;
+  if (!stillMoving && !pointerInside && !field.classList.contains("pointer-light--engaged")) {
+    field.classList.remove("pointer-light--visible");
+    pointerHasPosition = false;
+  }
+  pointerFrame = stillMoving
+    ? window.requestAnimationFrame(() => renderPointerField(field))
+    : undefined;
 }
 
 function initializeScrollProgress(): void {

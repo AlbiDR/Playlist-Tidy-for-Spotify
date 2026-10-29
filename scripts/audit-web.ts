@@ -103,6 +103,7 @@ try {
                 .filter((image) => !image.hasAttribute("width") || !image.hasAttribute("height")).length,
               localStorageCount: window.localStorage.length,
               mainCount: document.querySelectorAll("main").length,
+              pointerFieldCount: document.querySelectorAll(".pointer-light").length,
               sessionStorageCount: window.sessionStorage.length,
               skippedHeadingLevel: headings.some(
                 (level, index) => index > 0 && level > (headings[index - 1] ?? level) + 1,
@@ -127,6 +128,7 @@ try {
           if (facts.imagesWithoutAlternatives > 0) failures.push(`${contextName} has an image without an alt attribute.`);
           if (facts.imagesWithoutDimensions > 0) failures.push(`${contextName} has an image without explicit dimensions.`);
           if (facts.horizontalOverflow > 1) failures.push(`${contextName} overflows by ${String(facts.horizontalOverflow)}px.`);
+          if (facts.pointerFieldCount !== 0) failures.push(`${contextName} initialized the pointer field despite reduced motion.`);
           if (facts.cookies.length > 0 || facts.localStorageCount > 0 || facts.sessionStorageCount > 0) {
             failures.push(`${contextName} persisted browser data before authorization.`);
           }
@@ -178,6 +180,7 @@ try {
         await auditForcedColors(browser);
         await auditTextResize(browser);
         await auditKeyboardNavigation(browser);
+        await auditMorphingPointer(browser);
       }
     } finally {
       await browser.close();
@@ -415,5 +418,74 @@ async function auditKeyboardNavigation(browser: import("playwright").Browser): P
     } finally {
       await context.close();
     }
+  }
+}
+
+async function auditMorphingPointer(browser: import("playwright").Browser): Promise<void> {
+  const context = await browser.newContext({
+    colorScheme: "dark",
+    reducedMotion: "no-preference",
+    viewport: { width: 1440, height: 1024 },
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+    await page.mouse.move(260, 240);
+    await page.waitForTimeout(120);
+
+    const field = page.locator(".pointer-light");
+    const bloomCount = await page.locator(".pointer-light__bloom").count();
+    if (bloomCount !== 5) {
+      failures.push(`The morphing pointer rendered ${String(bloomCount)} contours instead of 5.`);
+      return;
+    }
+
+    const state = await field.evaluate((element) => ({
+      visible: element.classList.contains("pointer-light--visible"),
+      tone: (element as HTMLElement).dataset.tone,
+      polygonAnimations: element.getAnimations({ subtree: true }).filter((animation) => {
+        if (!(animation.effect instanceof KeyframeEffect)) return false;
+        return animation.effect.getKeyframes().some(
+          (frame) => typeof frame.clipPath === "string" && frame.clipPath.startsWith("polygon("),
+        );
+      }).length,
+    }));
+    if (!state.visible || state.polygonAnimations < 5) {
+      failures.push("The morphing pointer did not initialize all five animated organic contours.");
+    }
+
+    const originNote = page.locator(".origin-note");
+    await originNote.scrollIntoViewIfNeeded();
+    const originBounds = await originNote.boundingBox();
+    if (originBounds === null) {
+      failures.push("The morphing pointer audit could not locate the origin section.");
+      return;
+    }
+    await page.mouse.move(originBounds.x + originBounds.width * 0.78, originBounds.y + originBounds.height * 0.5);
+    await page.waitForTimeout(80);
+    if ((await field.getAttribute("data-tone")) !== "warm") {
+      failures.push("The morphing pointer did not adopt the warm origin-section palette.");
+    }
+
+    const demo = page.locator(".interactive-demo");
+    await demo.scrollIntoViewIfNeeded();
+    const demoBounds = await demo.boundingBox();
+    if (demoBounds === null) {
+      failures.push("The morphing pointer audit could not locate the demo section.");
+      return;
+    }
+    await page.mouse.move(demoBounds.x + demoBounds.width * 0.5, demoBounds.y + demoBounds.height * 0.5);
+    await page.waitForTimeout(80);
+    if ((await field.getAttribute("data-tone")) !== "paper") {
+      failures.push("The morphing pointer did not adopt the paper demo palette.");
+    }
+
+    await page.mouse.down();
+    if (!(await field.evaluate((element) => element.classList.contains("pointer-light--pressed")))) {
+      failures.push("The morphing pointer did not react to pointer press.");
+    }
+    await page.mouse.up();
+  } finally {
+    await context.close();
   }
 }
