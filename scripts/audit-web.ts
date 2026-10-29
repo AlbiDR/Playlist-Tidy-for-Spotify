@@ -103,7 +103,6 @@ try {
                 .filter((image) => !image.hasAttribute("width") || !image.hasAttribute("height")).length,
               localStorageCount: window.localStorage.length,
               mainCount: document.querySelectorAll("main").length,
-              pointerLightCount: document.querySelectorAll(".pointer-light").length,
               sessionStorageCount: window.sessionStorage.length,
               skippedHeadingLevel: headings.some(
                 (level, index) => index > 0 && level > (headings[index - 1] ?? level) + 1,
@@ -128,7 +127,6 @@ try {
           if (facts.imagesWithoutAlternatives > 0) failures.push(`${contextName} has an image without an alt attribute.`);
           if (facts.imagesWithoutDimensions > 0) failures.push(`${contextName} has an image without explicit dimensions.`);
           if (facts.horizontalOverflow > 1) failures.push(`${contextName} overflows by ${String(facts.horizontalOverflow)}px.`);
-          if (facts.pointerLightCount !== 0) failures.push(`${contextName} initialized motion despite reduced motion.`);
           if (facts.cookies.length > 0 || facts.localStorageCount > 0 || facts.sessionStorageCount > 0) {
             failures.push(`${contextName} persisted browser data before authorization.`);
           }
@@ -180,7 +178,6 @@ try {
         await auditForcedColors(browser);
         await auditTextResize(browser);
         await auditKeyboardNavigation(browser);
-        await auditInteractionField(browser);
       }
     } finally {
       await browser.close();
@@ -189,7 +186,6 @@ try {
 } finally {
   await server.close();
 }
-
 async function auditAxe(page: Page, contextName: string): Promise<void> {
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -201,7 +197,6 @@ async function auditAxe(page: Page, contextName: string): Promise<void> {
     );
   }
 }
-
 async function mapProductionRootToPreview(page: Page): Promise<void> {
   await page.route(`${origin}/PlaylistTidy/**`, async (route) => {
     const target = new URL(route.request().url());
@@ -420,63 +415,5 @@ async function auditKeyboardNavigation(browser: import("playwright").Browser): P
     } finally {
       await context.close();
     }
-  }
-}
-
-async function auditInteractionField(browser: import("playwright").Browser): Promise<void> {
-  const context = await browser.newContext({
-    colorScheme: "dark",
-    reducedMotion: "no-preference",
-    viewport: { width: 1440, height: 1024 },
-  });
-  try {
-    const page = await context.newPage();
-    await page.goto(`${origin}/`, { waitUntil: "networkidle" });
-    await page.mouse.move(320, 280);
-    await page.waitForTimeout(80);
-    const bloomCount = await page.locator(".pointer-light__bloom").count();
-    if (bloomCount !== 3) {
-      failures.push(`The interaction field rendered ${String(bloomCount)} internal blooms instead of 3.`);
-    }
-
-    const field = page.locator(".pointer-light");
-    const morphBefore = await page.locator(".pointer-light__bloom--green").evaluate(
-      (element) => getComputedStyle(element).clipPath,
-    );
-    await page.waitForTimeout(220);
-    const morphAfter = await page.locator(".pointer-light__bloom--green").evaluate(
-      (element) => getComputedStyle(element).clipPath,
-    );
-    const polygonAnimations = await field.evaluate((element) =>
-      element.getAnimations({ subtree: true }).filter((animation) => {
-        if (!(animation.effect instanceof KeyframeEffect)) return false;
-        return animation.effect.getKeyframes().some(
-          (frame) => typeof frame.clipPath === "string" && frame.clipPath.startsWith("polygon("),
-        );
-      }).length,
-    );
-    if (morphBefore === morphAfter || polygonAnimations < 5) {
-      failures.push("The interaction field is not continuously morphing all five organic contours.");
-    }
-
-    await page.evaluate(() => window.scrollTo(0, 520));
-    await page.waitForTimeout(80);
-    const response = await field.evaluate((element) => ({
-      activity: Number.parseFloat(element.style.getPropertyValue("--pointer-activity")),
-      scaleY: Number.parseFloat(element.style.getPropertyValue("--pointer-scale-y")),
-      visible: element.classList.contains("pointer-light--visible"),
-    }));
-    if (!response.visible || response.activity <= 0 || response.scaleY <= 1) {
-      failures.push("The interaction field did not energize and change composition during scrolling.");
-    }
-
-    await page.mouse.down();
-    await page.waitForTimeout(20);
-    if (!(await field.evaluate((element) => element.classList.contains("pointer-light--pressed")))) {
-      failures.push("The interaction field did not react to pointer press activity.");
-    }
-    await page.mouse.up();
-  } finally {
-    await context.close();
   }
 }

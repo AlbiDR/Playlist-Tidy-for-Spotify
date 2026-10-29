@@ -1,0 +1,22 @@
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- Copyright (C) 2026 AlbiDR -->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <rect width="96" height="96" fill="#182A38"/>
+  <rect x="8" y="11" width="80" height="58" rx="2" fill="#29485A"/>
+  <g fill="#E7B96D">
+    <rect x="15" y="19" width="13" height="17"/>
+    <rect x="34" y="19" width="13" height="17" opacity=".28"/>
+    <rect x="53" y="19" width="13" height="17" opacity=".5"/>
+    <rect x="72" y="19" width="9" height="17" opacity=".2"/>
+  </g>
+  <g fill="#8FB1AF" opacity=".48">
+    <rect x="15" y="43" width="13" height="18"/>
+    <rect x="34" y="43" width="13" height="18"/>
+    <rect x="53" y="43" width="13" height="18" opacity=".25"/>
+    <rect x="72" y="43" width="9" height="18"/>
+  </g>
+  <path d="M-8 86C22 57 51 56 104 77" fill="none" stroke="#E47862" stroke-width="7"/>
+  <path d="M-6 91C26 66 57 65 102 82" fill="none" stroke="#F1D3A3" stroke-width="2" opacity=".75"/>
+  <circle cx="26" cy="82" r="3" fill="#F5E6CB"/>
+</svg>
