@@ -496,8 +496,8 @@ function animateDemoPanel(panel: HTMLElement, phase: "reset" | "preview" | "veri
   const direction = phase === "reset" ? -1 : 1;
   panel.animate(
     [
-      { opacity: 0.72, transform: `translateX(${String(direction * 18)}px) scale(0.975)` },
-      { opacity: 1, transform: "translateX(0) scale(1)" },
+      { transform: `translateX(${String(direction * 18)}px) scale(0.975)` },
+      { transform: "translateX(0) scale(1)" },
     ],
     { duration: phase === "verified" ? 560 : 420, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)" },
   );

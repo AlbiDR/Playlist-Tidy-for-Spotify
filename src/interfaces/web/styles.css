@@ -996,7 +996,9 @@ h1 em,
 }
 
 .route__self-host {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
   margin-top: 18px;
   color: #b4b6ae;
   font-size: 0.77rem;
