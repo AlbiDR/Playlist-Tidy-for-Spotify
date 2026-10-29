@@ -66,20 +66,6 @@ let macroListenersInitialized = false;
 let macroKeyboardInitialized = false;
 let previousMacroScrollY = window.scrollY;
 let progressAnimation: Animation | undefined;
-let pointerFieldInitialized = false;
-let pointerFrame: number | undefined;
-let pointerX = 0;
-let pointerY = 0;
-let pointerRenderedX = 0;
-let pointerRenderedY = 0;
-let pointerHasPosition = false;
-let pointerInside = false;
-let pointerVelocityX = 0;
-let pointerVelocityY = 0;
-let interactionEnergy = 0;
-let scrollEnergy = 0;
-let scrollDirection = 0;
-let previousScrollY = window.scrollY;
 let runtimeFailureShown = false;
 let writeOperationActive = false;
 
@@ -510,8 +496,8 @@ function animateDemoPanel(panel: HTMLElement, phase: "reset" | "preview" | "veri
   const direction = phase === "reset" ? -1 : 1;
   panel.animate(
     [
-      { opacity: 0.72, transform: `translateX(${String(direction * 18)}px) scale(0.975)` },
-      { opacity: 1, transform: "translateX(0) scale(1)" },
+      { transform: `translateX(${String(direction * 18)}px) scale(0.975)` },
+      { transform: "translateX(0) scale(1)" },
     ],
     { duration: phase === "verified" ? 560 : 420, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)" },
   );
@@ -853,7 +839,6 @@ function initializeMotion(): void {
 function initializeInteractions(): void {
   initializeScrollProgress();
   initializeMacroScenes();
-  initializePointerField();
 }
 
 function initializeMacroScenes(): void {
@@ -931,9 +916,10 @@ function initializeChapterRail(scenes: readonly HTMLElement[]): void {
   rail.setAttribute("aria-label", "Page chapters");
   for (const [index, scene] of scenes.entries()) {
     const control = document.createElement("button");
+    const chapterNumber = String(index + 1).padStart(2, "0");
     control.type = "button";
-    control.textContent = String(index + 1).padStart(2, "0");
-    control.setAttribute("aria-label", `Go to chapter ${String(index + 1)}`);
+    control.textContent = chapterNumber;
+    control.setAttribute("aria-label", `Go to chapter ${chapterNumber}`);
     control.addEventListener("click", () => navigateToMacroScene(scene));
     rail.append(control);
   }
@@ -974,177 +960,6 @@ function navigateToMacroScene(scene: HTMLElement): void {
     document.documentElement.classList.remove("macro-is-navigating");
     scene.classList.remove("macro-scene--destination");
   }, reducedMotion ? 0 : 760);
-}
-
-function initializePointerField(): void {
-  if (
-    pointerFieldInitialized ||
-    !window.matchMedia("(any-pointer: fine)").matches ||
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  ) return;
-
-  pointerFieldInitialized = true;
-  const field = document.createElement("div");
-  field.className = "pointer-light";
-  field.dataset.tone = "dark";
-  field.setAttribute("aria-hidden", "true");
-
-  for (const name of ["leaf", "peach", "blue", "gold", "mist"]) {
-    const bloom = document.createElement("span");
-    bloom.className = `pointer-light__bloom pointer-light__bloom--${name}`;
-    field.append(bloom);
-  }
-  const core = document.createElement("span");
-  core.className = "pointer-light__core";
-  field.append(core);
-  document.body.append(field);
-
-  window.addEventListener("pointermove", (event) => {
-    if (event.pointerType === "touch") return;
-    if (pointerHasPosition) {
-      pointerVelocityX += event.clientX - pointerX;
-      pointerVelocityY += event.clientY - pointerY;
-    }
-    pointerX = event.clientX;
-    pointerY = event.clientY;
-    pointerInside = true;
-    if (!pointerHasPosition) {
-      pointerRenderedX = pointerX;
-      pointerRenderedY = pointerY;
-      pointerHasPosition = true;
-    }
-
-    const target = event.target instanceof Element ? event.target : undefined;
-    updatePointerTone(field, target);
-    field.classList.toggle(
-      "pointer-light--engaged",
-      target?.closest("a, button, summary, label, input") !== null && target !== undefined,
-    );
-    interactionEnergy = Math.max(
-      interactionEnergy,
-      Math.min(1, 0.22 + Math.hypot(pointerVelocityX, pointerVelocityY) / 72),
-    );
-    field.classList.add("pointer-light--visible");
-    schedulePointerField(field);
-  }, { passive: true });
-
-  window.addEventListener("scroll", () => {
-    const delta = window.scrollY - previousScrollY;
-    previousScrollY = window.scrollY;
-    if (Math.abs(delta) < 0.5) return;
-    ensurePointerFieldPosition();
-    scrollDirection = Math.sign(delta);
-    scrollEnergy = Math.max(scrollEnergy, Math.min(1, Math.abs(delta) / 78));
-    interactionEnergy = Math.max(interactionEnergy, 0.48 + scrollEnergy * 0.38);
-    updatePointerTone(field, document.elementFromPoint(pointerX, pointerY) ?? undefined);
-    field.classList.add("pointer-light--visible", "pointer-light--scrolling");
-    window.setTimeout(() => field.classList.remove("pointer-light--scrolling"), 260);
-    schedulePointerField(field);
-  }, { passive: true });
-
-  document.addEventListener("pointerdown", (event) => {
-    if (event.pointerType === "touch") return;
-    interactionEnergy = 1;
-    field.classList.add("pointer-light--visible", "pointer-light--pressed");
-    window.setTimeout(() => field.classList.remove("pointer-light--pressed"), 520);
-    schedulePointerField(field);
-  }, { passive: true });
-
-  document.addEventListener("focusin", (event) => {
-    if (!(event.target instanceof HTMLElement)) return;
-    if (event.target.closest("a, button, summary, label, input") === null) return;
-    const bounds = event.target.getBoundingClientRect();
-    pointerX = bounds.left + bounds.width / 2;
-    pointerY = bounds.top + bounds.height / 2;
-    if (!pointerHasPosition) {
-      pointerRenderedX = pointerX;
-      pointerRenderedY = pointerY;
-      pointerHasPosition = true;
-    }
-    updatePointerTone(field, event.target);
-    interactionEnergy = Math.max(interactionEnergy, 0.74);
-    field.classList.add("pointer-light--visible", "pointer-light--engaged");
-    schedulePointerField(field);
-  });
-
-  document.addEventListener("focusout", () => {
-    field.classList.remove("pointer-light--engaged");
-  });
-
-  document.documentElement.addEventListener("pointerleave", () => {
-    pointerInside = false;
-    field.classList.remove("pointer-light--engaged");
-    schedulePointerField(field);
-  });
-
-  window.addEventListener("blur", () => {
-    field.classList.remove("pointer-light--visible", "pointer-light--engaged");
-    pointerInside = false;
-    pointerHasPosition = false;
-  });
-}
-
-function updatePointerTone(field: HTMLElement, target: Element | undefined): void {
-  field.dataset.tone = target?.closest(".origin-note") !== null && target !== undefined
-    ? "warm"
-    : target?.closest(".interactive-demo") !== null && target !== undefined
-      ? "paper"
-      : "dark";
-}
-
-function ensurePointerFieldPosition(): void {
-  if (pointerHasPosition) return;
-  pointerX = window.innerWidth * 0.62;
-  pointerY = window.innerHeight * 0.42;
-  pointerRenderedX = pointerX;
-  pointerRenderedY = pointerY;
-  pointerHasPosition = true;
-}
-
-function schedulePointerField(field: HTMLElement): void {
-  if (pointerFrame !== undefined) return;
-  pointerFrame = window.requestAnimationFrame(() => renderPointerField(field));
-}
-
-function renderPointerField(field: HTMLElement): void {
-  const velocity = Math.min(1, Math.hypot(pointerVelocityX, pointerVelocityY) / 44);
-  const follow = 0.13 + interactionEnergy * 0.08;
-  pointerRenderedX += (pointerX - pointerRenderedX) * follow;
-  pointerRenderedY += (pointerY - pointerRenderedY) * follow;
-
-  const rotation = Math.max(-18, Math.min(18, pointerVelocityX * 0.11 + scrollDirection * scrollEnergy * 8));
-  const skew = Math.max(-7, Math.min(7, pointerVelocityY * 0.055));
-  field.style.setProperty("--pointer-x", `${pointerRenderedX.toFixed(2)}px`);
-  field.style.setProperty("--pointer-y", `${pointerRenderedY.toFixed(2)}px`);
-  field.style.setProperty("--pointer-energy", interactionEnergy.toFixed(3));
-  field.style.setProperty("--pointer-rotation", `${rotation.toFixed(2)}deg`);
-  field.style.setProperty("--pointer-skew", `${skew.toFixed(2)}deg`);
-  field.style.setProperty("--pointer-scale-x", (1 + velocity * 0.3 - scrollEnergy * 0.04).toFixed(3));
-  field.style.setProperty("--pointer-scale-y", (1 - velocity * 0.08 + scrollEnergy * 0.26).toFixed(3));
-  field.style.setProperty(
-    "--pointer-opacity",
-    Math.min(0.76, 0.34 + interactionEnergy * 0.34 + (field.classList.contains("pointer-light--engaged") ? 0.08 : 0)).toFixed(3),
-  );
-
-  pointerVelocityX *= 0.78;
-  pointerVelocityY *= 0.78;
-  interactionEnergy *= 0.948;
-  scrollEnergy *= 0.86;
-
-  const stillMoving =
-    Math.abs(pointerX - pointerRenderedX) > 0.18 ||
-    Math.abs(pointerY - pointerRenderedY) > 0.18 ||
-    Math.abs(pointerVelocityX) > 0.08 ||
-    Math.abs(pointerVelocityY) > 0.08 ||
-    interactionEnergy > 0.008 ||
-    scrollEnergy > 0.008;
-  if (!stillMoving && !pointerInside && !field.classList.contains("pointer-light--engaged")) {
-    field.classList.remove("pointer-light--visible");
-    pointerHasPosition = false;
-  }
-  pointerFrame = stillMoving
-    ? window.requestAnimationFrame(() => renderPointerField(field))
-    : undefined;
 }
 
 function initializeScrollProgress(): void {

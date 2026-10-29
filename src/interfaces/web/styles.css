@@ -75,127 +75,6 @@ a { -webkit-tap-highlight-color: transparent; }
   padding-bottom: 44px;
 }
 
-.pointer-light {
-  --pointer-x: -400px;
-  --pointer-y: -400px;
-  --pointer-opacity: 0;
-  --pointer-rotation: 0deg;
-  --pointer-skew: 0deg;
-  --pointer-scale-x: 1;
-  --pointer-scale-y: 1;
-  --morph-a: 165 232 121;
-  --morph-b: 233 160 121;
-  --morph-c: 126 184 204;
-  --morph-d: 231 185 109;
-  --morph-e: 243 240 231;
-  position: fixed;
-  z-index: 0;
-  top: 0;
-  left: 0;
-  width: 350px;
-  height: 292px;
-  opacity: 0;
-  filter: blur(5px) saturate(126%);
-  transform: translate3d(var(--pointer-x), var(--pointer-y), 0) translate(-50%, -50%) rotate(var(--pointer-rotation)) skewX(var(--pointer-skew)) scale(var(--pointer-scale-x), var(--pointer-scale-y));
-  transition: opacity 180ms ease, filter 220ms ease;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.pointer-light[data-tone="warm"] {
-  --morph-a: 255 250 240;
-  --morph-b: 165 232 121;
-  --morph-c: 42 72 65;
-  --morph-d: 248 205 123;
-  --morph-e: 92 45 42;
-}
-
-.pointer-light[data-tone="paper"] {
-  --morph-a: 48 93 80;
-  --morph-b: 201 101 75;
-  --morph-c: 63 103 119;
-  --morph-d: 183 143 67;
-  --morph-e: 46 50 43;
-  filter: blur(5px) saturate(112%);
-}
-
-.pointer-light--visible { opacity: var(--pointer-opacity); }
-.pointer-light--engaged { filter: blur(2px) saturate(142%); }
-.pointer-light--pressed { filter: blur(1px) saturate(158%); }
-
-.pointer-light__bloom {
-  position: absolute;
-  display: block;
-  opacity: 0.92;
-  mix-blend-mode: screen;
-  will-change: clip-path, transform;
-}
-
-.pointer-light[data-tone="paper"] .pointer-light__bloom {
-  opacity: 0.76;
-  mix-blend-mode: multiply;
-}
-
-.pointer-light__bloom--leaf {
-  inset: 8% 30% 18% 4%;
-  background: radial-gradient(ellipse at 42% 48%, rgb(var(--morph-a) / 66%), rgb(var(--morph-a) / 16%) 57%, transparent 78%);
-  clip-path: polygon(48% 0%, 76% 8%, 96% 28%, 100% 59%, 84% 85%, 57% 100%, 27% 94%, 5% 76%, 0% 45%, 17% 17%);
-  animation: cursor-morph-leaf 5.4s ease-in-out -1.1s infinite alternate;
-}
-
-.pointer-light__bloom--peach {
-  inset: 29% 4% 5% 38%;
-  background: radial-gradient(ellipse at 56% 52%, rgb(var(--morph-b) / 62%), rgb(var(--morph-b) / 14%) 59%, transparent 80%);
-  clip-path: polygon(38% 0%, 68% 4%, 91% 20%, 100% 48%, 91% 78%, 66% 98%, 35% 100%, 10% 83%, 0% 53%, 7% 23%);
-  animation: cursor-morph-peach 7.1s ease-in-out -3.4s infinite alternate;
-}
-
-.pointer-light__bloom--blue {
-  inset: 10% 6% 42% 37%;
-  background: radial-gradient(ellipse at 50% 42%, rgb(var(--morph-c) / 58%), rgb(var(--morph-c) / 13%) 60%, transparent 81%);
-  clip-path: polygon(52% 0%, 80% 11%, 97% 35%, 96% 65%, 78% 89%, 49% 100%, 22% 91%, 4% 68%, 0% 38%, 20% 14%);
-  animation: cursor-morph-blue 4.7s ease-in-out -2.2s infinite alternate;
-}
-
-.pointer-light__bloom--gold {
-  inset: 43% 37% 0 12%;
-  background: radial-gradient(ellipse at 46% 54%, rgb(var(--morph-d) / 55%), rgb(var(--morph-d) / 12%) 61%, transparent 82%);
-  clip-path: polygon(31% 0%, 63% 5%, 88% 21%, 100% 49%, 92% 79%, 66% 100%, 36% 94%, 11% 83%, 0% 55%, 8% 25%);
-  animation: cursor-morph-gold 6.3s ease-in-out -4.2s infinite alternate;
-}
-
-.pointer-light__bloom--mist {
-  inset: 18% 22% 22% 20%;
-  background: radial-gradient(ellipse, rgb(var(--morph-e) / 48%), rgb(var(--morph-e) / 10%) 62%, transparent 82%);
-  clip-path: polygon(60% 0%, 87% 15%, 100% 43%, 90% 72%, 68% 91%, 39% 100%, 13% 82%, 0% 54%, 10% 25%, 35% 6%);
-  animation: cursor-morph-mist 8.2s ease-in-out -5.6s infinite alternate;
-}
-
-.pointer-light__core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid rgb(var(--morph-a) / 92%);
-  border-radius: 50%;
-  background: rgb(14 18 13 / 36%);
-  box-shadow: 0 0 0 5px rgb(var(--morph-a) / 13%), 0 0 24px rgb(var(--morph-a) / 58%);
-  transform: translate(-50%, -50%);
-  transition: width 220ms ease, height 220ms ease, border-radius 220ms ease, border-color 220ms ease, transform 180ms ease;
-}
-
-.pointer-light--engaged .pointer-light__core {
-  width: 34px;
-  height: 28px;
-  border-radius: 44% 56% 63% 37% / 56% 41% 59% 44%;
-  border-color: rgb(var(--morph-b) / 86%);
-  animation: cursor-core-morph 1.3s ease-in-out infinite alternate;
-}
-
-.pointer-light--pressed .pointer-light__core { transform: translate(-50%, -50%) scale(0.58) rotate(24deg); }
-.pointer-light--scrolling .pointer-light__bloom { animation-duration: 2.8s; }
-
 .skip-link {
   position: fixed;
   z-index: 100;
@@ -863,6 +742,7 @@ h1 em,
 }
 
 .interactive-demo .preview-button:hover:not(:disabled) { border-color: #263322; color: #fff; background: #35482f; }
+.interactive-demo .preview-button:disabled { cursor: default; opacity: 0.78; }
 .interactive-demo .custom-client-forget { border-color: #77796f; color: #3f433b; }
 .interactive-demo .custom-client-forget:hover { border-color: #263322; color: #263322; }
 
@@ -910,7 +790,7 @@ h1 em,
 }
 
 .demo-playlist__header > div { display: grid; gap: 4px; }
-.demo-playlist__header span { color: #81877e; font-size: 0.64rem; }
+.demo-playlist__header span { color: #a7aca3; font-size: 0.64rem; }
 .demo-playlist__header strong { font-size: 0.88rem; }
 
 .demo-phase {
@@ -984,7 +864,6 @@ h1 em,
   margin-bottom: 116px;
   padding: clamp(38px, 6vw, 68px);
   border-radius: 12px;
-  border-left: 5px solid #bd7258;
   background: #1a1d18;
 }
 
@@ -1117,7 +996,9 @@ h1 em,
 }
 
 .route__self-host {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
   margin-top: 18px;
   color: #b4b6ae;
   font-size: 0.77rem;
@@ -1870,11 +1751,9 @@ section:hover > * > .eyebrow { letter-spacing: 0.16em; }
 }
 
 .macro-motion-ready .macro-scene > * {
-  opacity: 0.35;
   translate: 0 38px;
   scale: 0.985;
   transition:
-    opacity 600ms ease,
     translate 820ms cubic-bezier(0.16, 0.8, 0.2, 1),
     scale 820ms cubic-bezier(0.16, 0.8, 0.2, 1);
 }
@@ -1888,7 +1767,6 @@ section:hover > * > .eyebrow { letter-spacing: 0.16em; }
 }
 
 .macro-motion-ready .macro-scene--entered > * {
-  opacity: 1;
   translate: 0 0;
   scale: 1;
 }
@@ -1945,7 +1823,7 @@ body { transition: background-color 680ms ease; }
   transform: translate(24px, -50%);
   animation: chapter-rail-arrive 620ms 380ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
 }
-.chapter-rail button { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; color: #777d74; background: transparent; font: 0.52rem ui-monospace, monospace; cursor: pointer; }
+.chapter-rail button { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; color: #aeb3aa; background: transparent; font: 0.52rem ui-monospace, monospace; cursor: pointer; }
 
 /* Macro 06: the rail advances with the active chapter. */
 .chapter-rail__chapter--active { color: #10140e !important; background: var(--green) !important; transform: scale(1.14); transition: color 240ms ease, background 240ms ease, transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1); }
@@ -1979,8 +1857,8 @@ body { transition: background-color 680ms ease; }
 .purpose.macro-scene--entered .purpose__steps { clip-path: inset(0); }
 
 /* Macro 14: engineering principles cascade as a coordinated panel. */
-.engineering__principles article { translate: 44px 0; opacity: 0.35; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1), opacity 480ms ease; }
-.engineering.macro-scene--entered .engineering__principles article { translate: 0; opacity: 1; }
+.engineering__principles article { translate: 44px 0; transition: translate 620ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.engineering.macro-scene--entered .engineering__principles article { translate: 0; }
 .engineering.macro-scene--entered .engineering__principles article:nth-child(2) { transition-delay: 110ms; }
 .engineering.macro-scene--entered .engineering__principles article:nth-child(3) { transition-delay: 220ms; }
 
@@ -2151,8 +2029,6 @@ body { transition: background-color 680ms ease; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pointer-light { display: none; }
-
   *,
   *::before,
   *::after {
@@ -2174,13 +2050,8 @@ body { transition: background-color 680ms ease; }
   .chapter-rail { display: none; }
 }
 
-@media (any-pointer: coarse) {
-  .pointer-light { display: none; }
-}
-
 @media (forced-colors: active) {
-  .reading-progress,
-  .pointer-light { display: none; }
+  .reading-progress { display: none; }
   .connect-button,
   .secondary-button,
   .safe-open-link,

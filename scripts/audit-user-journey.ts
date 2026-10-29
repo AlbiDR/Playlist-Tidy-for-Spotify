@@ -73,6 +73,22 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
     const before = await page.locator("#demo-track-list .demo-track strong").allTextContents();
     await page.getByRole("button", { name: "Apply sample sort" }).click();
     await page.getByText("Sorted and verified 5 sample tracks", { exact: false }).waitFor();
+    const completedAction = await page.locator("#demo-primary-action").evaluate((element) => {
+      if (!(element instanceof HTMLButtonElement)) throw new Error("The demo action is not a button.");
+      return {
+        cursor: getComputedStyle(element).cursor,
+        disabled: element.disabled,
+        text: element.textContent?.trim() ?? "",
+      };
+    });
+    if (
+      !completedAction.disabled ||
+      completedAction.text !== "Sort verified" ||
+      completedAction.cursor === "wait" ||
+      completedAction.cursor === "progress"
+    ) {
+      failures.push(`${browserName} interactive demo left its completed action in a loading state.`);
+    }
     const maxHeartbeatDelay = await page.evaluate(async () => {
       const delays: number[] = [];
       let previous = performance.now();
