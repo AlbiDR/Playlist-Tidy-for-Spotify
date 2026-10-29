@@ -59,8 +59,10 @@ let clientId = customClientId ?? "";
 const auth = new SpotifyPkceAuth(sessionStorage);
 let connectionEpoch = 0;
 let revealObserver: IntersectionObserver | undefined;
+let sceneObserver: IntersectionObserver | undefined;
 let hasIntroducedPage = false;
 let progressListenersInitialized = false;
+let macroListenersInitialized = false;
 let progressAnimation: Animation | undefined;
 let pointerFieldInitialized = false;
 let pointerFrame: number | undefined;
@@ -397,7 +399,8 @@ function initializeDemo(): void {
   const reset = document.querySelector<HTMLButtonElement>("#demo-reset");
   const status = document.querySelector<HTMLElement>("#demo-status");
   const phase = document.querySelector<HTMLElement>("#demo-phase");
-  if (list === null || primary === null || reset === null || status === null || phase === null) {
+  const demoPanel = document.querySelector<HTMLElement>(".demo-playlist");
+  if (list === null || primary === null || reset === null || status === null || phase === null || demoPanel === null) {
     throw new Error("Interactive demo controls are missing.");
   }
 
@@ -450,7 +453,7 @@ function initializeDemo(): void {
     }));
   };
 
-  const resetDemo = (): void => {
+  const resetDemo = (animate = false): void => {
     order = DEMO_OCCURRENCES;
     step = "initial";
     primary.textContent = "Preview the sort";
@@ -460,6 +463,7 @@ function initializeDemo(): void {
     phase.className = "demo-phase";
     status.textContent = "The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.";
     renderTracks();
+    if (animate) animateDemoPanel(demoPanel, "reset");
   };
 
   primary.addEventListener("click", () => {
@@ -471,6 +475,7 @@ function initializeDemo(): void {
       phase.className = "demo-phase demo-phase--preview";
       status.textContent = `${String(plan.length)} range ${plan.length === 1 ? "move" : "moves"} planned for ${String(order.length)} sample tracks. The displayed order has not changed.`;
       renderTracks();
+      animateDemoPanel(demoPanel, "preview");
       return;
     }
     if (step !== "previewed") return;
@@ -489,9 +494,22 @@ function initializeDemo(): void {
     phase.className = "demo-phase demo-phase--verified";
     status.textContent = `Sorted and verified ${String(order.length)} sample tracks with ${String(plan.length)} ${plan.length === 1 ? "move" : "moves"}. Membership and track details are unchanged.`;
     renderTracks();
+    animateDemoPanel(demoPanel, "verified");
   });
-  reset.addEventListener("click", resetDemo);
+  reset.addEventListener("click", () => resetDemo(true));
   resetDemo();
+}
+
+function animateDemoPanel(panel: HTMLElement, phase: "reset" | "preview" | "verified"): void {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const direction = phase === "reset" ? -1 : 1;
+  panel.animate(
+    [
+      { opacity: 0.72, transform: `translateX(${String(direction * 18)}px) scale(0.975)` },
+      { opacity: 1, transform: "translateX(0) scale(1)" },
+    ],
+    { duration: phase === "verified" ? 560 : 420, easing: "cubic-bezier(0.2, 0.75, 0.2, 1)" },
+  );
 }
 
 function initializeCustomClientControls(): void {
@@ -828,7 +846,56 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
+  initializeMacroScenes();
   initializePointerField();
+}
+
+function initializeMacroScenes(): void {
+  sceneObserver?.disconnect();
+  const scenes = [
+    ...document.querySelectorAll<HTMLElement>(
+      ".hero, .origin-note, #interactive-demo, .scope, #how-it-works, #engineering, #personal-spotify, .closing-note",
+    ),
+  ];
+  const navLinks = [...document.querySelectorAll<HTMLAnchorElement>(".site-nav a[href^='#']")];
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.documentElement.classList.toggle("macro-motion-ready", !reducedMotion);
+  for (const scene of scenes) scene.classList.add("macro-scene");
+  if (reducedMotion || !("IntersectionObserver" in window)) {
+    for (const scene of scenes) scene.classList.add("macro-scene--entered");
+    return;
+  }
+
+  sceneObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const scene = entry.target as HTMLElement;
+        if (entry.isIntersecting) scene.classList.add("macro-scene--entered");
+        if (entry.intersectionRatio < 0.32) continue;
+        for (const candidate of scenes) candidate.classList.toggle("macro-scene--active", candidate === scene);
+        const sceneId = scene.id;
+        for (const link of navLinks) {
+          const active = sceneId !== "" && link.hash === `#${sceneId}`;
+          link.classList.toggle("site-nav__link--active", active);
+          if (active) link.setAttribute("aria-current", "location");
+          else link.removeAttribute("aria-current");
+        }
+      }
+    },
+    { rootMargin: "-18% 0px -38%", threshold: [0.12, 0.32, 0.55] },
+  );
+  for (const scene of scenes) sceneObserver.observe(scene);
+
+  if (!macroListenersInitialized) {
+    window.addEventListener("scroll", updateMacroHeader, { passive: true });
+    macroListenersInitialized = true;
+  }
+  updateMacroHeader();
+}
+
+function updateMacroHeader(): void {
+  document.querySelector<HTMLElement>(".app-header")?.classList.toggle("app-header--condensed", window.scrollY > 72);
 }
 
 function initializePointerField(): void {
