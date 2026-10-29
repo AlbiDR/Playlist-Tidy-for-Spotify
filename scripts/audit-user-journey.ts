@@ -54,12 +54,17 @@ try {
 }
 
 async function auditInteractiveDemo(browser: Browser, browserName: string): Promise<void> {
-  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 } });
+  const context = await browser.newContext({ reducedMotion: "no-preference", viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   const thirdPartyRequests: string[] = [];
+  const runtimeErrors: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== origin) thirdPartyRequests.push(request.url());
   });
+  page.on("console", (message) => {
+    if (message.type() === "error") runtimeErrors.push(`console: ${message.text()}`);
+  });
+  page.on("pageerror", (error) => runtimeErrors.push(`page: ${error.message}`));
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Try the interactive demo" }).click();
@@ -68,6 +73,17 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
     const before = await page.locator("#demo-track-list .demo-track strong").allTextContents();
     await page.getByRole("button", { name: "Apply sample sort" }).click();
     await page.getByText("Sorted and verified 5 sample tracks", { exact: false }).waitFor();
+    const maxHeartbeatDelay = await page.evaluate(async () => {
+      const delays: number[] = [];
+      let previous = performance.now();
+      for (let sample = 0; sample < 8; sample += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 25));
+        const current = performance.now();
+        delays.push(current - previous);
+        previous = current;
+      }
+      return Math.max(...delays);
+    });
     const after = await page.locator("#demo-track-list .demo-track strong").allTextContents();
     if (before.join("|") === after.join("|") || after[0] !== "Afterimage" || after.at(-1) !== "Northbound") {
       failures.push(`${browserName} interactive demo did not visibly reach newest-first order.`);
@@ -77,6 +93,12 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
     }
     if (thirdPartyRequests.length > 0) {
       failures.push(`${browserName} interactive demo contacted a third party.`);
+    }
+    if (runtimeErrors.length > 0) {
+      failures.push(`${browserName} interactive demo emitted runtime errors: ${runtimeErrors.join("; ")}.`);
+    }
+    if (maxHeartbeatDelay > 500) {
+      failures.push(`${browserName} interactive demo blocked the main thread after sorting (${String(Math.round(maxHeartbeatDelay))}ms heartbeat delay).`);
     }
     if ((await page.evaluate(() => window.sessionStorage.length + window.localStorage.length)) !== 0) {
       failures.push(`${browserName} interactive demo persisted browser data.`);

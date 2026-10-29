@@ -1,0 +1,26 @@
+# Playlist Tidy for Spotify
+
+> Playlist Tidy is an open-source Spotify utility that previews, applies, and verifies stable newest-added-first ordering for playlists owned by the authenticated user.
+
+The public website includes a synthetic, credential-free product demo and an optional personal Spotify mode that requires the visitor to supply the public Client ID from their own Spotify Development Mode application. The only supported Spotify mutation is reordering existing playlist occurrences. Playlist Tidy never adds, removes, replaces, creates, or deletes playlist content. It is an independent project and is not affiliated with or endorsed by Spotify.
+
+## Product
+
+- [Public application](https://albidr.github.io/PlaylistTidy/): Interactive demo and optional browser-based personal Spotify workflow.
+- [Privacy and safe use](https://albidr.github.io/PlaylistTidy/privacy.html): Browser data flow, temporary credential handling, infrastructure boundaries, and user controls.
+
+## Documentation
+
+- [Project overview](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/README.md): Capabilities, safety contract, setup, scheduled automation, development, and quality gates.
+- [CleanStack architecture](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/docs/architecture/cleanstack.md): Authoritative boundaries, dependency direction, ordering invariants, concurrency rules, and mutation policy.
+- [Web quality contract](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/docs/operations/web-quality.md): Accessibility, privacy, performance, discoverability, and release requirements.
+
+## Project governance
+
+- [Contributing guide](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/.github/CONTRIBUTING.md): Contribution scope and acceptance requirements.
+- [Security policy](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/.github/SECURITY.md): Supported versions, private vulnerability reporting, and the security boundary.
+
+## Optional
+
+- [Source repository](https://github.com/AlbiDR/PlaylistTidy): TypeScript source, tests, workflows, and project history.
+- [GPL-3.0-only license](https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/LICENSE): Project license text.

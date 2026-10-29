@@ -49,6 +49,8 @@ if (!documentSource.includes("Loading the application…")) {
 }
 for (const requiredMarkup of [
   'rel="canonical" href="https://albidr.github.io/PlaylistTidy/"',
+  'rel="describedby" href="./llms.txt"',
+  'rel="author" href="./humans.txt"',
   'rel="manifest" href="./site.webmanifest"',
   'http-equiv="Content-Security-Policy"',
   'name="referrer" content="no-referrer"',
@@ -58,6 +60,8 @@ for (const requiredMarkup of [
 for (const requiredMarkup of [
   '<title>Privacy &amp; safe use | Playlist Tidy</title>',
   'rel="canonical" href="https://albidr.github.io/PlaylistTidy/privacy.html"',
+  'rel="describedby" href="./llms.txt"',
+  'rel="author" href="./humans.txt"',
   'name="referrer" content="no-referrer"',
   'http-equiv="Content-Security-Policy"',
 ]) {
@@ -79,12 +83,26 @@ for (const publicAsset of [
   "app-icon-192.png",
   "app-icon-512.png",
   "apple-touch-icon.png",
+  "humans.txt",
+  "llms.txt",
   "robots.txt",
   "site.webmanifest",
   "sitemap.xml",
   "social-card.png",
 ]) {
   await request(new URL(publicAsset, deploymentUrl));
+}
+
+for (const [discoveryAsset, requiredText] of [
+  ["humans.txt", "Creator and maintainer: AlbiDR"],
+  ["llms.txt", "# Playlist Tidy for Spotify"],
+  ["robots.txt", "Sitemap: https://albidr.github.io/PlaylistTidy/sitemap.xml"],
+  ["sitemap.xml", "<loc>https://albidr.github.io/PlaylistTidy/</loc>"],
+] as const) {
+  const response = await request(new URL(`${discoveryAsset}?health=${String(Date.now())}`, deploymentUrl));
+  if (response !== undefined && !(await response.text()).includes(requiredText)) {
+    failures.push(`${discoveryAsset} is missing its expected production marker.`);
+  }
 }
 
 const releaseResponse = await request(new URL(`release.json?health=${String(Date.now())}`, deploymentUrl));
