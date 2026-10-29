@@ -656,6 +656,7 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     const previewed = selectedIds.filter((id) => previews.has(id));
     const sortable = previewed.filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
     batchCount.textContent = `${String(selectedIds.length)} selected`;
+    toolbar.dataset.macroSelection = selectedIds.length === 0 ? "empty" : "active";
     batchPreview.disabled = catalogBusy || selectedIds.length === 0;
     batchSort.disabled =
       catalogBusy || selectedIds.length === 0 || previewed.length !== selectedIds.length || sortable.length === 0;
@@ -907,6 +908,17 @@ function updateMacroHeader(): void {
     document.documentElement.dataset.macroScrollDirection = delta > 0 ? "forward" : "backward";
     previousMacroScrollY = window.scrollY;
   }
+  updateActiveMacroSceneProgress();
+}
+
+function updateActiveMacroSceneProgress(): void {
+  const scene = document.querySelector<HTMLElement>(".macro-scene--active");
+  if (scene === null) return;
+  const bounds = scene.getBoundingClientRect();
+  const travel = window.innerHeight + bounds.height;
+  const progress = travel <= 0 ? 0.5 : Math.min(1, Math.max(0, (window.innerHeight - bounds.top) / travel));
+  scene.style.setProperty("--macro-scene-progress", progress.toFixed(3));
+  scene.style.setProperty("--macro-scene-shift", `${((progress - 0.5) * 36).toFixed(2)}px`);
 }
 
 function initializeChapterRail(scenes: readonly HTMLElement[]): void {
@@ -982,6 +994,7 @@ function updateScrollProgress(): void {
   if (progressAnimation === undefined) return;
   const available = document.documentElement.scrollHeight - window.innerHeight;
   const ratio = available <= 0 ? 0 : Math.min(1, Math.max(0, window.scrollY / available));
+  document.documentElement.style.setProperty("--macro-page-progress", ratio.toFixed(4));
   progressAnimation.currentTime = ratio * 1_000;
 }
 
@@ -1090,7 +1103,9 @@ async function applyPlaylistSort(
 type RoutePhase = "preview" | "confirm" | "sorting" | "verified";
 
 function setRoutePhase(phase: RoutePhase): void {
-  document.querySelector<HTMLElement>("#personal-spotify")?.setAttribute("data-macro-phase", phase);
+  const route = document.querySelector<HTMLElement>("#personal-spotify");
+  route?.setAttribute("data-macro-phase", phase);
+  route?.style.setProperty("--macro-route-progress", phase === "preview" ? "0.5" : phase === "verified" ? "1" : "0.82");
   const activeStep = phase === "preview" ? 2 : 3;
   const completed = phase === "verified";
   for (const element of document.querySelectorAll<HTMLElement>("[data-route-step]")) {
