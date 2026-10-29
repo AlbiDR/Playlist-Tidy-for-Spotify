@@ -27,7 +27,7 @@
 <p align="center">
   <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/ci.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/ci.yml/badge.svg?branch=main&amp;event=push" alt="Verify workflow status"></a>
   <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/repository-policy.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/repository-policy.yml/badge.svg?branch=main&amp;event=push" alt="Repository Policy workflow status"></a>
-  <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml/badge.svg?branch=main&amp;event=push" alt="Pages deployment status"></a>
+  <a href="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml"><img src="https://github.com/AlbiDR/PlaylistTidy/actions/workflows/pages.yml/badge.svg?branch=main&amp;event=workflow_run" alt="Pages deployment status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--only-386b49" alt="GPL-3.0-only license"></a>
 </p>
 
