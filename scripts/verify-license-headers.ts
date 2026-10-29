@@ -17,6 +17,7 @@ const licenseNoticeExemptFiles = new Set([
   "src/interfaces/web/public/app-icon-192.png",
   "src/interfaces/web/public/app-icon-512.png",
   "src/interfaces/web/public/apple-touch-icon.png",
+  "src/interfaces/web/public/llms.txt",
   "src/interfaces/web/public/social-card.png",
 ]);
 const strictJsonFiles = new Set([
@@ -53,6 +54,8 @@ const requiredFiles = [
   "scripts/audit-web.ts",
   "scripts/generate-web-assets.ts",
   "scripts/verify-web-quality.ts",
+  "src/interfaces/web/public/humans.txt",
+  "src/interfaces/web/public/llms.txt",
   "src/interfaces/web/index.html",
   "src/interfaces/web/privacy.html",
   "src/interfaces/cli/main.ts",

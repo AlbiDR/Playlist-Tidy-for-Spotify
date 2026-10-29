@@ -11,6 +11,10 @@ const outputRoot = fileURLToPath(new URL("../dist/web/", import.meta.url));
 const indexSource = readFileSync(join(outputRoot, "index.html"), "utf8");
 const privacySource = readFileSync(join(outputRoot, "privacy.html"), "utf8");
 const notFoundSource = readFileSync(join(outputRoot, "404.html"), "utf8");
+const humansSource = readFileSync(join(outputRoot, "humans.txt"), "utf8");
+const llmsSource = readFileSync(join(outputRoot, "llms.txt"), "utf8");
+const robotsSource = readFileSync(join(outputRoot, "robots.txt"), "utf8");
+const sitemapSource = readFileSync(join(outputRoot, "sitemap.xml"), "utf8");
 const failures: string[] = [];
 const expectedReleaseRevision = process.env.PLAYLIST_TIDY_RELEASE_SHA?.trim();
 
@@ -20,6 +24,8 @@ const requiredMarkup = [
   'name="referrer" content="no-referrer"',
   'name="theme-color"',
   'rel="canonical" href="https://albidr.github.io/PlaylistTidy/"',
+  'rel="describedby" href="./llms.txt"',
+  'rel="author" href="./humans.txt"',
   'rel="manifest" href="./site.webmanifest"',
   'property="og:title"',
   'property="og:description"',
@@ -37,6 +43,8 @@ for (const name of [
   "app-icon-192.png",
   "app-icon-512.png",
   "apple-touch-icon.png",
+  "humans.txt",
+  "llms.txt",
   "robots.txt",
   "site.webmanifest",
   "sitemap.xml",
@@ -65,11 +73,43 @@ for (const markup of [
   '<html lang="en">',
   '<title>Privacy &amp; safe use | Playlist Tidy</title>',
   'rel="canonical" href="https://albidr.github.io/PlaylistTidy/privacy.html"',
+  'rel="describedby" href="./llms.txt"',
+  'rel="author" href="./humans.txt"',
   'name="referrer" content="no-referrer"',
   'http-equiv="Content-Security-Policy"',
   '<main id="main-content"',
 ]) {
   if (!privacySource.includes(markup)) failures.push(`privacy.html is missing ${markup}.`);
+}
+
+if (!llmsSource.startsWith("# Playlist Tidy for Spotify\n")) {
+  failures.push("llms.txt must begin with the project H1 required by the llms.txt proposal.");
+}
+for (const requiredLlmsText of [
+  "> Playlist Tidy is an open-source Spotify utility",
+  "## Product",
+  "## Documentation",
+  "## Project governance",
+  "https://raw.githubusercontent.com/AlbiDR/PlaylistTidy/main/README.md",
+]) {
+  if (!llmsSource.includes(requiredLlmsText)) failures.push(`llms.txt is missing ${requiredLlmsText}.`);
+}
+if (!humansSource.includes("Creator and maintainer: AlbiDR") || !humansSource.includes("License: GPL-3.0-only")) {
+  failures.push("humans.txt is missing project authorship or licensing metadata.");
+}
+if (!robotsSource.includes("Sitemap: https://albidr.github.io/PlaylistTidy/sitemap.xml")) {
+  failures.push("robots.txt does not advertise the canonical sitemap.");
+}
+for (const canonicalUrl of [
+  "https://albidr.github.io/PlaylistTidy/",
+  "https://albidr.github.io/PlaylistTidy/privacy.html",
+]) {
+  if (!sitemapSource.includes(`<loc>${canonicalUrl}</loc>`)) {
+    failures.push(`sitemap.xml is missing ${canonicalUrl}.`);
+  }
+}
+if (sitemapSource.includes("<priority>") || sitemapSource.includes("<changefreq>")) {
+  failures.push("sitemap.xml includes priority or changefreq values ignored by major search engines.");
 }
 
 for (const markup of [

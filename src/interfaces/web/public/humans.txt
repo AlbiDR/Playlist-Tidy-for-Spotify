@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 AlbiDR
+
+/* PROJECT */
+Name: Playlist Tidy for Spotify
+Purpose: Stable newest-added-first ordering for owned Spotify playlists
+Website: https://albidr.github.io/PlaylistTidy/
+Source: https://github.com/AlbiDR/PlaylistTidy
+License: GPL-3.0-only
+
+/* HUMAN */
+Creator and maintainer: AlbiDR
+Profile: https://github.com/AlbiDR
+
+/* TECHNOLOGY */
+Language: TypeScript
+Interface: Standards-based HTML and CSS
+Build: Vite
+Testing: Vitest, Playwright, and axe-core
+Hosting: GitHub Pages
+
+/* VALUES */
+Privacy: No analytics, advertising, cookies, or application server
+Accessibility: WCAG A and AA automated checks across Chromium, Firefox, and WebKit
+Safety: Preview first, explicit confirmation, snapshot-guarded writes, and final verification
+
+Last significant website update: 2026-10-29

@@ -48,7 +48,9 @@ The public privacy page is intentionally static and script-free. It documents th
 
 ## Discoverability
 
-Production includes canonical, description, author, robot, Open Graph, and large-image social-card metadata together with a sitemap, robots policy, and scoped web manifest. Deterministically generated PNG icons cover Apple touch, 192-pixel, 512-pixel, and maskable install surfaces. A dedicated 1200 by 630 image covers link previews. Dimensions, public files, and both indexable documents are checked in the build artifact and again against the live deployment.
+Production includes canonical, description, author, robot, Open Graph, and large-image social-card metadata together with a sitemap, robots policy, scoped web manifest, project authorship file, and an LLM-readable project guide. The indexable documents advertise `llms.txt` through the `describedby` link relation and `humans.txt` through the `author` relation. Deterministically generated PNG icons cover Apple touch, 192-pixel, 512-pixel, and maskable install surfaces. A dedicated 1200 by 630 image covers link previews. Dimensions, public files, discovery-file contents, and both indexable documents are checked in the build artifact and again against the live deployment.
+
+GitHub Pages serves this project beneath `/PlaylistTidy/` on a shared origin. The project therefore does not publish or claim RFC 9116 `security.txt` discovery at the origin-level `/.well-known/security.txt` location it cannot control. Security reporting remains available through the repository security policy and GitHub private vulnerability reporting linked from `llms.txt`.
 
 Unknown routes return a branded, keyboard-accessible custom 404 document with recovery links, an explicit `noindex` directive, no JavaScript, and a restrictive Content Security Policy. Deployment health verifies both the HTTP 404 status and the recovery document served by GitHub Pages.
 

@@ -87,12 +87,22 @@ function render(state: ViewState): void {
         <img class="wordmark__symbol" src="${markUrl}" alt="" width="32" height="32" />
         <span>Playlist Tidy <small>for Spotify</small></span>
       </a>
-      <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Source &amp; automation ↗</a>
+      <div class="header-actions">
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="#interactive-demo">Demo</a>
+          <a href="#how-it-works">Method</a>
+          <a href="#engineering">Engineering</a>
+        </nav>
+        <a class="repository-link" href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer"><span>View source</span><span aria-hidden="true">↗</span></a>
+      </div>
     </header>
     <main id="main-content" tabindex="-1">
       <section class="hero" aria-labelledby="connection-title">
         <div class="hero__copy reveal">
-          <p class="eyebrow">Order for your listening life</p>
+          <div class="hero__kicker">
+            <p class="eyebrow">Order for your listening life</p>
+            <span class="hero__availability"><i aria-hidden="true"></i> Open-source utility</span>
+          </div>
           <h1 id="connection-title">Newest tracks.<br><em>Right where they belong.</em></h1>
           <p class="summary">
             Playlist Tidy sorts the tracks inside playlists you own by the date each track
@@ -104,20 +114,33 @@ function render(state: ViewState): void {
             <button id="spotify-setup-action" class="secondary-button" type="button">Set up personal Spotify</button>
           </div>
           <p class="demo-intro"><strong>Start with the demo.</strong> It uses the real sorting engine with fictional tracks, no login, no storage, and no Spotify connection.</p>
+          <ul class="hero-proof" aria-label="Playlist Tidy guarantees">
+            <li><strong>0</strong><span>tracks removed</span></li>
+            <li><strong>Preview</strong><span>before every write</span></li>
+            <li><strong>Verify</strong><span>after every sort</span></li>
+          </ul>
         </div>
         <div class="sort-visual-wrap reveal reveal--delay-1">
           <div class="sort-visual" aria-hidden="true">
             <div class="sort-visual__orbit sort-visual__orbit--outer"></div>
             <div class="sort-visual__orbit sort-visual__orbit--inner"></div>
-            <div class="sort-visual__label">added_at ↓</div>
+            <div class="sort-visual__topline"><span>live ordering model</span><i></i><span>05 tracks</span></div>
+            <div class="sort-visual__label">sort.key = added_at ↓</div>
             <div class="track-stack">
-              <div class="track-strip track-strip--one"><span>01</span><i></i><time>24 OCT</time></div>
-              <div class="track-strip track-strip--two"><span>02</span><i></i><time>18 OCT</time></div>
-              <div class="track-strip track-strip--three"><span>03</span><i></i><time>02 OCT</time></div>
+              <div class="track-strip track-strip--one"><span>01</span><div><strong>Afterimage</strong><small>Glass Hours</small></div><i></i><time>24 OCT</time></div>
+              <div class="track-strip track-strip--two"><span>02</span><div><strong>Soft Signal</strong><small>Low Season</small></div><i></i><time>21 OCT</time></div>
+              <div class="track-strip track-strip--three"><span>03</span><div><strong>Night Bus</strong><small>Neon Static</small></div><i></i><time>18 OCT</time></div>
             </div>
+            <div class="sort-visual__verification"><span>membership</span><strong>5 / 5 intact</strong></div>
             <div class="sort-visual__stamp">stable sort<br>verified</div>
           </div>
         </div>
+      </section>
+      <section class="proof-rail reveal" aria-label="Product safeguards">
+        <article><span>01</span><div><strong>Read-only preview</strong><small>The plan lands before the write.</small></div></article>
+        <article><span>02</span><div><strong>Snapshot guarded</strong><small>Stale state stops the operation.</small></div></article>
+        <article><span>03</span><div><strong>Stable ordering</strong><small>Equal dates keep their order.</small></div></article>
+        <article><span>04</span><div><strong>Membership proof</strong><small>Every occurrence stays present.</small></div></article>
       </section>
       <section id="interactive-demo" class="interactive-demo reveal" aria-labelledby="demo-heading">
         <div class="interactive-demo__intro">
@@ -130,6 +153,11 @@ function render(state: ViewState): void {
             <button id="demo-reset" class="custom-client-forget" type="button" hidden>Reset demo</button>
           </div>
           <p id="demo-status" class="demo-status" role="status" aria-live="polite">The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.</p>
+          <div class="demo-telemetry" aria-hidden="true">
+            <span><i></i> engine.ready</span>
+            <span>network <strong>off</strong></span>
+            <span>storage <strong>off</strong></span>
+          </div>
         </div>
         <div class="demo-playlist" aria-label="Synthetic sample playlist">
           <div class="demo-playlist__header">
@@ -143,7 +171,7 @@ function render(state: ViewState): void {
           <p class="demo-proof"><strong>Boundary:</strong> the order may change; titles, artists, dates, and membership never do.</p>
         </div>
       </section>
-      <section class="purpose" aria-labelledby="purpose-heading">
+      <section id="how-it-works" class="purpose" aria-labelledby="purpose-heading">
         <header class="purpose__heading reveal">
           <p class="eyebrow">What Playlist Tidy does</p>
           <h2 id="purpose-heading">One useful job.<br>Handled carefully.</h2>
@@ -164,6 +192,48 @@ function render(state: ViewState): void {
           </li>
         </ol>
         <p class="purpose__boundary reveal"><strong>The boundary:</strong> track order changes; playlist membership and track metadata do not.</p>
+      </section>
+      <section id="engineering" class="engineering reveal" aria-labelledby="engineering-heading">
+        <div class="engineering__intro">
+          <p class="eyebrow">The engineering is the feature</p>
+          <h2 id="engineering-heading">Small surface.<br><em>Serious safeguards.</em></h2>
+          <p>Playlist Tidy treats a simple reorder like production work: deterministic planning, explicit consent, snapshot-aware writes, and a full read-back before success.</p>
+          <div class="engineering__links">
+            <a href="https://github.com/AlbiDR/PlaylistTidy/blob/main/docs/architecture/cleanstack.md" target="_blank" rel="noopener noreferrer">Read the architecture ↗</a>
+            <a href="https://github.com/AlbiDR/PlaylistTidy/tree/main/src" target="_blank" rel="noopener noreferrer">Explore the source ↗</a>
+          </div>
+        </div>
+        <div class="engineering__console" aria-label="A visual summary of the verified sorting pipeline">
+          <div class="engineering__console-bar">
+            <span><i></i><i></i><i></i></span>
+            <strong>sort.pipeline</strong>
+            <small>guarded</small>
+          </div>
+          <ol class="pipeline">
+            <li><span>01</span><div><small>READ</small><strong>Complete playlist view</strong></div><b>coherent</b></li>
+            <li><span>02</span><div><small>PLAN</small><strong>Stable newest-first order</strong></div><b>deterministic</b></li>
+            <li><span>03</span><div><small>WRITE</small><strong>Snapshot-chained range moves</strong></div><b>explicit</b></li>
+            <li><span>04</span><div><small>PROVE</small><strong>Membership + final order</strong></div><b>verified</b></li>
+          </ol>
+          <div class="engineering__console-foot"><span>result</span><strong><i aria-hidden="true"></i> success is earned, never assumed</strong></div>
+        </div>
+        <div class="engineering__principles">
+          <article>
+            <span>Fail closed</span>
+            <h3>Uncertainty stops writes.</h3>
+            <p>Ownership, snapshots, authentication, and ambiguous responses all have explicit safe exits.</p>
+          </article>
+          <article>
+            <span>Occurrence-safe</span>
+            <h3>Duplicates stay distinct.</h3>
+            <p>Every playlist position is handled as its own occurrence, so repeated tracks are never collapsed.</p>
+          </article>
+          <article>
+            <span>Inspectable</span>
+            <h3>The proof is open.</h3>
+            <p>The planner, Spotify adapter, browser flow, audits, and architecture decisions are public.</p>
+          </article>
+        </div>
       </section>
       <section id="personal-spotify" class="route reveal" aria-labelledby="route-heading">
         <div class="route__intro">
@@ -232,10 +302,20 @@ function render(state: ViewState): void {
         </div>
         <div id="playlist-list" class="playlist-list"></div>
       </section>
+      <section class="closing-note reveal" aria-labelledby="closing-heading">
+        <div>
+          <p class="eyebrow">Built in public</p>
+          <h2 id="closing-heading">A tiny tool with<br><em>nothing to hide.</em></h2>
+        </div>
+        <div class="closing-note__copy">
+          <p>Try the engine with sample data, inspect every design decision, or self-host the scheduled automation. The product stays useful because its boundary stays clear.</p>
+          <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Audit Playlist Tidy on GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
     </main>
     <footer class="reveal">
       <div class="footer-credit">
-        <strong>Open source</strong>
+        <div class="footer-mark"><img src="${markUrl}" alt="" width="30" height="30" /><strong>Playlist Tidy</strong></div>
         <p>Built by <a href="https://github.com/AlbiDR" target="_blank" rel="noopener noreferrer">AlbiDR</a>. Read, audit, or fork the <a href="https://github.com/AlbiDR/PlaylistTidy" target="_blank" rel="noopener noreferrer">Playlist Tidy repository</a>.</p>
       </div>
       <p class="footer-legal"><a href="./privacy.html">Privacy &amp; safe use</a> · Independent project · Not affiliated with or endorsed by Spotify.</p>
@@ -296,6 +376,7 @@ function initializeDemo(): void {
   }
 
   const plan = planPlaylistSort(DEMO_OCCURRENCES);
+  const targetOrder = getTargetOrder(DEMO_OCCURRENCES);
   let order: readonly PlaylistOccurrence[] = DEMO_OCCURRENCES;
   let step: "initial" | "previewed" | "verified" = "initial";
 
@@ -305,19 +386,37 @@ function initializeDemo(): void {
       if (track === undefined) throw new Error("Interactive demo track identity is invalid.");
       const item = document.createElement("li");
       item.className = "demo-track";
+      const targetPosition = targetOrder.findIndex(
+        (candidate) => candidate.originalPosition === occurrence.originalPosition,
+      );
+      if (step === "previewed" && targetPosition !== index) item.classList.add("demo-track--moving");
+      if (step === "verified") item.classList.add("demo-track--verified");
       const position = document.createElement("span");
       position.className = "demo-track__position";
       position.textContent = String(index + 1).padStart(2, "0");
+      const artwork = document.createElement("span");
+      artwork.className = "demo-track__art";
+      artwork.setAttribute("aria-hidden", "true");
       const identity = document.createElement("div");
       const title = document.createElement("strong");
       title.textContent = track.title;
       const artist = document.createElement("span");
       artist.textContent = track.artist;
       identity.append(title, artist);
+      const trackMeta = document.createElement("div");
+      trackMeta.className = "demo-track__meta";
       const date = document.createElement("time");
       date.dateTime = track.addedAt;
       date.textContent = new Intl.DateTimeFormat("en", { day: "2-digit", month: "short" }).format(new Date(track.addedAt));
-      item.append(position, identity, date);
+      trackMeta.append(date);
+      if (step === "previewed" && targetPosition !== index) {
+        const move = document.createElement("span");
+        move.className = "demo-track__move";
+        move.textContent = `→ ${String(targetPosition + 1).padStart(2, "0")}`;
+        move.setAttribute("aria-label", `planned position ${String(targetPosition + 1)}`);
+        trackMeta.append(move);
+      }
+      item.append(position, artwork, identity, trackMeta);
       return item;
     }));
   };
@@ -342,6 +441,7 @@ function initializeDemo(): void {
       phase.textContent = "Preview ready";
       phase.className = "demo-phase demo-phase--preview";
       status.textContent = `${String(plan.length)} range ${plan.length === 1 ? "move" : "moves"} planned for ${String(order.length)} sample tracks. The displayed order has not changed.`;
+      renderTracks();
       return;
     }
     if (step !== "previewed") return;
@@ -349,8 +449,7 @@ function initializeDemo(): void {
     if (!haveEqualMembership(order, sorted) || !isNewestFirst(sorted)) {
       throw new Error("Interactive demo verification failed.");
     }
-    const target = getTargetOrder(order);
-    if (!target.every((occurrence, index) => occurrence.originalPosition === sorted[index]?.originalPosition)) {
+    if (!targetOrder.every((occurrence, index) => occurrence.originalPosition === sorted[index]?.originalPosition)) {
       throw new Error("Interactive demo did not reach its target order.");
     }
     order = sorted;
