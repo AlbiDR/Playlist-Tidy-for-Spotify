@@ -1646,6 +1646,105 @@ footer {
 .footer-legal a:hover,
 .footer-legal a:focus-visible { text-underline-offset: 6px; }
 
+/* 41 */
+.safe-open-link { transition: background 160ms ease, box-shadow 180ms ease, transform 120ms ease; }
+.safe-open-link:hover,
+.safe-open-link:focus-visible { box-shadow: 0 7px 0 rgb(48 73 39 / 28%); transform: translateY(-2px); }
+.safe-open-link:active { box-shadow: 0 2px 0 rgb(48 73 39 / 28%); transform: translateY(1px); }
+
+/* 42 */
+.eyebrow { transition: letter-spacing 180ms ease; }
+section:hover > .eyebrow,
+section:hover > * > .eyebrow { letter-spacing: 0.16em; }
+
+/* 43 */
+.playlist-example__header strong { transition: color 160ms ease, transform 180ms ease; }
+.playlist-example:hover .playlist-example__header strong { color: #fff; transform: translateX(2px); }
+
+/* 44 */
+.playlist-example__header small { transition: letter-spacing 180ms ease; }
+.playlist-example:hover .playlist-example__header small { letter-spacing: 0.025em; }
+
+/* 45 */
+.track-art { transition: filter 180ms ease, transform 180ms ease; }
+.playlist-example__tracks li:hover .track-art { filter: saturate(1.18) brightness(1.06); }
+
+/* 46 */
+.proof-rail strong { transition: color 160ms ease; }
+.proof-rail article:hover strong { color: #fff; }
+
+/* 47 */
+.origin-note__sleeve { transition: filter 180ms ease, box-shadow 180ms ease, transform 180ms ease; }
+.origin-note__sleeve:hover { filter: saturate(1.12) contrast(1.03); }
+
+/* 48 */
+.interactive-demo__controls { transition: transform 160ms ease; }
+.interactive-demo__controls:focus-within { transform: translateX(2px); }
+
+/* 49 */
+.demo-phase { transition: border-color 160ms ease, box-shadow 180ms ease, transform 160ms ease; }
+.demo-phase:hover { transform: scale(1.04); }
+
+/* 50 */
+.demo-phase--preview { box-shadow: 0 0 0 3px rgb(185 138 79 / 10%); }
+
+/* 51 */
+.demo-phase--verified { animation: verified-chip 420ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+
+/* 52 */
+.purpose__step code { transition: background 160ms ease, color 160ms ease; }
+.purpose__step:hover code { color: #d5f7bf; background: rgb(165 232 121 / 7%); }
+
+/* 53 */
+.engineering__principles h3 { transition: color 160ms ease, transform 160ms ease; }
+.engineering__principles article:hover h3 { color: #fff; transform: translateX(2px); }
+
+/* 54 */
+.custom-app-setup__active strong { display: inline-block; transition: transform 180ms ease; }
+.custom-app-setup__active:hover strong { transform: translateY(-1px) scale(1.03); }
+
+/* 55 */
+.availability-note { transition: border-color 160ms ease, transform 180ms ease; }
+.availability-note:hover { border-color: #c6f6a6; transform: translateX(3px); }
+
+/* 56 */
+.playlist-count { transition: color 160ms ease, transform 160ms ease; }
+.section-heading:hover .playlist-count { color: #b4b9b0; transform: translateY(-1px); }
+
+/* 57 */
+.batch-status:not(:empty) { animation: status-arrive 220ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+
+/* 58 */
+.playlist-row--selected { box-shadow: inset 3px 0 0 rgb(165 232 121 / 72%); }
+
+/* 59 */
+.playlist-row h3 { transition: color 160ms ease, transform 160ms ease; }
+.playlist-row--selected h3 { color: #e8f5df; transform: translateX(2px); }
+
+/* 60 */
+.preview-result__actions { transition: gap 180ms ease; }
+.preview-result__actions:focus-within { gap: 14px; }
+
+/* 61 */
+.empty-message { transition: color 160ms ease, transform 160ms ease; }
+.empty-message:hover { color: #adb2a8; transform: translateX(2px); }
+
+/* 62 */
+.closing-note h2 em { display: inline-block; transition: transform 200ms cubic-bezier(0.2, 0.75, 0.2, 1); }
+.closing-note:hover h2 em { transform: rotate(-2deg) translateY(-2px); }
+
+/* 63 */
+.footer-credit strong { transition: color 160ms ease, letter-spacing 180ms ease; }
+.footer-credit:hover strong { color: #fff; letter-spacing: 0.015em; }
+
+/* 64 */
+.footer-credit a { transition: color 160ms ease, text-underline-offset 160ms ease; }
+.footer-credit a:hover,
+.footer-credit a:focus-visible { text-underline-offset: 6px; }
+
+/* 65 */
+.error-message:not(:empty) { animation: error-arrive 300ms cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+
 @keyframes cursor-morph-leaf {
   0% { clip-path: polygon(48% 0%, 76% 8%, 96% 28%, 100% 59%, 84% 85%, 57% 100%, 27% 94%, 5% 76%, 0% 45%, 17% 17%); transform: translate(-15%, 9%) rotate(-14deg) scale(0.76, 1.1); }
   34% { clip-path: polygon(27% 0%, 58% 4%, 87% 15%, 100% 41%, 92% 69%, 72% 94%, 42% 100%, 15% 84%, 0% 59%, 9% 27%); transform: translate(17%, -12%) rotate(18deg) scale(1.24, 0.72); }
@@ -1735,6 +1834,16 @@ footer {
   0%, 100% { transform: translateX(0); }
   35% { transform: translateX(3px); }
   70% { transform: translateX(-2px); }
+}
+
+@keyframes verified-chip {
+  from { box-shadow: 0 0 0 0 rgb(102 141 76 / 24%); transform: scale(0.96); }
+  to { box-shadow: 0 0 0 5px rgb(102 141 76 / 0%); transform: scale(1); }
+}
+
+@keyframes error-arrive {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .motion-ready .reveal {
