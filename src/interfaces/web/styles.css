@@ -2045,6 +2045,69 @@ body { transition: background-color 680ms ease; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Keep page structure stable. Large chapter choreography is intentionally disabled. */
+body,
+:root[data-active-macro-scene] body { background: #10120f; }
+
+.chapter-rail { display: none !important; }
+.app-header--retreating { transform: none !important; }
+
+.macro-motion-ready .macro-scene,
+.macro-motion-ready .macro-scene--entered,
+.macro-motion-ready .macro-scene--active,
+.macro-motion-ready .macro-scene--destination {
+  clip-path: none !important;
+  filter: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: none !important;
+}
+
+.macro-motion-ready .macro-scene > *,
+.macro-motion-ready .macro-scene--entered > *,
+.macro-motion-ready .macro-scene--active > *,
+.macro-motion-ready .hero.macro-scene > :first-child,
+.macro-motion-ready .hero.macro-scene > :last-child,
+.macro-motion-ready .scope.macro-scene > :first-child,
+.macro-motion-ready .scope.macro-scene > :last-child,
+.macro-motion-ready .engineering.macro-scene > :first-child,
+.macro-motion-ready .engineering.macro-scene > :last-child,
+.macro-motion-ready .route.macro-scene > :first-child,
+.macro-motion-ready .route.macro-scene > :last-child,
+.macro-motion-ready .closing-note > * {
+  filter: none !important;
+  opacity: 1 !important;
+  scale: 1 !important;
+  translate: 0 0 !important;
+}
+
+.macro-motion-ready .hero::before,
+.macro-motion-ready .hero::after,
+.proof-rail::after { display: none !important; }
+
+.motion-ready .proof-rail,
+.purpose__steps,
+.motion-ready footer {
+  clip-path: none !important;
+  translate: 0 0 !important;
+}
+
+.motion-ready .proof-rail article,
+.scope__facts article,
+.engineering__principles article,
+.route__intro,
+.route__steps,
+.playlist-list {
+  translate: 0 0 !important;
+}
+
+.origin-note::before,
+.route,
+.engineering__principles,
+.playlist-catalog,
+.batch-toolbar,
+.closing-note { transform: none !important; }
+
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 66px; }
   .playlist-example { width: min(100%, 510px); justify-self: start; }

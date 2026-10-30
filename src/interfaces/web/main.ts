@@ -449,7 +449,6 @@ function initializeDemo(): void {
     reset.hidden = true;
     phase.textContent = "Unsorted";
     phase.className = "demo-phase";
-    demoPanel.dataset.macroPhase = "initial";
     status.textContent = "The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.";
     renderTracks();
     if (animate) animateDemoPanel(demoPanel, "reset");
@@ -462,7 +461,6 @@ function initializeDemo(): void {
       reset.hidden = false;
       phase.textContent = "Preview ready";
       phase.className = "demo-phase demo-phase--preview";
-      demoPanel.dataset.macroPhase = "preview";
       status.textContent = `${String(plan.length)} range ${plan.length === 1 ? "move" : "moves"} planned for ${String(order.length)} sample tracks. The displayed order has not changed.`;
       renderTracks();
       animateDemoPanel(demoPanel, "preview");
@@ -482,7 +480,6 @@ function initializeDemo(): void {
     primary.disabled = true;
     phase.textContent = "Verified newest-first";
     phase.className = "demo-phase demo-phase--verified";
-    demoPanel.dataset.macroPhase = "verified";
     status.textContent = `Sorted and verified ${String(order.length)} sample tracks with ${String(plan.length)} ${plan.length === 1 ? "move" : "moves"}. Membership and track details are unchanged.`;
     renderTracks();
     animateDemoPanel(demoPanel, "verified");
@@ -609,7 +606,6 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     throw new Error("Playlist catalog controls are missing.");
   }
   catalog.hidden = false;
-  catalog.classList.add("macro-catalog--visible");
   catalog.setAttribute("aria-busy", state.libraryStatus === "loading" ? "true" : "false");
   if (state.libraryStatus === "loading") {
     count.textContent = "Loading…";
@@ -656,7 +652,6 @@ function renderPlaylistCatalog(state: Extract<ViewState, { readonly kind: "conne
     const previewed = selectedIds.filter((id) => previews.has(id));
     const sortable = previewed.filter((id) => (previews.get(id)?.moves.length ?? 0) > 0);
     batchCount.textContent = `${String(selectedIds.length)} selected`;
-    toolbar.dataset.macroSelection = selectedIds.length === 0 ? "empty" : "active";
     batchPreview.disabled = catalogBusy || selectedIds.length === 0;
     batchSort.disabled =
       catalogBusy || selectedIds.length === 0 || previewed.length !== selectedIds.length || sortable.length === 0;
@@ -839,7 +834,7 @@ function initializeMotion(): void {
 
 function initializeInteractions(): void {
   initializeScrollProgress();
-  initializeMacroScenes();
+  if (document.documentElement.hasAttribute("data-enable-macro-motion")) initializeMacroScenes();
 }
 
 function initializeMacroScenes(): void {
