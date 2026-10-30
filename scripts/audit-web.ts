@@ -5,11 +5,12 @@ import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
-import { preview } from "vite";
+import { build, preview } from "vite";
 
 const host = "127.0.0.1";
 const port = 4174;
 const origin = `http://${host}:${String(port)}`;
+const configFile = fileURLToPath(new URL("../config/vite.config.ts", import.meta.url));
 const failures: string[] = [];
 const routes = [
   {
@@ -36,8 +37,9 @@ const viewports = [
   { width: 390, height: 844 },
   { width: 1440, height: 1024 },
 ] as const;
+await build({ configFile, logLevel: "error" });
 const server = await preview({
-  configFile: fileURLToPath(new URL("../config/vite.config.ts", import.meta.url)),
+  configFile,
   preview: { host, port, strictPort: true },
 });
 const browserTypes = [
@@ -172,6 +174,7 @@ try {
       }
 
       await auditFramedApplication(browser, browserName);
+      await auditVisualLayout(browser, browserName);
 
       if (browserName === "Chromium") {
         await auditNoScriptFallback(browser);
@@ -186,6 +189,76 @@ try {
 } finally {
   await server.close();
 }
+
+async function auditVisualLayout(
+  browser: import("playwright").Browser,
+  browserName: string,
+): Promise<void> {
+  const layoutViewports = [
+    { name: "mobile", width: 390, height: 844 },
+    { name: "desktop", width: 1440, height: 1024 },
+  ] as const;
+  const selectors = [
+    ".hero",
+    ".proof-rail",
+    ".origin-note",
+    ".interactive-demo",
+    ".scope",
+    ".purpose",
+    ".engineering",
+    ".route",
+    ".closing-note",
+  ] as const;
+
+  for (const viewport of layoutViewports) {
+    const context = await browser.newContext({ reducedMotion: "no-preference", viewport });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${origin}/`, { waitUntil: "networkidle" });
+      const facts = await page.evaluate((sectionSelectors) => ({
+        horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        sections: sectionSelectors.map((selector) => {
+          const element = document.querySelector<HTMLElement>(selector);
+          if (element === null) return { selector, missing: true as const };
+          const bounds = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            missing: false as const,
+            clipPath: style.clipPath,
+            height: bounds.height,
+            transform: style.transform,
+            width: bounds.width,
+          };
+        }),
+      }), selectors);
+      const contextName = `${browserName} ${viewport.name} visual layout`;
+      if (facts.horizontalOverflow > 1) {
+        failures.push(`${contextName} overflows horizontally by ${String(facts.horizontalOverflow)}px.`);
+      }
+      for (const section of facts.sections) {
+        if (section.missing) {
+          failures.push(`${contextName} is missing ${section.selector}.`);
+          continue;
+        }
+        if (section.width < viewport.width * 0.75 || section.height < 80) {
+          failures.push(
+            `${contextName} collapses ${section.selector} to ${String(Math.round(section.width))}x${String(Math.round(section.height))}px.`,
+          );
+        }
+        if (section.clipPath !== "none") {
+          failures.push(`${contextName} clips ${section.selector} with ${section.clipPath}.`);
+        }
+        if (section.transform.startsWith("matrix3d(")) {
+          failures.push(`${contextName} applies a page-level 3D transform to ${section.selector}.`);
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  }
+}
+
 async function auditAxe(page: Page, contextName: string): Promise<void> {
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
