@@ -442,6 +442,7 @@ function initializeDemo(): void {
   };
 
   const resetDemo = (animate = false): void => {
+    const restorePrimaryFocus = animate && document.activeElement === reset;
     order = DEMO_OCCURRENCES;
     step = "initial";
     primary.textContent = "Preview the sort";
@@ -452,6 +453,7 @@ function initializeDemo(): void {
     status.textContent = "The sample playlist is intentionally out of order. Previewing calculates a plan without changing it.";
     renderTracks();
     if (animate) animateDemoPanel(demoPanel, "reset");
+    if (restorePrimaryFocus) primary.focus({ preventScroll: true });
   };
 
   primary.addEventListener("click", () => {
@@ -467,6 +469,7 @@ function initializeDemo(): void {
       return;
     }
     if (step !== "previewed") return;
+    const moveFocusToReset = document.activeElement === primary;
     const sorted = applyMovePlan(order, plan);
     if (!haveEqualMembership(order, sorted) || !isNewestFirst(sorted)) {
       throw new Error("Interactive demo verification failed.");
@@ -483,6 +486,7 @@ function initializeDemo(): void {
     status.textContent = `Sorted and verified ${String(order.length)} sample tracks with ${String(plan.length)} ${plan.length === 1 ? "move" : "moves"}. Membership and track details are unchanged.`;
     renderTracks();
     animateDemoPanel(demoPanel, "verified");
+    if (moveFocusToReset) reset.focus({ preventScroll: true });
   });
   reset.addEventListener("click", () => resetDemo(true));
   resetDemo();
@@ -1058,6 +1062,7 @@ async function applyPlaylistSort(
   trackRoute = true,
 ): Promise<boolean> {
   const { previewButton, result, resultMessage, resultActions } = controls;
+  const moveFocusToResult = document.activeElement === sortButton;
   previewButton.disabled = true;
   sortButton.disabled = true;
   sortButton.textContent = "Sorting…";
@@ -1076,6 +1081,10 @@ async function applyPlaylistSort(
         ? `No changes needed. ${String(outcome.occurrenceCount)} items were already newest-first.`
         : `Sorted and verified ${String(outcome.occurrenceCount)} items with ${String(outcome.writeCalls)} ${outcome.writeCalls === 1 ? "write" : "writes"}. Membership is unchanged.`;
     resultActions.replaceChildren();
+    if (moveFocusToResult) {
+      result.tabIndex = -1;
+      result.focus({ preventScroll: true });
+    }
     if (trackRoute) setRoutePhase("verified");
     return true;
   } catch (error) {

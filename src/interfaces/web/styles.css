@@ -49,6 +49,11 @@ a { -webkit-tap-highlight-color: transparent; }
   outline-offset: 4px;
 }
 
+.preview-result:focus-visible {
+  outline: 3px solid #d9ffc1;
+  outline-offset: 4px;
+}
+
 ::selection {
   color: #11150e;
   background: var(--green);

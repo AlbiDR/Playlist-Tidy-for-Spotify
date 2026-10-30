@@ -68,10 +68,12 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
   try {
     await page.goto(`${origin}/`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "Try the interactive demo" }).click();
-    await page.getByRole("button", { name: "Preview the sort" }).click();
+    await page.getByRole("button", { name: "Preview the sort" }).focus();
+    await page.keyboard.press("Enter");
     await page.getByText("range moves planned", { exact: false }).waitFor();
     const before = await page.locator("#demo-track-list .demo-track strong").allTextContents();
-    await page.getByRole("button", { name: "Apply sample sort" }).click();
+    await page.getByRole("button", { name: "Apply sample sort" }).focus();
+    await page.keyboard.press("Enter");
     await page.getByText("Sorted and verified 5 sample tracks", { exact: false }).waitFor();
     const completedAction = await page.locator("#demo-primary-action").evaluate((element) => {
       if (!(element instanceof HTMLButtonElement)) throw new Error("The demo action is not a button.");
@@ -88,6 +90,9 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
       completedAction.cursor === "progress"
     ) {
       failures.push(`${browserName} interactive demo left its completed action in a loading state.`);
+    }
+    if ((await page.evaluate(() => document.activeElement?.id ?? "")) !== "demo-reset") {
+      failures.push(`${browserName} interactive demo left focus on its disabled completed action.`);
     }
     const maxHeartbeatDelay = await page.evaluate(async () => {
       const delays: number[] = [];
@@ -120,6 +125,10 @@ async function auditInteractiveDemo(browser: Browser, browserName: string): Prom
       failures.push(`${browserName} interactive demo persisted browser data.`);
     }
     await auditAxe(page, `${browserName} verified interactive demo`);
+    await page.keyboard.press("Enter");
+    if ((await page.evaluate(() => document.activeElement?.id ?? "")) !== "demo-primary-action") {
+      failures.push(`${browserName} interactive demo lost focus when reset hid its trigger.`);
+    }
   } finally {
     await context.close();
   }
@@ -202,7 +211,8 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
     const writeRequest = page.waitForRequest((request) =>
       request.method() === "PUT" && new URL(request.url()).pathname === "/v1/playlists/owned-a/items",
     );
-    await page.getByRole("button", { name: "Sort now: apply 1 planned sorting moves" }).click();
+    await page.getByRole("button", { name: "Sort now: apply 1 planned sorting moves" }).focus();
+    await page.keyboard.press("Enter");
     await writeRequest;
     if (await page.getByRole("button", { name: "Disconnect" }).isEnabled()) {
       failures.push(`${browserName} allowed disconnect while a playlist write was in progress.`);
@@ -218,6 +228,12 @@ async function auditSuccessfulJourney(browser: Browser, browserName: string): Pr
       failures.push(`${browserName} did not protect an in-progress playlist write from accidental navigation.`);
     }
     await page.getByText("Sorted and verified 2 items with 1 write. Membership is unchanged.").waitFor();
+    const focusedResult = await page.evaluate(() =>
+      document.activeElement?.classList.contains("preview-result--success") === true,
+    );
+    if (!focusedResult) {
+      failures.push(`${browserName} successful playlist sort lost focus when its action was removed.`);
+    }
     await page.waitForFunction(() => {
       const button = document.querySelector<HTMLButtonElement>("#connection-action");
       return button !== null && !button.disabled;
